@@ -129,37 +129,37 @@
 
 <p>部屋数をX、部屋の価格をYとすると相関を表すグラフを引くための1次関数の式は次のようになります。（懐かしい数式）</p>
 
-<p><img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Cdisplaystyle%0AY%20%3D%20aX%20%2B%20b%0A" alt=" \displaystyle
+<p><img src="https://chart.apis.google.com/chart?cht=tx&chl=%20%5Cdisplaystyle%0AY%20%3D%20aX%20%2B%20b%0A" alt=" \displaystyle
 Y = aX + b
 "/></p>
 
 <p>Machine Learningのコースではθをつかって次のような式で定義しています。</p>
 
-<p><img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Cdisplaystyle%0Ah_%5Ctheta%20%28X%29%20%3D%20%5Ctheta_0%20%2B%20%5Ctheta_1%28X%29%0A" alt=" \displaystyle
+<p><img src="https://chart.apis.google.com/chart?cht=tx&chl=%20%5Cdisplaystyle%0Ah_%5Ctheta%20%28X%29%20%3D%20%5Ctheta_0%20%2B%20%5Ctheta_1%28X%29%0A" alt=" \displaystyle
 h_\theta (X) = \theta_0 + \theta_1(X)
 "/></p>
 
-<p><img src="http://chart.apis.google.com/chart?cht=tx&chl=%20h_%5Ctheta%20%28X%29" alt=" h_\theta (X)"/> は<strong>仮定関数</strong>と呼ばれます。家の価格予想に最適な直線を引くために<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_0" alt=" \theta_0"/> と<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_1" alt=" \theta_1"/>の数値を変えながらグラフにフィットした仮定関数を導き出します。
-つまり右肩上がりの直線のグラフを引くために最適な<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%20aX%20%2B%20b" alt="  aX + b"/> の <code>a</code>と<code>b</code>を決めるということですね。</p>
+<p><img src="https://chart.apis.google.com/chart?cht=tx&chl=%20h_%5Ctheta%20%28X%29" alt=" h_\theta (X)"/> は<strong>仮定関数</strong>と呼ばれます。家の価格予想に最適な直線を引くために<img src="https://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_0" alt=" \theta_0"/> と<img src="https://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_1" alt=" \theta_1"/>の数値を変えながらグラフにフィットした仮定関数を導き出します。
+つまり右肩上がりの直線のグラフを引くために最適な<img src="https://chart.apis.google.com/chart?cht=tx&chl=%20%20aX%20%2B%20b" alt="  aX + b"/> の <code>a</code>と<code>b</code>を決めるということですね。</p>
 
 <p>仮定関数がフィットしているか計算するための関数である<strong>目的関数</strong>があります。</p>
 
-<p><img src="http://chart.apis.google.com/chart?cht=tx&chl=%7B%20%5Cdisplaystyle%0AJ%28%5Ctheta_0%2C%20%5Ctheta_1%29%20%3D%20%5Cfrac%7B1%7D%7B2m%7D%5Csum_%7Bi%3D1%7D%5E%7Bm%7D%20%28h_%5Ctheta%20%28X_i%29%20-%20Y_i%29%5E2%0A%7D" alt="{ \displaystyle
+<p><img src="https://chart.apis.google.com/chart?cht=tx&chl=%7B%20%5Cdisplaystyle%0AJ%28%5Ctheta_0%2C%20%5Ctheta_1%29%20%3D%20%5Cfrac%7B1%7D%7B2m%7D%5Csum_%7Bi%3D1%7D%5E%7Bm%7D%20%28h_%5Ctheta%20%28X_i%29%20-%20Y_i%29%5E2%0A%7D" alt="{ \displaystyle
 J(\theta_0, \theta_1) = \frac{1}{2m}\sum_{i=1}^{m} (h_\theta (X_i) - Y_i)^2
 }"/></p>
 
-<p>この目的関数をつかって<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20J%28%5Ctheta_0%2C%20%5Ctheta_1%29" alt=" J(\theta_0, \theta_1)"/>を最小にする<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_0" alt=" \theta_0"/> と<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_1" alt=" \theta_1"/>を導き出します。</p>
+<p>この目的関数をつかって<img src="https://chart.apis.google.com/chart?cht=tx&chl=%20J%28%5Ctheta_0%2C%20%5Ctheta_1%29" alt=" J(\theta_0, \theta_1)"/>を最小にする<img src="https://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_0" alt=" \theta_0"/> と<img src="https://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_1" alt=" \theta_1"/>を導き出します。</p>
 
 <h3 id="最急降下法">最急降下法</h3>
 
 <p>目的関数を最小にする方法に<strong>最急降下法</strong>があります。</p>
 
-<p><img src="http://chart.apis.google.com/chart?cht=tx&chl=%7B%20%5Cdisplaystyle%0A%5Ctheta_j%20%3D%20%5Ctheta_j%20-%20%5Calpha%20%5Csum_%7Bi%3D1%7D%5E%7Bm%7D%20%28h_%5Ctheta%20%28x%5E%7B%28i%29%7D%29%20-%20y%5E%7B%28i%29%7D%29%20x_j%5C%20%5E%7B%28i%29%7D%0A%7D" alt="{ \displaystyle
+<p><img src="https://chart.apis.google.com/chart?cht=tx&chl=%7B%20%5Cdisplaystyle%0A%5Ctheta_j%20%3D%20%5Ctheta_j%20-%20%5Calpha%20%5Csum_%7Bi%3D1%7D%5E%7Bm%7D%20%28h_%5Ctheta%20%28x%5E%7B%28i%29%7D%29%20-%20y%5E%7B%28i%29%7D%29%20x_j%5C%20%5E%7B%28i%29%7D%0A%7D" alt="{ \displaystyle
 \theta_j = \theta_j - \alpha \sum_{i=1}^{m} (h_\theta (x^{(i)}) - y^{(i)}) x_j\ ^{(i)}
 }"/></p>
 
-<p>ここで微分が出てきます。微分は傾きを求めますがこのアルゴリズムを使い傾きが最小になるまで学習を繰り返していきます。傾きの値が最小になるほどグラフにフィットした<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_j" alt=" \theta_j"/>が求められます。
-<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%20%5Calpha" alt="  \alpha"/>は学習率と呼ばれ数値が大きいほど傾きの変動幅が大きくなりフィットしたデータが得られず、小さいほど学習はゆっくりと進み確実にデータにフィットした値が求められます。</p>
+<p>ここで微分が出てきます。微分は傾きを求めますがこのアルゴリズムを使い傾きが最小になるまで学習を繰り返していきます。傾きの値が最小になるほどグラフにフィットした<img src="https://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_j" alt=" \theta_j"/>が求められます。
+<img src="https://chart.apis.google.com/chart?cht=tx&chl=%20%20%5Calpha" alt="  \alpha"/>は学習率と呼ばれ数値が大きいほど傾きの変動幅が大きくなりフィットしたデータが得られず、小さいほど学習はゆっくりと進み確実にデータにフィットした値が求められます。</p>
 
 <h3 id="octaveでプログラム化する">Octaveでプログラム化する</h3>
 

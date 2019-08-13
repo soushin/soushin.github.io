@@ -273,7 +273,7 @@
     </item>
     
     <item>
-      <title>android</title>
+      <title>Android</title>
       <link>https://blog.soushi.me/tags/android/</link>
       <pubDate>Mon, 04 Jun 2018 11:30:31 +0000</pubDate>
       
@@ -372,20 +372,20 @@
     </item>
     
     <item>
+      <title>Dagger</title>
+      <link>https://blog.soushi.me/tags/dagger/</link>
+      <pubDate>Fri, 23 Feb 2018 10:02:50 +0000</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/dagger/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Fragment</title>
       <link>https://blog.soushi.me/tags/fragment/</link>
       <pubDate>Fri, 23 Feb 2018 10:02:50 +0000</pubDate>
       
       <guid>https://blog.soushi.me/tags/fragment/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>dagger</title>
-      <link>https://blog.soushi.me/tags/dagger/</link>
-      <pubDate>Fri, 23 Feb 2018 10:02:50 +0000</pubDate>
-      
-      <guid>https://blog.soushi.me/tags/dagger/</guid>
       <description></description>
     </item>
     

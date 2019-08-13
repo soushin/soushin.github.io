@@ -265,14 +265,14 @@
   </url>
   
   <url>
-    <loc>https://blog.soushi.me/entry/2018/06/04/113031/</loc>
-    <lastmod>2018-06-04T11:30:31+00:00</lastmod>
-  </url>
-  
-  <url>
     <loc>https://blog.soushi.me/tags/android/</loc>
     <lastmod>2018-06-04T11:30:31+00:00</lastmod>
     <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/entry/2018/06/04/113031/</loc>
+    <lastmod>2018-06-04T11:30:31+00:00</lastmod>
   </url>
   
   <url>
@@ -356,18 +356,18 @@
   </url>
   
   <url>
+    <loc>https://blog.soushi.me/tags/dagger/</loc>
+    <lastmod>2018-02-23T10:02:50+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://blog.soushi.me/entry/2018/02/23/100250/</loc>
     <lastmod>2018-02-23T10:02:50+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://blog.soushi.me/tags/fragment/</loc>
-    <lastmod>2018-02-23T10:02:50+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://blog.soushi.me/tags/dagger/</loc>
     <lastmod>2018-02-23T10:02:50+00:00</lastmod>
     <priority>0</priority>
   </url>
