@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>ProwではじめるChatOps on GitHub。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Kubernetesのtest-infraレポジトリにあるProwを試す。ProwはKubernates環境を基盤としたCIとCDのシステム">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">ProwではじめるChatOps on GitHub。</h1>
+    <div class="post-meta">2019.1.8</div>
+  </header>
+  <div class="post-content">
+
+<p>Kubernetesのtest-infraレポジトリにある<code>Prow</code>を試す。ProwはKubernates環境を基盤としたCIとCDのシステムである。</p>
+
+<h3 id="モチベーション">モチベーション</h3>
+
+<p>Kubernatesを追っている人であれば次のようなコメントのやり取りをGitHub上で見かけたことがあるだろう。</p>
+
+<figure class="figure-image figure-image-fotolife" title="Prowイメージ"><figure>
+    <img src="/images/20190108105515.png"/> 
+</figure>
+</figure>
+
+<p><a href="https://github.com/kubernetes/kubernetes/pull/70875">Enable kustomize in kubectl by Liujingfang1 · Pull Request #70875 · kubernetes/kubernetes · GitHub</a></p>
+
+<p><code>/hold</code>や<code>/test</code>などのキーワードをコメント欄に入力してオペレーションを実行している。<code>/hold cancel</code>でラベルを取り除いたり<code>/test</code>でテストを実行している。入力したキーワードはWebhookで稼働しているProwのエンドポイントに送信されてGitHubイベントと合わせてProwのプラグインが実行される仕組みである。</p>
+
+<p>このProwの導入手順をまとめていきプロジェクトにフィットするか検討したいというのがエントリのモチベーションである。ProwはKubernetesをはじめIstio、Knative、Prometheusなどのオーガナイゼーションにも利用されている。</p>
+
+<h3 id="prowをデプロイする">Prowをデプロイする</h3>
+
+<p>Prowが含まれるレポジトリは<code>kubernetes/test-infra</code>である。</p>
+
+<p><div class="github-card" data-user="kubernetes" data-repo="test-infra" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>デプロイ手順は<code>getting_started_deploy.md</code>を参考に進めている。</p>
+
+<p><a href="https://github.com/kubernetes/test-infra/blob/master/prow/getting_started_deploy.md">test-infra/getting_started_deploy.md at master · kubernetes/test-infra · GitHub</a></p>
+
+<p>gcpを利用している人であれば<code>Tackle</code>というユーティリティが用意されているので対話式にProwをセットアップできるが私はローカル（Docker For Desktop）でKubernatesを起動させているため<code>Manual deployment</code>を参考にすすめた。</p>
+
+<p>またClusterとNamespaceは<code>docker-for-desktop</code>と<code>default</code>としている。実際の運用ではプロジェクトに合わせた選択が求められる。</p>
+
+<h4 id="事前に準備するものを一覧にする">事前に準備するものを一覧にする。</h4>
+
+<ul>
+<li>Prowを試すレポジトリ</li>
+<li>Botアカウント（GitHubのBot専用アカウント）</li>
+<li>BotアカウントのAccessToken</li>
+<li>ご自身のアカウントのAccessToken</li>
+</ul>
+
+<p>Kubernatesは<code>k8s-ci-robot</code>というBotアカウントを使用している。</p>
+
+<p><a href="https://github.com/k8s-ci-robot">k8s-ci-robot (Kubernetes Prow Robot) · GitHub</a></p>
+
+<h4 id="kubernetes-test-infra-をチェックアウト">kubernetes/test-infra をチェックアウト</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">$ git clone git@github.com:kubernetes/test-infra.git
+$ cd test-infra</pre></td></tr></table>
+</div>
+</div>
+<p>以降の手順はすべて<code>test-infra</code>のディレクトリで行う。</p>
+
+<h4 id="githubとprowを連携するための準備">GitHubとProwを連携するための準備</h4>
+
+<p>GitHubとProwを連携するための準備としてWebhookで送信するSecretキーを生成しSecretリソースに追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ openssl rand -hex 20 &gt; hook_secret
+(test-infra) $ kubectl create secret generic hmac-token --from-file=hmac=hook_secret</pre></td></tr></table>
+</div>
+</div>
+<p>BotアカウントのGitHubアクセストークンをSecretリソースに追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"># BotアカウントのGitHubアクセストークンを`bot_oauth_secret`に保存している
+(test-infra) $ kubectl create secret generic oauth-token --from-file=oauth=bog_oauth_secret</pre></td></tr></table>
+</div>
+</div>
+<h4 id="prowのコンポーネントをデプロイする">Prowのコンポーネントをデプロイする</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ kubectl apply -f prow/cluster/starter.yaml</pre></td></tr></table>
+</div>
+</div>
+<p>Deploymentは次のようになっている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ kubectl get deployments 
+NAME         DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+deck         2         2         2            0           3m
+hook         2         2         2            2           3m
+horologium   1         1         1            1           3m
+plank        1         1         1            1           3m
+sinker       1         1         1            1           3m
+tide         1         1         1            1           3m</pre></td></tr></table>
+</div>
+</div>
+<p>deckがエラーになっているがOAuth Appを利用するケースのため割愛する。</p>
+
+<p><a href="https://github.com/kubernetes/test-infra/blob/master/prow/docs/pr_status_setup.md">test-infra/pr_status_setup.md at master · kubernetes/test-infra · GitHub</a></p>
+
+<h4 id="webhookをgithubに追加する">WebhookをGitHubに追加する</h4>
+
+<p>私の環境はローカルのためIngressにIPアドレスが割り振られないがGitHubのWebhookから叩かれるエンドポイントの<code>hook</code>PodはNodePortで開かれているのでngrockをつかってプロキシしている。</p>
+
+<p>NodePortを確認する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ kubectl describe service hook
+Name:                     hook
+Namespace:                default
+Labels:                   &amp;lt;none&gt;
+Annotations:              kubectl.kubernetes.io/last-applied-configuration:
+                            {&#34;apiVersion&#34;:&#34;v1&#34;,&#34;kind&#34;:&#34;Service&#34;,&#34;metadata&#34;:{&#34;annotations&#34;:{},&#34;name&#34;:&#34;hook&#34;,&#34;namespace&#34;:&#34;default&#34;},&#34;spec&#34;:{&#34;ports&#34;:[{&#34;port&#34;:8888}],&#34;sel...
+Selector:                 app=hook
+Type:                     NodePort
+IP:                       10.98.120.195
+LoadBalancer Ingress:     localhost
+Port:                     &amp;lt;unset&gt;  8888/TCP
+TargetPort:               8888/TCP
+NodePort:                 &amp;lt;unset&gt;  31797/TCP
+Endpoints:                10.1.7.24:8888,10.1.7.25:8888
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:                   &amp;lt;none&gt;</pre></td></tr></table>
+</div>
+</div>
+<p>確認したNodePort <code>31797</code>をngrockでプロキシする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ ngrok http 31797</pre></td></tr></table>
+</div>
+</div>
+<p>Forwardingに表示されている<code><a href="https://xxxxxx.ap.ngrok.io">https://xxxxxx.ap.ngrok.io</a></code>のURLをWebhookに利用する。</p>
+
+<h4 id="webhookを追加するユーティリティをつかってみる">Webhookを追加するユーティリティをつかってみる</h4>
+
+<p>ProwにはWebhookを追加するユーティリティが用意されている。ユーティリティを使わなければ手動でGitHubからWebhookを追加すれば良い。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ bazel run //experiment/add-hook -- \
+  --hmac-path=/path/to/hook_secret \
+  --github-token-path=/path/to/own_oauth_secret \
+  --hook-url https://xxxxxx.ap.ngrok.io/hook \
+  --repo soushin/bazel-multiprojects \
+  --confirm=true</pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>hmac-pathには生成した<code>hook_secret</code>を指定（注：絶対パス）</li>
+<li>github-token-pathにはご自身のGitHubアクセストークンを保存した<code>own_oauth_secret</code>を指定（注：絶対パス）</li>
+<li>hook-urlにはngrockでプロキシした<code>https://xxxxxx.ap.ngrok.io</code>に<code>/hook</code>のエンドポイントを追加して指定</li>
+<li>repoにはProwを試すレポジトリを指定</li>
+</ul>
+
+<p>実行後にINFOが次のように出力されていれば完了。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">INFO[0000] ListRepoHooks(soushin, bazel-multiprojects)   client=github
+INFO[0000] CreateRepoHook(soushin, bazel-multiprojects)  client=github</pre></td></tr></table>
+</div>
+</div>
+<p>GitHubの<code>Settings -&gt; Webhooks</code>のページにWebhookが追加されていてグリーンのチェックマークが点いていれば正常に完了。</p>
+
+<p>これでKubernatesにデプロイしたProwのコンポーネントとGitHubがWebhookで連携できた。次にプラグインを追加してProwのChatOpsを体験していく。</p>
+
+<h4 id="prowプラグインを追加する">Prowプラグインを追加する</h4>
+
+<p>プラグインを追加する前にProwの<code>hook</code>Podのログに<code>no plugins</code>のエラーが確認できる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">hook-64448bb489-42v8b hook {&#34;component&#34;:&#34;hook&#34;,&#34;level&#34;:&#34;warning&#34;,&#34;msg&#34;:&#34;no plugins specified-- check syntax?&#34;,&#34;time&#34;:&#34;2019-01-08T03:07:15Z&#34;}
+hook-64448bb489-42v8b hook {&#34;component&#34;:&#34;hook&#34;,&#34;level&#34;:&#34;warning&#34;,&#34;msg&#34;:&#34;no plugins specified-- check syntax?&#34;,&#34;time&#34;:&#34;2019-01-08T03:08:15Z&#34;}</pre></td></tr></table>
+</div>
+</div>
+<p>つまり何かしらプラグインを追加して初めてProwのChatOpsが体験できるわけだ。</p>
+
+<p>Prowのプラグインはこちらにまとまっている。</p>
+
+<p><a href="https://prow.k8s.io/plugins">Prow Plugin Catalog</a></p>
+
+<h5 id="sizeプラグインを試す">Sizeプラグインを試す</h5>
+
+<p>SizeプラグインはPushしたコード量に応じてBotアカウントが<code>size/S</code>や<code>Size/XL</code>などのラベルをプルリクエストに付与してくれるプラグインである。</p>
+
+<p>plugins.yamlを次のように作成する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ echo &#39;plugins:
+  soushin/bazel-multiprojects:
+  - size&#39; &gt; ./plugins.yaml</pre></td></tr></table>
+</div>
+</div>
+<p><code>soushin</code>の<code>bazel-multiprojects</code>レポジトリにsizeプラグインを有効にしている。<code>soushin</code>のみを指定してオーガナイゼーション全体にプラグインを有効にすることも可能である。</p>
+
+<p>plugin.yamlをConfigMapに追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ kubectl create configmap plugins \
+  --from-file=plugins.yaml=plugins.yaml --dry-run -o yaml  \
+  | kubectl replace configmap plugins -f -</pre></td></tr></table>
+</div>
+</div>
+<p>追加したConfigMapは<code>hook</code>Podにマウントされてプラグインが有効になる。</p>
+
+<p>適当なプルリクエストを追加するとBotアカウントがSizeラベルを付与してくれる。</p>
+
+<figure>
+    <img src="/images/20190108122855.png"/> 
+</figure>
+
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>Prowの導入手順をまとめた。</li>
+<li>Kubernatesは1日にテストを1,000回以上実行するそうでスケーラビリティが求められる。ProwはKubernates環境で稼働するためニーズとマッチした仕組みである。</li>
+<li><a href="https://cloudbees.techmatrix.jp/serverless-jenkins-jenkins-x/">Jenkins X</a>はKnativeとProwを基盤に実現したサーバレスJenkinsで、Knativeというサーバレスの仕組みにProwプラグインの拡張性が組み合わさった感じなのかな、という印象を持った。</li>
+<li>今回は既存のプラグインを試したが<code>trigger</code>というプラグインはtestに関連していそうで非常に気になる。</li>
+<li>プロジェクトにマッチするか引き続きProwを触っていきたい。</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/prow/">Prow</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/chatops/">ChatOps</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/github/">GitHub</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kubernetes/">Kubernetes</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

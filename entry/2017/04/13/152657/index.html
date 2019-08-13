@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>KotlinでgRPC。実運用にも活かせるWEBアプリケーション構成で試してみた。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="KotlinでgRPCを試していきます。protocol buffersがkotlinに対応していないのでjavaに生成したものを使います。次">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">KotlinでgRPC。実運用にも活かせるWEBアプリケーション構成で試してみた。</h1>
+    <div class="post-meta">2017.4.13</div>
+  </header>
+  <div class="post-content">
+
+<p>KotlinでgRPCを試していきます。protocol buffersがkotlinに対応していないのでjavaに生成したものを使います。次のようなアプリケーション構成でKotlinを使ったgRPC通信を試してみました。</p>
+
+<h3 id="アプリケーション構成">アプリケーション構成</h3>
+
+<figure>
+    <img src="/images/20170413103848.png"/> 
+</figure>
+
+
+<ul>
+<li>エンドクライアントからのアクセスは<code>Gateway Server</code>が窓口となり<code>HTTP/1.1</code>で通信を行います。</li>
+<li><code>Gateway Server</code>のバックエンドにいる<code>gRPC Server</code>とは<code>gRPC（HTTP/2）</code>で通信を行います。</li>
+<li><code>monitoring tool</code>は<code>Gateway Server</code>と<code>gRPC Server</code>の監視を行い<code>HTTP/1.1</code>で通信を行います。</li>
+</ul>
+
+<h3 id="モチベーション">モチベーション</h3>
+
+<p>何度かgRPCについてのエントリをまとめてきました。kotlinでgRPCを試してみたいと感じていたのとSpring Framework 5.0のリリースを控えた状況でSpring Framework 5 on Kotlinを試してみたい欲求がありました。  そのためアプリケーション構成図にあるとおり<code>Gateway Server</code>にはRouter機能を試したいので <code>spring-webflux</code>でアプリケーションを作りました。</p>
+
+<p>次のエントリではSpring Framework 5.0でReactive Programmingを活用しながらkotlinらしいコードの紹介がされています。</p>
+
+<p><a href="https://spring.io/blog/2017/01/04/introducing-kotlin-support-in-spring-framework-5-0">Introducing Kotlin support in Spring Framework 5.0</a></p>
+
+<p>また<code>gRPC Server</code>では<code>HTTP/1.1</code>と<code>gRPC(HTTP2)</code>の２つの通信方式を有効にしたいです。Spring Bootでどのように実現するのか？この課題についても理解を深める必要がありました。</p>
+
+<p>そして実戦に向けて実運用をイメージしたアプリケーション構成を構築する必要がありました。</p>
+
+<hr/>
+
+<p>ここからは構築にいたるまでの勘所や課題などについてまとめていきます。</p>
+
+<h3 id="grpc-server">gRPC Server</h3>
+
+<p>まずはgRPC Serverからです。<br/>
+ここでの課題は<code>HTTP/1.1</code>と<code>gRPC(HTTP2)</code>の２つの通信方式を有効にすることです。</p>
+
+<ul>
+<li><code>monitoring tool</code>からはヘルスチェックなどの監視リクエストに応えるために<code>HTTP/1.1</code>で通信を行いたい</li>
+<li><code>Gateway Server</code>との通信には<code>gRPC(HTTP2)</code>で通信を行いたい</li>
+</ul>
+
+<p>この課題を解決するために次のspring-boot-starterを使いました。</p>
+
+<p><div class="github-card" data-user="LogNet" data-repo="grpc-spring-boot-starter" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>こちらを使えばgRPC Serverを実装したクラスに<code>@GRpcService</code>をつけるだけでgRPC SeverをSpring Boot上に起動できます。またSpring Boot（spring-boot-starter-web）で起動していますので<code>HTTP/1.1</code>の通信も有効です。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@GRpcService</span>
+<span class="k">class</span> <span class="nc">EchoServer</span> <span class="p">:</span> <span class="n">EchoServiceGrpc</span><span class="p">.</span><span class="n">EchoServiceImplBase</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">echoService</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">EchoMessage</span><span class="p">?,</span> <span class="n">responseObserver</span><span class="p">:</span> <span class="n">StreamObserver</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">EchoMessage</span><span class="p">&gt;?)</span> <span class="p">{</span>
+        <span class="k">val</span> <span class="py">msg</span> <span class="p">=</span> <span class="n">EchoMessage</span><span class="p">.</span><span class="n">newBuilder</span><span class="p">().</span><span class="n">setMessage</span><span class="p">(</span><span class="s">&#34;echo \\${request?.message}/&#34;</span><span class="p">).</span><span class="n">build</span><span class="p">()</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onNext</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onCompleted</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><a href="https://github.com/LogNet/grpc-spring-boot-starter#interceptors-support">レポジトリのREADMEにある</a>とおり<code>interceptor</code>の提供（ログ差し込んだり）やServerビルド定義もカスタマイズできます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">$ ./gradlew clean generateProto bootRun
+・・・
+2017-04-13 14:48:45.479  INFO 30602 --- [           main] s.b.c.e.t.TomcatEmbeddedServletContainer : Tomcat started on port(s): 8080 (http)
+2017-04-13 14:48:45.482  INFO 30602 --- [           main] o.l.springboot.grpc.GRpcServerRunner     : Starting gRPC Server ...
+2017-04-13 14:48:45.528  INFO 30602 --- [           main] o.l.springboot.grpc.GRpcServerRunner     : &#39;app.grpc.server.EchoServer&#39; service has been registered.
+2017-04-13 14:48:45.531  INFO 30602 --- [           main] o.l.springboot.grpc.GRpcServerRunner     : &#39;app.grpc.server.GreetServer&#39; service has been registered.
+2017-04-13 14:48:45.765  INFO 30602 --- [           main] o.l.springboot.grpc.GRpcServerRunner     : gRPC Server started, listening on port 50051.
+・・・</pre></td></tr></table>
+</div>
+</div>
+<p>8080ポート（HTTP/1.1）と50051ポート（gRPC／HTTP2）の両方が起動ログで確認できます。これでgRPC Serverの課題は解決です。</p>
+
+<h3 id="gateway-server">Gateway Server</h3>
+
+<p>次にGateway Serverです。<br/>
+ここではspring-web-fluxを使いreactor coreベースでアプリケーションが動いています。そしてエンドクライアントからリクエストをgRPC Serverへ渡すgatewayの役割を担います（gRPCクライアントの役割）。<br/>
+spring-web-fluxを使うとnon-blockingなservletが起動するためgRPCクライントには <code>okhttp</code>を使います。gRPCのクライアントは標準でnettyが使われるため<code>okhttp</code>を指定します。これをしないとreactor coreのアプリケーションとgRPC Serverのnon-blokingなところがバッティングしてしまうようです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">private</span> <span class="k">fun</span> <span class="nf">getChannel</span><span class="p">()</span> <span class="p">=</span> <span class="n">OkHttpChannelBuilder</span><span class="p">.</span><span class="n">forAddress</span><span class="p">(</span><span class="n">appProperties</span><span class="p">.</span><span class="n">grpc</span><span class="p">.</span><span class="n">server</span><span class="p">.</span><span class="n">hostname</span><span class="p">,</span> <span class="n">appProperties</span><span class="p">.</span><span class="n">grpc</span><span class="p">.</span><span class="n">server</span><span class="p">.</span><span class="n">port</span><span class="o">!!</span><span class="p">)</span>
+            <span class="c1">// for testing
+</span><span class="c1"></span>            <span class="p">.</span><span class="n">usePlaintext</span><span class="p">(</span><span class="k">true</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">build</span><span class="p">()</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>もし<code>Gateway Server</code>と<code>エンドクライアント</code>との通信にgRPCを使いたい場合はGateway Serverに<code>gRPC Server</code>を置く必要がありバッティング問題を解消しなくてはなりません。これに関してはSpring Framework5.0の正式リリースやマイルストーンの動きを見て試していく必要があり課題として残りました。</p>
+
+<h3 id="protobuf-gradle-plugin">protobuf-gradle-plugin</h3>
+
+<p>protoclo bufferの生成には次のgradleプラグインを使っています。</p>
+
+<p><div class="github-card" data-user="google" data-repo="protobuf-gradle-plugin" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>起動時に<code>.proto</code>からprotocol bufferを生成するようにgradleに次ような設定をしています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">protobuf {
+    protoc {
+        artifact = &#39;com.google.protobuf:protoc:3.2.0&#39;
+    }
+    plugins {
+        grpc {
+            artifact = &#34;io.grpc:protoc-gen-grpc-java:${grpcVersion}&#34;
+        }
+    }
+    generateProtoTasks {
+        ofSourceSet(&#39;main&#39;).each { task -&gt;
+            task.builtins {
+                java {
+                    outputSubDir = &#39;protoGen&#39;
+                }
+            }
+            task.plugins {
+                grpc {
+                    outputSubDir = &#39;protoGen&#39;
+                }
+            }
+        }
+    }
+    generatedFilesBaseDir = &#34;$projectDir/src/&#34;
+}
+
+task cleanProtoGen {
+    doFirst{
+        delete(&#34;$projectDir/src/main/protoGen&#34;)
+    }
+}
+clean.dependsOn cleanProtoGen</pre></td></tr></table>
+</div>
+</div>
+<p>上記の定義により<code>./gradlew clean generateProto</code>を実行することでprotocol bufferを再生成できます。起動時に最新の<code>.proto</code>からprotocol bufferを使われるように起動コマンドは<code>./gradlew clean generateProto bootRun</code>を使っています。</p>
+
+<hr/>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>現バージョンの<code>Spring Boot 1.5.2</code>では<code>LogNet/grpc-spring-boot-starter</code>を使うことで<code>HTTP/1.1</code>と<code>gRPC(HTTP2)</code>の共存課題は解決できました。</li>
+<li>Spring Framework 5ではreactor coreの採用からgRPC Serverとの共存には課題が残りました。今後のjavaのエコシステムなどを使いながら課題解決に取り組みます。</li>
+</ul>
+
+<h3 id="コードを公開しています">コードを公開しています</h3>
+
+<p>今回のKotlinでgRPCを試したコードのすべてはgithubに公開しています。
+起動して確認するにはgithubのコードからできますのでREADMEを参照してください。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="grpc-kotlin-test" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/spring-boot/">Spring Boot</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

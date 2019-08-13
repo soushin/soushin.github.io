@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Kotlin &#43; Spring Boot／ResponseEntityを使ったJSONレスポンスにJacksonの@JsonPropertyを有効にする - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Spring Bootを使ってkotlinで書いています。サーバサイドでkotlinを使うと新たな発見があるのでいいですね。 Controllerのレスポ">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Kotlin &#43; Spring Boot／ResponseEntityを使ったJSONレスポンスにJacksonの@JsonPropertyを有効にする</h1>
+    <div class="post-meta">2016.12.29</div>
+  </header>
+  <div class="post-content">
+
+<p>Spring Bootを使ってkotlinで書いています。サーバサイドでkotlinを使うと新たな発見があるのでいいですね。<br/>
+ControllerのレスポンスにResponseEntityを使ったところdata classのプロパティを@JsonPropertyでリネームしたのに有効になりませんでした。<br/>
+自分のググラビリティが低く解決方法が見つからず小一時間ほど費やしてしまいました。同じような人（いれば）のために解決方法をメモします。</p>
+
+<h3 id="こんな環境で試しました">こんな環境で試しました</h3>
+
+<ul>
+<li>Spring Bootは1.4.2</li>
+<li>kotlinは1.0.4</li>
+</ul>
+
+<p>次のようなdata classを用意します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">data</span> <span class="k">class</span> <span class="nc">Member</span><span class="p">(</span>
+        <span class="k">val</span> <span class="py">userId</span><span class="p">:</span> <span class="n">Long</span><span class="p">,</span>
+        <span class="k">val</span> <span class="py">name</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+        <span class="n">@JsonIgnore</span>
+        <span class="k">val</span> <span class="py">age</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span>
+        <span class="n">@JsonProperty</span><span class="p">(</span><span class="s">&#34;isGold&#34;</span><span class="p">)</span>
+        <span class="k">val</span> <span class="py">gold</span><span class="p">:</span> <span class="n">Boolean</span> <span class="p">=</span> <span class="k">false</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>@JsonProperty(&ldquo;isGold&rdquo;)のようにJsonレスポンスではgoldのプロパティ名を<strong>isGold</strong>にしたいです。次のようなコントローラーでMemberクラスを返します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@RequestMapping</span><span class="p">(</span><span class="n">value</span> <span class="p">=</span> <span class="s">&#34;/member/{id}&#34;</span><span class="p">,</span> <span class="n">method</span> <span class="p">=</span> <span class="n">arrayOf</span><span class="p">(</span><span class="n">RequestMethod</span><span class="p">.</span><span class="n">GET</span><span class="p">))</span>
+<span class="k">open</span> <span class="k">fun</span> <span class="nf">getUser</span><span class="p">(</span><span class="n">@PathVariable</span> <span class="n">id</span><span class="p">:</span> <span class="n">Long</span><span class="p">):</span> <span class="n">ResponseEntity</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Member</span><span class="p">&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">ResponseEntity</span><span class="p">(</span><span class="n">Member</span><span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="s">&#34;name&#34;</span><span class="p">,</span> <span class="m">20</span><span class="p">,</span> <span class="k">true</span><span class="p">),</span> <span class="n">HttpStatus</span><span class="p">.</span><span class="n">OK</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>次のようなレスポンスになります</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">curl -X GET http://localhost:8080/test/member/1 | python -m json.tool
+{
+    &#34;gold&#34;: true,
+    &#34;name&#34;: &#34;name&#34;,
+    &#34;userId&#34;: 1
+}</pre></td></tr></table>
+</div>
+</div>
+<p>ageは @JsonIgnoreで隠れているのに、goldが<strong>isGold</strong>ではありません。<br/>
+こんな状況でした。</p>
+
+<h3 id="kotlinモジュールを使う">kotlinモジュールを使う</h3>
+
+<p>kotolinモジュールを追加すると解決します。<br/></p>
+
+<div class="github-card" data-user="FasterXML" data-repo="jackson-module-kotlin" data-width="400" data-height="" data-theme="default"></div>
+
+<p>Gradle:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-gradle" data-lang="gradle"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-gradle" data-lang="gradle"><span class="n">compile</span> <span class="s2">&#34;com.fasterxml.jackson.module:jackson-module-kotlin:2.8.4&#34;</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>kotlinモジュールを追加すると次のようなレスポンスになります</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">curl -X GET http://localhost:8080/test/member/1 <span class="p">|</span> python -m json.tool
+<span class="o">{</span>
+    <span class="s2">&#34;age&#34;</span>: <span class="m">20</span>,
+    <span class="s2">&#34;isGold&#34;</span>: true,
+    <span class="s2">&#34;name&#34;</span>: <span class="s2">&#34;name&#34;</span>,
+    <span class="s2">&#34;userId&#34;</span>: <span class="m">1</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>isGold</strong>になりました！！・・？？、@JsonIgnoreしたageがignoreされていない。。kotlinモジュールを有効にしたら@JsonIgnoreの宣言は以下のように変える必要があります。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">data</span> <span class="k">class</span> <span class="nc">User</span><span class="p">(</span>
+        <span class="k">val</span> <span class="py">userId</span><span class="p">:</span> <span class="n">Long</span><span class="p">,</span>
+        <span class="k">val</span> <span class="py">name</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+        <span class="n">@get</span><span class="p">:</span><span class="n">JsonIgnore</span>
+        <span class="k">val</span> <span class="py">age</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span>
+        <span class="n">@JsonProperty</span><span class="p">(</span><span class="s">&#34;isGold&#34;</span><span class="p">)</span>
+        <span class="k">val</span> <span class="py">gold</span><span class="p">:</span> <span class="n">Boolean</span> <span class="p">=</span> <span class="k">false</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>data classを更新して再度レスポンスをとると</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">curl -X GET http://localhost:8080/test/member/1 <span class="p">|</span> python -m json.tool
+<span class="o">{</span>
+    <span class="s2">&#34;isGold&#34;</span>: true,
+    <span class="s2">&#34;name&#34;</span>: <span class="s2">&#34;name&#34;</span>,
+    <span class="s2">&#34;userId&#34;</span>: <span class="m">1</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>期待する結果となりました👏kotlinで@JsonPropertyの使い方を調べていたら棚から牡丹餅のように@JsonIgnoreの使い方も学べました。</p>
+
+<h3 id="ソースを公開しています">ソースを公開しています</h3>
+
+<p>ソースコードを公開しています。<br/></p>
+
+<p><a href="https://github.com/soushin/kotlin-json-parse">https://github.com/soushin/kotlin-json-parse</a></p>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/jackson/">Jackson</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/json/">json</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/springboot/">springboot</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

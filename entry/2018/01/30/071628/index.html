@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>minikube &#43; helmでローカル環境を構築する - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="plasmaの動作確認のためにローカル環境を構築する機会がありminikube &#43; helmで構築してみようと始めたのがエントリのモチベーション">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">minikube &#43; helmでローカル環境を構築する</h1>
+    <div class="post-meta">2018.1.30</div>
+  </header>
+  <div class="post-content">
+
+<p>plasmaの動作確認のためにローカル環境を構築する機会がありminikube + helmで構築してみようと始めたのがエントリのモチベーション。</p>
+
+<p><div class="github-card" data-user="openfresh" data-repo="plasma" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>plasmaはServer Push型のミドルウェアで<a href="https://freshlive.tv/">FRESH!</a>で使われている。ポーリング撲滅を掲げgRPC／SSEを用いて省コネクションでイベントのSubscribeを実現している。<br/>
+plasmaの動作確認には<code>plasma</code>と <code>redis</code>のミドルウェアとイベントをSubscribeするアプリケーションが必要（kotlin + SpringBootで書いた）。これらをコンテナ化してローカル環境で確認していきたい。</p>
+
+<p>これまでのローカルのコンテナ実行環境は <code>docker-compose</code>でやっていたけど、Kubernetesの初学も兼ねてminikubeでやってみる。helmを使いコンテナ全体をパッケージングしていく。</p>
+
+<h4 id="minikubeでkubernetes環境を起動する">minikubeでkubernetes環境を起動する</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$  minikube start
+$  <span class="nb">eval</span> <span class="k">$(</span>minikube docker-env<span class="k">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<hr/>
+
+<p>必要なDockerイメージをビルドまたはプルした状態がこちら。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ docker images <span class="p">|</span> grep -v <span class="s2">&#34;gcr.io&#34;</span>
+REPOSITORY                                             TAG                 IMAGE ID            CREATED             SIZE
+soushin/plasmacli                                      latest              49ca95df3dad        <span class="m">2</span> days ago          942MB
+redis                                                  latest              861cc310cd91        <span class="m">4</span> days ago          107MB
+openfresh/plasma                                       latest              7ff567596426        <span class="m">6</span> weeks ago         <span class="m">16</span>.6MB
+java                                                   openjdk-8           d23bdf5b1b1b        <span class="m">12</span> months ago       643MB</code></pre></td></tr></table>
+</div>
+</div>
+<p>※ <code>gcr.io/*</code>のイメージはリストから排除しています</p>
+
+<h4 id="helmを使いコンテナ全体をパッケージングをする">helmを使いコンテナ全体をパッケージングをする</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ helm create plasmacli
+$ tree ./plasmacli
+./plasmacli
+├── Chart.yaml
+├── charts
+├── templates
+│   ├── NOTES.txt
+│   ├── _helpers.tpl
+│   ├── deployment.yaml
+│   ├── ingress.yaml
+│   └── service.yaml
+└── values.yaml</code></pre></td></tr></table>
+</div>
+</div>
+<p><code>helm create {packageName}</code>で雛形を生成する。</p>
+
+<hr/>
+
+<p>このエントリで修正したyamlは <code>values.yaml</code>と<code>templates/deployment.yaml</code>の２つ。<br/>
+<code>templates/deployment.yaml</code>にコンテナとコンテナ内の環境変数、Internal/Externalのポートを定義する。値は <code>values.yaml</code>から参照する。</p>
+
+<h5 id="templates-deployment-yamlとvalues-yaml">templates/deployment.yamlとvalues.yaml</h5>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="c"># `plasmacli`コンテナ定義を抜粋</span><span class="w">
+</span><span class="w">
+</span><span class="w">      </span>containers<span class="p">:</span><span class="w">
+</span><span class="w">        </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>plasmacli<span class="w">
+</span><span class="w">          </span>image<span class="p">:</span><span class="w"> </span><span class="s2">&#34;{{ .Values.plasmaCli.image.repository }}:{{ .Values.plasmaCli.image.tag }}&#34;</span><span class="w">
+</span><span class="w">          </span>imagePullPolicy<span class="p">:</span><span class="w"> </span>{{<span class="w"> </span>.Values.plasmaCli.image.pullPolicy<span class="w"> </span>}}<span class="w">
+</span><span class="w">          </span>ports<span class="p">:</span><span class="w">
+</span><span class="w">            </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>plasmacli<span class="w">
+</span><span class="w">              </span>containerPort<span class="p">:</span><span class="w"> </span>{{<span class="w"> </span>.Values.service.internalPort<span class="w"> </span>}}<span class="w">
+</span><span class="w">          </span>env<span class="p">:</span><span class="w">
+</span><span class="w">          </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>PLASMA_CLI_PORT<span class="w">
+</span><span class="w">            </span>value<span class="p">:</span><span class="w"> </span>{{<span class="w"> </span>.Values.service.internalPort<span class="w"> </span>|<span class="w"> </span>quote<span class="w"> </span>}}<span class="w">
+</span><span class="w">          </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>PLASMA_HOST<span class="w">
+</span><span class="w">            </span>value<span class="p">:</span><span class="w"> </span>{{<span class="w"> </span>.Values.plasmaCli.env.plasmaHost<span class="w"> </span>|<span class="w"> </span>quote<span class="w"> </span>}}<span class="w">
+</span><span class="w">          </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>PLASMA_PORT<span class="w">
+</span><span class="w">            </span>value<span class="p">:</span><span class="w"> </span>{{<span class="w"> </span>.Values.plasmaCli.env.plasmaPort<span class="w"> </span>|<span class="w"> </span>quote<span class="w"> </span>}}</code></pre></td></tr></table>
+</div>
+</div>
+<hr/>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="c"># 関連する値を `values.yaml`から抜粋</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span>plasmaCli<span class="p">:</span><span class="w">
+</span><span class="w">  </span>image<span class="p">:</span><span class="w">
+</span><span class="w">    </span>repository<span class="p">:</span><span class="w"> </span>soushin/plasmacli<span class="w">
+</span><span class="w">    </span>tag<span class="p">:</span><span class="w"> </span>latest<span class="w">
+</span><span class="w">    </span>pullPolicy<span class="p">:</span><span class="w"> </span>IfNotPresent<span class="w">
+</span><span class="w">  </span>env<span class="p">:</span><span class="w">
+</span><span class="w">    </span>plasmaHost<span class="p">:</span><span class="w"> </span>localhost<span class="w">
+</span><span class="w">    </span>plasmaPort<span class="p">:</span><span class="w"> </span><span class="m">50051</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span>service<span class="p">:</span><span class="w">
+</span><span class="w">  </span>type<span class="p">:</span><span class="w"> </span>NodePort<span class="w">
+</span><span class="w">  </span>port<span class="p">:</span><span class="w"> </span><span class="m">80</span><span class="w">
+</span><span class="w">  </span>internalPort<span class="p">:</span><span class="w"> </span><span class="m">8080</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="パッケージングしたchartをインストールする">パッケージングしたchartをインストールする</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ helm package plasmacli
+$ helm install --name plasmacli local/plasmacli
+NAME:   plasmacli
+LAST DEPLOYED: Sat Jan <span class="m">27</span> <span class="m">11</span>:30:23 <span class="m">2018</span>
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+<span class="o">==</span>&gt; v1/Service
+NAME       TYPE      CLUSTER-IP    EXTERNAL-IP  PORT<span class="o">(</span>S<span class="o">)</span>       AGE
+plasmacli  NodePort  <span class="m">10</span>.98.66.149  <span class="p">&amp;</span>lt<span class="p">;</span>none&gt;       <span class="m">80</span>:31118/TCP  <span class="nv">0s</span>
+
+<span class="o">==</span>&gt; v1beta2/Deployment
+NAME       DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+plasmacli  <span class="m">1</span>        <span class="m">0</span>        <span class="m">0</span>           <span class="m">0</span>          0s</code></pre></td></tr></table>
+</div>
+</div>
+<hr/>
+
+<p>podを確認してみると無事起動している。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ kubectl get pods -n default
+NAME                        READY     STATUS    RESTARTS   AGE
+plasmacli-957c79484-d4dkh   <span class="m">3</span>/3       Running   <span class="m">0</span>          2d</code></pre></td></tr></table>
+</div>
+</div>
+<hr/>
+
+<h4 id="クラスタの外からアクセスする">クラスタの外からアクセスする</h4>
+
+<p>クラスタの外からのアクセスにはserviceをNodePort化したのでポート番号が払い出されている。<br/>
+アクセスURLは次のように確認できる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ minikube service plasmacli --url
+http://192.168.64.12:31118</code></pre></td></tr></table>
+</div>
+</div>
+<p>このURLのバックエンドにはイベントをSubscribeするアプリケーションが設定されているので次のように <code>/health_check</code> が叩けるようになっている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ curl http://192.168.64.12:31118/health_check
+true</code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="plasmaの動作確認をしてみよう">plasmaの動作確認をしてみよう</h4>
+
+<p>イベントをSubscribeするアプリケーションではイベント名：<code>my-event</code>をSubscribeするようにしている。</p>
+
+<p>redisからchannelへPublishする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">PUBLISH plasma &#39;{&#34;meta&#34;: { &#34;type&#34;: &#34;my-event&#34;}, &#34;data&#34;: &#34;HELLO&#34;}&#39;
+PUBLISH plasma &#39;{&#34;meta&#34;: { &#34;type&#34;: &#34;my-event&#34;}, &#34;data&#34;: &#34;My Plasma&#34;}&#39;</pre></td></tr></table>
+</div>
+</div>
+<p>イベントをSubscribeするアプリケーションのログの最後にPayloadデータ（<code>HELLO</code>, <code>My Plasma</code>の文字列）が出力できた。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ kubectl logs -f  plasmacli-957c79484-d4dkh -c plasmacli
+
+  .   ____          _            __ _ _
+ /<span class="se">\\</span> / ___<span class="s1">&#39;_ __ _ _(_)_ __  __ _ \ \ \ \
+</span><span class="s1">( ( )\___ | &#39;</span>_ <span class="p">|</span> <span class="s1">&#39;_| | &#39;</span>_ <span class="se">\/</span> _<span class="sb">`</span> <span class="p">|</span> <span class="se">\ \ \ \
+</span><span class="se"></span> <span class="se">\\</span>/  ___<span class="o">)</span><span class="p">|</span> <span class="p">|</span>_<span class="o">)</span><span class="p">|</span> <span class="p">|</span> <span class="p">|</span> <span class="p">|</span> <span class="p">|</span> <span class="o">||</span> <span class="o">(</span>_<span class="p">|</span> <span class="p">|</span>  <span class="o">)</span> <span class="o">)</span> <span class="o">)</span> <span class="o">)</span>
+  <span class="err">&#39;</span>  <span class="p">|</span>____<span class="p">|</span> .__<span class="p">|</span>_<span class="p">|</span> <span class="p">|</span>_<span class="p">|</span>_<span class="p">|</span> <span class="p">|</span>_<span class="se">\_</span>_, <span class="p">|</span> / / / /
+ <span class="o">=========</span><span class="p">|</span>_<span class="p">|</span><span class="o">==============</span><span class="p">|</span>___/<span class="o">=</span>/_/_/_/
+ :: Spring Boot ::             <span class="o">(</span>v2.0.0.M7<span class="o">)</span>
+
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:26.380<span class="o">]</span> Starting Application.Companion on plasmacli-957c79484-d4dkh with PID <span class="m">5</span> <span class="o">(</span>/usr/local/plasma-cli/lib/plasma-cli.jar started by root in /<span class="o">)</span>
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:26.420<span class="o">]</span> No active profile set, falling back to default profiles: default
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:26.582<span class="o">]</span> Refreshing org.springframework.boot.web.reactive.context.AnnotationConfigReactiveWebServerApplicationContext@445b84c0: startup date <span class="o">[</span>Sat Jan <span class="m">27</span> <span class="m">11</span>:30:26 GMT+09:00 <span class="m">2018</span><span class="o">]</span><span class="p">;</span> root of context hierarchy
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:29.531<span class="o">]</span> Mapped <span class="o">(</span>Accept: <span class="o">[</span>application/json<span class="o">]</span> <span class="o">&amp;&amp;</span> /health_check<span class="o">)</span> <span class="o">=</span>&gt; <span class="o">{</span>
+ <span class="o">(</span>GET <span class="o">&amp;&amp;</span> /<span class="o">)</span> -&gt; org.springframework.web.reactive.function.server.RouterFunctionDsl<span class="nv">$GET$1</span>@709ba3fb
+<span class="o">}</span>
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:29.564<span class="o">]</span> Mapped URL path <span class="o">[</span>/webjars/**<span class="o">]</span> onto handler of <span class="nb">type</span> <span class="o">[</span>class org.springframework.web.reactive.resource.ResourceWebHandler<span class="o">]</span>
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:29.565<span class="o">]</span> Mapped URL path <span class="o">[</span>/**<span class="o">]</span> onto handler of <span class="nb">type</span> <span class="o">[</span>class org.springframework.web.reactive.resource.ResourceWebHandler<span class="o">]</span>
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:29.661<span class="o">]</span> Looking <span class="k">for</span> @ControllerAdvice: org.springframework.boot.web.reactive.context.AnnotationConfigReactiveWebServerApplicationContext@445b84c0: startup date <span class="o">[</span>Sat Jan <span class="m">27</span> <span class="m">11</span>:30:26 GMT+09:00 <span class="m">2018</span><span class="o">]</span><span class="p">;</span> root of context hierarchy
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:31.598<span class="o">]</span> Registering beans <span class="k">for</span> JMX exposure on startup
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:31.745<span class="o">]</span> Started HttpServer on /0.0.0.0:8080
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:31.761<span class="o">]</span> Netty started on port<span class="o">(</span>s<span class="o">)</span>: <span class="m">8080</span>
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:30:31.773<span class="o">]</span> Started Application.Companion in <span class="m">6</span>.292 seconds <span class="o">(</span>JVM running <span class="k">for</span> <span class="m">7</span>.875<span class="o">)</span>
+
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:46:06.378<span class="o">]</span> stream observe: <span class="nv">onNext</span><span class="o">={</span><span class="s2">&#34;HELLO&#34;</span><span class="o">}</span>
+<span class="o">[</span>INFO <span class="o">][</span><span class="m">2018</span>-01-27 <span class="m">11</span>:48:48.386<span class="o">]</span> stream observe: <span class="nv">onNext</span><span class="o">={</span><span class="s2">&#34;My Plasma&#34;</span><span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="コードはgithubにあります">コードはgithubにあります</h4>
+
+<p><div class="github-card" data-user="soushin" data-repo="sandbox-plasma" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>コードはgithubに置いてますので合わせて参照ください。</p>
+
+<h4 id="まとめ">まとめ</h4>
+
+<ul>
+<li>簡易的なplasmaの動作確認環境が構築できた。</li>
+<li>これからは公開するアプリケーションのコンテナパッケージはhelmで公開していこうとモチベーションがあがった。</li>
+<li>kubectlの各種コマンドはDockerコマンドライクなところが多く、ここらへんはとても飲み込みやすい。</li>
+<li>今回は初学ということで用語の解説などを飛ばしまったので触っていきながら用語の理解を深めていく必要を感じた。</li>
+<li>helmのvaluesで定義した値とdeployment.yamlで参照する値のKeyのマッピングにミスが多かったのでIDEのhelmライブラリがあると便利そう。</li>
+<li>Serviceの <code>ClusterIP</code>やPod間のアクセスなど気になるところが数多あるので引き続きアウトプットしていく。</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/minikube/">minikube</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/helm/">helm</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/plasma/">plasma</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

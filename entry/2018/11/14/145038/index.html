@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Googleが開発するビルドツールのBazelを試していく。 Bazel - a fast, scalable, multi-language and extensible build system&rdquo; - Bazel モチベーション GoやKotlinでつくるマイクロサービス">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">GoとKotlinのマルチプロジェクトをBazelでビルドする</h1>
+    <div class="post-meta">2018.11.14</div>
+  </header>
+  <div class="post-content">
+
+<p>Googleが開発するビルドツールのBazelを試していく。</p>
+
+<p><a href="https://bazel.build/">Bazel - a fast, scalable, multi-language and extensible build system&rdquo; - Bazel</a></p>
+
+<h3 id="モチベーション">モチベーション</h3>
+
+<p>GoやKotlinでつくるマイクロサービス開発は１つのサービスに１つのレポジトリで行ってきた経緯がある。またCIではDockerfileをレポジトリに内包することでビルド時にDockerイメージの錬成を行いRegistryへのPushを行う。GoやKotlinのビルド環境が異なることやイメージのビルドがDockerfileドリブンであるためサービス対レポジトリが1:1の関係であった。</p>
+
+<p>Bazelは複数言語のビルドをサポートする。またDockerfileを使わずにイメージをビルドができる。</p>
+
+<p>１つのレポジトリにGoとKotlinのマイクロサービスを構造化したプロジェクトのビルドをBazelで実現できるのか？を検証することがエントリのモチベーションである。</p>
+
+<h3 id="ゴール">ゴール</h3>
+
+<p>簡易的なHello Worldを出力するアプリケーションをGoとKotlinでつくる。また言語ごとにアプリケーションから参照するライブラリを作りマルチプロジェクトの構成も取り入れる。そしてBazelでアプリケーションをDockerイメージにビルドするまでをゴールと定義する。</p>
+
+<h3 id="プロジェクト構成">プロジェクト構成</h3>
+
+<p><code>pkg</code>以下にアプリケーションを配置する構成を定義する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">./
+├── README.md
+└── pkg
+    ├── common_go
+    │   └── util
+    │       └── string.go
+    ├── common_kt
+    │   └── util
+    │       └── string.kt
+    ├── public_go
+    │   └── main.go
+    └── public_kt
+        └── main.kt</pre></td></tr></table>
+</div>
+</div>
+<p><code>public_go</code>と<code>public_kt</code>はHello Worldを出力するアプリケーションを配置する。<code>common_go</code>と<code>common_kt</code>は各言語が参照するライブラリを配置する。</p>
+
+<h3 id="kotlin">Kotlin</h3>
+
+<p>まずはKotlinからビルドしていく。Bazelのインストールは調べるとキャッチアップできるので割愛する。</p>
+
+<p>Bazelは<code>WORKSPACE</code>というファイルをプロジェクトの最上位に配置する。そして<code>BUILD</code>というファイルを各アプリケーションに配置することでビルドを行う。</p>
+
+<h4 id="workspace">WORKSPACE</h4>
+
+<p>WORKSPACEはビルド全般の設定を定義するものと理解すると分かりやすい。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./WORKSPACE</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@bazel_tools//tools/build_defs/repo:http.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;http_archive&#34;</span><span class="p">)</span>
+
+<span class="n">rules_kotlin_version</span> <span class="o">=</span> <span class="s2">&#34;87bd13f91d166a8070e9bbfbb0861f6f76435e7a&#34;</span>
+
+<span class="n">http_archive</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;io_bazel_rules_kotlin&#34;</span><span class="p">,</span>
+    <span class="n">urls</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;https://github.com/bazelbuild/rules_kotlin/archive/</span><span class="si">%s</span><span class="s2">.zip&#34;</span> <span class="o">%</span> <span class="n">rules_kotlin_version</span><span class="p">],</span>
+    <span class="nb">type</span> <span class="o">=</span> <span class="s2">&#34;zip&#34;</span><span class="p">,</span>
+    <span class="n">strip_prefix</span> <span class="o">=</span> <span class="s2">&#34;rules_kotlin-</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">rules_kotlin_version</span>
+<span class="p">)</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_kotlin//kotlin:kotlin.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;kotlin_repositories&#34;</span><span class="p">,</span> <span class="s2">&#34;kt_register_toolchains&#34;</span><span class="p">)</span>
+
+<span class="n">kotlin_repositories</span><span class="p">()</span>
+
+<span class="n">kt_register_toolchains</span><span class="p">()</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>pkg</code>と同じ階層に上記のWORKSPACEファイルを配置する。Bazelはrulesという各言語ごとのビルド定義を用意している。Kotlinは次のレポジトリから参照できる。</p>
+
+<p><div class="github-card" data-user="bazelbuild" data-repo="rules_kotlin" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>WORKSPACEで行っていることはbazel_toolsから<code>http_archive</code>を読み込み<code>io_bazel_rules_kotlin</code>の名前でrulesをインストールしている。そして<code>kotlin_repositories</code>と<code>kt_register_toolchains</code>を有効にしている。</p>
+
+<p>Bazelの良いところはWORKSPACEに定義したビルド設定を各自が実行すればビルド環境を簡単に再現できることである。リリース前のrulesを試したければ<code>rules_kotlin_version</code>を個人で更新して試せば良い。他者に影響することなくローカルにインストールできる。</p>
+
+<h4 id="build">BUILD</h4>
+
+<p>次に各アプリケーションを見ていく。<code>pkg/public_kt/main.kt</code>はHello Worldを出力する簡単なコードで動いている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">package</span> <span class="nn">com.github.soushin.multipojects.publickt</span>
+
+<span class="k">import</span> <span class="nn">com.github.soushin.multipojects.commonkt.util.add</span>
+
+<span class="k">fun</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span> <span class="p">:</span> <span class="n">Array</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;)</span> <span class="p">{</span>
+    <span class="n">println</span><span class="p">(</span><span class="s">&#34;Hello kotlin!&#34;</span><span class="p">.</span><span class="n">add</span><span class="p">())</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Stringクラスの拡張関数である<code>add()</code>をつかっている。この拡張関数は<code>pkg/common_kt/util/string.kt</code>のライブラリを参照している。このようなマルチプロジェクトな仕組みをBazelで実現する方法を整理する。</p>
+
+<hr/>
+
+<p>まずは<code>common_kt/util/string.kt</code>をライブラリとしてビルドする方法をまとめる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./pkg/common_kt/BUILD</span>
+
+<span class="n">package</span><span class="p">(</span><span class="n">default_visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//visibility:public&#34;</span><span class="p">])</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_kotlin//kotlin:kotlin.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;kt_jvm_library&#34;</span><span class="p">)</span>
+
+<span class="n">kt_jvm_library</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;common_kt_lib&#34;</span><span class="p">,</span>
+    <span class="n">srcs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;util/string.kt&#34;</span><span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>このBUILDファイルで<code>add()</code>を含むライブラリがビルドできる。<code>kt_jvm_library</code>を有効にして<code>common_kt_lib</code>の名前でビルドしている。このビルドはpublic_ktから参照するのでvisibilityをpublicに定義している。</p>
+
+<p>このcommon_ktをビルドするにはbazelコマンドを実行する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ bazel build //pkg/common_kt:common_kt_lib</pre></td></tr></table>
+</div>
+</div>
+<p>上記のコマンドはWORKSPACEが配置されたプロジェクトのルートディレクトリで実行している。<code>//pkg/common_kt</code>がBUILDファイルまでのパスで<code>common_kt_lib</code>がBUILDファイルで定義したビルドタスクである。</p>
+
+<p><code>bazel-multiprojects/pkg/common_kt</code>のディレクトリで実行する場合は次のコマンドになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects/pkg/common_kt) bazel build common_kt_lib</pre></td></tr></table>
+</div>
+</div>
+<hr/>
+
+<p>ライブラリとしてビルドした<code>common_kt_lib</code>を利用する<code>pkg/public_kt/BUILD</code>は次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./pkg/public_kt/BUILD</span>
+
+<span class="n">package</span><span class="p">(</span><span class="n">default_visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//visibility:public&#34;</span><span class="p">])</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_kotlin//kotlin:kotlin.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;kt_jvm_library&#34;</span><span class="p">)</span>
+
+<span class="n">kt_jvm_library</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;public_kt_lib&#34;</span><span class="p">,</span>
+    <span class="n">srcs</span> <span class="o">=</span> <span class="n">glob</span><span class="p">([</span><span class="s2">&#34;main.kt&#34;</span><span class="p">]),</span>
+    <span class="n">deps</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//pkg/common_kt:common_kt_lib&#34;</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">java_binary</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;java_bin&#34;</span><span class="p">,</span>
+    <span class="n">main_class</span> <span class="o">=</span> <span class="s2">&#34;com.github.soushin.multipojects.publickt.MainKt&#34;</span><span class="p">,</span>
+    <span class="n">runtime_deps</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;:public_kt_lib&#34;</span><span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>kt_jvm_library</code>を使い<code>main.kt</code>を含む<code>public_kt_lib</code>を定義している。public_kt_libでは<code>deps</code>に<code>&rdquo;//pkg/common_kt:common_kt_lib&rdquo;</code>が追加 して<code>common_kt</code>を依存させている。</p>
+
+<p>depsの定義によりmain.ktから<code>add()</code>の拡張関数が参照できるようになる。</p>
+
+<p><code>java_binary</code>はjarを錬成するruleである。main_classには<code>main()</code>関数があるクラスを定義する。<code>runtime_deps</code>ではkt_jvm_libraryでビルドした<code>public_kt_lib</code>を追加する。</p>
+
+<p>これまで複数のruleを定義してきたがHello Worldを出力するビルドは<code>java_binary</code>のruleで定義した<code>java_binary</code>を実行するだけである。java_binaryは<code>public_kt_lib</code>に依存しているのでBazelが依存関係をよしなに解決して実行してくれる。</p>
+
+<p>java_binを実行した結果が次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ bazel run //pkg/public_kt:java_bin
+INFO: Analysed target //pkg/public_kt:java_bin (2 packages loaded).
+INFO: Found 1 target...
+Target //pkg/public_kt:java_bin up-to-date:
+  bazel-bin/pkg/public_kt/java_bin.jar
+  bazel-bin/pkg/public_kt/java_bin
+INFO: Elapsed time: 8.150s, Critical Path: 7.60s
+INFO: 2 processes: 2 darwin-sandbox.
+INFO: Build completed successfully, 6 total actions
+INFO: Build completed successfully, 6 total actions
+Hello kotlin! - built by Bazel!</pre></td></tr></table>
+</div>
+</div>
+<p>錬成したjarを実行すると失敗する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ java -jar bazel-bin/pkg/public_kt/java_bin.jar
+ bazel-bin/pkg/public_kt/java_bin.jarにメイン・マニフェスト属性がありません</pre></td></tr></table>
+</div>
+</div>
+<p>これは単体で動かないjarのため単体で動かすには<code>_deploy.jar</code>をタスクに追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ bazel build //pkg/public_kt:java_bin_deploy.jar
+ INFO: Analysed target //pkg/public_kt:java_bin_deploy.jar (0 packages loaded).
+ INFO: Found 1 target...
+ Target //pkg/public_kt:java_bin_deploy.jar up-to-date:
+   bazel-bin/pkg/public_kt/java_bin_deploy.jar
+ INFO: Elapsed time: 0.359s, Critical Path: 0.13s
+ INFO: 1 process: 1 darwin-sandbox.
+ INFO: Build completed successfully, 2 total actions</pre></td></tr></table>
+</div>
+</div>
+<p>このjarを実行すると正常にHello Worldが出力したjarが起動する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ java -jar bazel-bin/pkg/public_kt/java_bin_deploy.jar
+Hello kotlin! - built by Bazel!</pre></td></tr></table>
+</div>
+</div>
+<p><code>name_deploy.jar</code>の仕組みは次のDocsにまとまっているので参照してほしい。</p>
+
+<p><a href="https://docs.bazel.build/versions/master/be/java.html#java_binary_implicit_outputs">Java Rules#Implicit output targets</a></p>
+
+<h3 id="go">Go</h3>
+
+<p>ここまでjarをBazelで錬成できるところまでまとめた。Dockerイメージのビルドは最後にまとめるのでGoプロジェクトを整理する。</p>
+
+<h4 id="workspace-1">WORKSPACE</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./WORKSPACE</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@bazel_tools//tools/build_defs/repo:http.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;http_archive&#34;</span><span class="p">)</span>
+
+<span class="n">http_archive</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;io_bazel_rules_go&#34;</span><span class="p">,</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="s2">&#34;https://github.com/bazelbuild/rules_go/releases/download/0.16.2/rules_go-0.16.2.tar.gz&#34;</span><span class="p">,</span>
+    <span class="n">sha256</span> <span class="o">=</span> <span class="s2">&#34;f87fa87475ea107b3c69196f39c82b7bbf58fe27c62a338684c20ca17d1d8613&#34;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">http_archive</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;bazel_gazelle&#34;</span><span class="p">,</span>
+    <span class="n">urls</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;https://github.com/bazelbuild/bazel-gazelle/releases/download/0.15.0/bazel-gazelle-0.15.0.tar.gz&#34;</span><span class="p">],</span>
+    <span class="n">sha256</span> <span class="o">=</span> <span class="s2">&#34;6e875ab4b6bf64a38c352887760f21203ab054676d9c1b274963907e0768740d&#34;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_go//go:def.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;go_rules_dependencies&#34;</span><span class="p">,</span> <span class="s2">&#34;go_register_toolchains&#34;</span><span class="p">)</span>
+
+<span class="n">go_rules_dependencies</span><span class="p">()</span>
+
+<span class="n">go_register_toolchains</span><span class="p">()</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@bazel_gazelle//:deps.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;gazelle_dependencies&#34;</span><span class="p">)</span>
+
+<span class="n">gazelle_dependencies</span><span class="p">()</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>http_archive</code>で必要なruleをインストールしているがGoでは<code>gazelle</code>というGoプロジェクトに特化したBUILDファイルジェネレーターが用意されている。</p>
+
+<p><div class="github-card" data-user="bazelbuild" data-repo="bazel-gazelle" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h4 id="gazelleの威力">Gazelleの威力</h4>
+
+<p>KotlinではHello Worldを出力するアプリケーションとライブラリの依存関係をBUILDファイルに定義したがgazelleはプロジェクト内のgoファイルを解析してBUILDファイルを錬成してくれる！</p>
+
+<p><code>WORKSPACE</code>と同階層に次のようなBUILDファイルを配置する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./BUILD</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@bazel_gazelle//:def.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;gazelle&#34;</span><span class="p">)</span>
+
+<span class="c1"># gazelle:prefix github.com/soushin/bazel-multiprojects</span>
+<span class="n">gazelle</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;gazelle&#34;</span><span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>gazelle</code>を有効にしている箇所で<code>gazelle:prefix</code>でgoのimportパスのprefixを定義している。このBUILDファイルを配置した状態で次のコマンドを実行する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ bazel run gazelle</pre></td></tr></table>
+</div>
+</div>
+<p>上記のコマンドを実行すると自動で<code>public_go</code>と<code>common_go</code>のgoコードを解析してBUILDファイルが錬成される。錬成したBUILDファイルを見ていく。</p>
+
+<p>まずはcommon_goを見ていく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./pkg/common_go/BUILD.bazel ※ gazelleが錬成したファイルは`.bazel`が含まれる。</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_go//go:def.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;go_library&#34;</span><span class="p">)</span>
+
+<span class="n">go_library</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;go_default_library&#34;</span><span class="p">,</span>
+    <span class="n">srcs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;string.go&#34;</span><span class="p">],</span>
+    <span class="n">importpath</span> <span class="o">=</span> <span class="s2">&#34;github.com/soushin/bazel-multiprojects/pkg/common_go/util&#34;</span><span class="p">,</span>
+    <span class="n">visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//visibility:public&#34;</span><span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>go_library</code>のruleが定義されている。importpathは<code>gazelle:prefix</code>で定義したプレフィックスが適応されている。</p>
+
+<p>このgo_default_libraryをpublic_ktに依存させていく。</p>
+
+<hr/>
+
+<p>次にpublic_goのBUILDファイルは次のようになっている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./pkg/public_go/BUILD.bazel</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_go//go:def.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;go_binary&#34;</span><span class="p">,</span> <span class="s2">&#34;go_library&#34;</span><span class="p">)</span>
+
+<span class="n">go_library</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;go_default_library&#34;</span><span class="p">,</span>
+    <span class="n">srcs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;main.go&#34;</span><span class="p">],</span>
+    <span class="n">importpath</span> <span class="o">=</span> <span class="s2">&#34;github.com/soushin/bazel-multiprojects/pkg/public_go&#34;</span><span class="p">,</span>
+    <span class="n">visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//visibility:private&#34;</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">go_binary</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;public_go&#34;</span><span class="p">,</span>
+    <span class="n">embed</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;:go_default_library&#34;</span><span class="p">],</span>
+    <span class="n">visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//visibility:public&#34;</span><span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>main.goは<code>main</code>パッケージに配置しているので<code>go_binary</code>のruleが追加になっている。このgo_binaryを実行してみると次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ bazel run //pkg/public_go:public_go    
+INFO: Analysed target //pkg/public_go:public_go (0 packages loaded).
+INFO: Found 1 target...
+Target //pkg/public_go:public_go up-to-date:
+  bazel-bin/pkg/public_go/darwin_amd64_stripped/public_go
+INFO: Elapsed time: 0.571s, Critical Path: 0.37s
+INFO: 2 processes: 2 darwin-sandbox.
+INFO: Build completed successfully, 3 total actions
+INFO: Build completed successfully, 3 total actions
+Hello World!</pre></td></tr></table>
+</div>
+</div>
+<p><code>Hello World!</code>が出力できた。次にcommon_goを依存させて<code>Hello kotlin! - built by Bazel!</code>と出力するようにしてみる。</p>
+
+<hr/>
+
+<p>錬成したライブラリを依存させるにはKotlinと同様にdepsを用いる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="n">go_library</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;go_default_library&#34;</span><span class="p">,</span>
+    <span class="n">srcs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;main.go&#34;</span><span class="p">],</span>
+    <span class="n">importpath</span> <span class="o">=</span> <span class="s2">&#34;github.com/soushin/bazel-multiprojects/pkg/public_go&#34;</span><span class="p">,</span>
+    <span class="n">visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//visibility:private&#34;</span><span class="p">],</span>
+    <span class="n">deps</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//pkg/common_go/util:go_default_library&#34;</span><span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>depsに<code>go_default_library</code>のライブラリを追加した。この状態で<code>go_default_library</code>をビルドするとmain.goからcommon_go/util/stirng.goが参照できるようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;fmt&#34;</span>
+
+    <span class="s">&#34;github.com/soushin/bazel-multiprojects/pkg/common_go/util&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">util</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Hello World!&#34;</span><span class="p">))</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>最後にgo_binaryを実行する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ bazel run //pkg/public_go:public_go 
+INFO: Analysed target //pkg/public_go:public_go (0 packages loaded).
+INFO: Found 1 target...
+Target //pkg/public_go:public_go up-to-date:
+  bazel-bin/pkg/public_go/darwin_amd64_stripped/public_go
+INFO: Elapsed time: 0.629s, Critical Path: 0.41s
+INFO: 2 processes: 2 darwin-sandbox.
+INFO: Build completed successfully, 3 total actions
+INFO: Build completed successfully, 3 total actions
+Hello World! - built by Bazel!</pre></td></tr></table>
+</div>
+</div>
+<p>無事、<code>util/stirng.go</code>がmain.goに依存できた。</p>
+
+<h3 id="dockerイメージのビルド">Dockerイメージのビルド</h3>
+
+<p>KotlinとGoのDockerイメージのビルドを見ていく。今回はビルドしたイメージをローカルにインストールするところまでをまとめていく。</p>
+
+<h4 id="kotlin-1">Kotlin</h4>
+
+<p>WORKSPACEに次のhttp_archiveを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./WORKSPACE</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@bazel_tools//tools/build_defs/repo:http.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;http_archive&#34;</span><span class="p">)</span>
+
+<span class="n">http_archive</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;io_bazel_rules_docker&#34;</span><span class="p">,</span>
+    <span class="n">sha256</span> <span class="o">=</span> <span class="s2">&#34;29d109605e0d6f9c892584f07275b8c9260803bf0c6fcb7de2623b2bedc910bd&#34;</span><span class="p">,</span>
+    <span class="n">strip_prefix</span> <span class="o">=</span> <span class="s2">&#34;rules_docker-0.5.1&#34;</span><span class="p">,</span>
+    <span class="n">urls</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;https://github.com/bazelbuild/rules_docker/archive/v0.5.1.tar.gz&#34;</span><span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Dockerをビルドするためのruleをインストールする定義である。</p>
+
+<p>Kotlinプロジェクトで錬成したjarを動かすJavaベースのDockerイメージをプロジェクト内にインストールしたい。そのような場合は次のようにWORKSPACEに追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./WORKSPACE</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_docker//container:container.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;container_pull&#34;</span><span class="p">)</span>
+
+<span class="n">container_pull</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;java_base_image&#34;</span><span class="p">,</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="s2">&#34;index.docker.io&#34;</span><span class="p">,</span>
+    <span class="n">repository</span> <span class="o">=</span> <span class="s2">&#34;library/openjdk&#34;</span><span class="p">,</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="s2">&#34;12-ea-18-jdk-alpine3.8&#34;</span><span class="p">,</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>container_pull</code>のruleを有効にしてdocker.ioにあるalpineベースのjdkイメージを<code>java_baze_image</code>としてプロジェクトにインストールした。</p>
+
+<p>ここまでがWORKSPACEに追加するKotlin向けのプロジェクト全般の定義である。</p>
+
+<h5 id="build-1">BUILD</h5>
+
+<p><code>container_pull</code>したjava_base_imageをベースにHello Worldを出力するアプリケーションを内包したDockerイメージを錬成していく。</p>
+
+<p>次のようなcontainer_imageのruleを有効にして定義する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./pkg/public_kt/BUILD</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_docker//container:container.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;container_image&#34;</span><span class="p">)</span>
+
+<span class="n">container_image</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;public_kt_image&#34;</span><span class="p">,</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="s2">&#34;@java_base_image//image&#34;</span><span class="p">,</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;:java_bin_deploy.jar&#34;</span><span class="p">],</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&#34;java&#34;</span><span class="p">,</span>
+        <span class="s2">&#34;-jar&#34;</span><span class="p">,</span>
+        <span class="s2">&#34;java_bin_deploy.jar&#34;</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>base</code>はWORKSPACEに追加した<code>java_base_image</code>を設定している。filesには<code>java_bin</code>のタスクで錬成するjarファイルを設定しDockerイメージ内に配置されるようにしている。あとはイメージ内に配置したjarを実行するcmdを設定している。</p>
+
+<p>このタスクを実行すると次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ bazel run //pkg/public_kt:public_kt_image
+ INFO: Analysed target //pkg/public_kt:public_kt_image (14 packages loaded).
+ INFO: Found 1 target...
+ Target //pkg/public_kt:public_kt_image up-to-date:
+   bazel-bin/pkg/public_kt/public_kt_image-layer.tar
+ INFO: Elapsed time: 5.201s, Critical Path: 2.85s
+ INFO: 4 processes: 4 darwin-sandbox.
+ INFO: Build completed successfully, 5 total actions
+ INFO: Build completed successfully, 5 total actions
+ 84c6c9b35317: Loading layer [==================================================&gt;]  972.8kB/972.8kB
+ Loaded image ID: sha256:a5cf4f2786c475fe57d020a86d74f2b686a85701908e9c9128c24219b078e809
+ Tagging a5cf4f2786c475fe57d020a86d74f2b686a85701908e9c9128c24219b078e809 as bazel/pkg/public_kt:public_kt_image</pre></td></tr></table>
+</div>
+</div>
+<p>ローカルに<code>bazel/pkg/public_kt:public_kt_image</code>の名前とタグでイメージがビルドできた。このDockerイメージを起動する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ docker run -it bazel/pkg/public_kt:public_kt_image
+ Hello kotlin! - built by Bazel!</pre></td></tr></table>
+</div>
+</div>
+<p>Bazelで錬成したjarをBazelによって錬成したDockerイメージに内包することができた。</p>
+
+<h4 id="go-1">Go</h4>
+
+<p>GoのDockerイメージの錬成を見ていく。</p>
+
+<p>WORKSPACEに次のhttp_archiveを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./WORKSPACE</span>
+
+<span class="n">load</span><span class="p">(</span>
+    <span class="s2">&#34;@io_bazel_rules_docker//go:image.bzl&#34;</span><span class="p">,</span>
+    <span class="n">_go_image_repos</span> <span class="o">=</span> <span class="s2">&#34;repositories&#34;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">_go_image_repos</span><span class="p">()</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Kotlinとは異なりBazelが提供するイメージを利用する。</p>
+
+<h5 id="build-2">BUILD</h5>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ./pkg/public_go/BUILD</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_docker//go:image.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;go_image&#34;</span><span class="p">)</span>
+
+<span class="n">go_image</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;public_go_base_image&#34;</span><span class="p">,</span>
+    <span class="n">embed</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;:go_default_library&#34;</span><span class="p">],</span>
+    <span class="n">importpath</span> <span class="o">=</span> <span class="s2">&#34;github.com/soushin/bazel-multiprojects/pkg/public_go&#34;</span><span class="p">,</span>
+    <span class="n">goarch</span> <span class="o">=</span> <span class="s2">&#34;amd64&#34;</span><span class="p">,</span>
+    <span class="n">goos</span> <span class="o">=</span> <span class="s2">&#34;linux&#34;</span><span class="p">,</span>
+    <span class="n">pure</span> <span class="o">=</span> <span class="s2">&#34;on&#34;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_docker//container:container.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;container_image&#34;</span><span class="p">)</span>
+
+<span class="n">container_image</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;public_go_image&#34;</span><span class="p">,</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="s2">&#34;:public_go_base_image&#34;</span><span class="p">,</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>go_image</code>のruleを有効にしてGoのDockerイメージを錬成している。embedにはライブラリの<code>go_default_library</code>を設定している。この<code>public_go_base_image</code>をcontainer_imageのbaseにしてローカルにDockerイメージがインストールする。</p>
+
+<p><code>go_image</code>のpublic_go_base_imageだけでもDockerイメージはインストールできるのだがcontainer_imageはportやenvなどの細かいビルド設定が定義できる。今回のエンドリでは利用用途がなく割愛しているがHTTP Serverのようなアプリケーションではもう少し設定が増えると思う。</p>
+
+<p><code>public_go_image</code>のタスクを実行すると次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> (bazel-multiprojects) $ bazel run //pkg/public_go:public_go_image
+INFO: Analysed target //pkg/public_go:public_go_image (0 packages loaded).
+INFO: Found 1 target...
+Target //pkg/public_go:public_go_image up-to-date:
+  bazel-bin/pkg/public_go/public_go_image-layer.tar
+INFO: Elapsed time: 1.137s, Critical Path: 0.49s
+INFO: 2 processes: 2 darwin-sandbox.
+INFO: Build completed successfully, 3 total actions
+INFO: Build completed successfully, 3 total actions
+84ff92691f90: Loading layer [==================================================&gt;]  10.24kB/10.24kB
+Loaded image ID: sha256:71560af2643cc9a1f0593ff72940ae99711d5d572156187c930bfdb6aa740bbf
+Tagging 71560af2643cc9a1f0593ff72940ae99711d5d572156187c930bfdb6aa740bbf as bazel/pkg/public_go:public_go_image</pre></td></tr></table>
+</div>
+</div>
+<p>ローカルにDockerイメージがインストールできたのでDockerイメージを起動する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ docker run -it bazel/pkg/public_go:public_go_image
+Hello World! - built by Bazel!</pre></td></tr></table>
+</div>
+</div>
+<p>Kotlinと同様にバイナリの錬成からDockerイメージのビルドまでBazelのみで完遂できた。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<p>最終的なプロジェクトの構造は次のようになった。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">./
+├── BUILD
+├── README.md
+├── WORKSPACE
+├── bazel-bazel-multiprojects -&gt; /path/to/symlink
+├── bazel-bin -&gt; /path/to/symlink
+├── bazel-genfiles -&gt; /path/to/symlink
+├── bazel-out -&gt; /path/to/symlink
+├── bazel-testlogs -&gt; /path/to/symlink
+└── pkg
+    ├── common_go
+    │   └── util
+    │       ├── BUILD.bazel
+    │       └── string.go
+    ├── common_kt
+    │   ├── BUILD
+    │   └── util
+    │       └── string.kt
+    ├── public_go
+    │   ├── BUILD.bazel
+    │   └── main.go
+    └── public_kt
+        ├── BUILD
+        └── main.kt</pre></td></tr></table>
+</div>
+</div>
+<p>※Bazelが出力する<code>bazel-*</code>のシンボリックリンクのパスは<code>/path/to/symlink</code>に置換しています。</p>
+
+<p>プロジェクトのルートにWORKSPACEが配置され各アプリケーションとライブラリにBUILDファイルが配置されているのが分かる。BazelはGoとKotlinの言語が混合したプロジェクト構造であってもビルド環境は１つなので言語環境が競合することなく１つのレポジトリに配置することができる。</p>
+
+<p>GoとKotlinが言語間でやり取りすることはないので１つのレポジトリに配置することはメリットがないかもしれない。あるとすればWORKSPACEの設定は共有されるのでGoとKotlinプロジェクトのビルド環境の差異を防げるくらいでだろうか。このエントリを通して今後プロジェクトに導入して事例を貯めていけるようなフェーズに入れたので引き続きBazelを推進していきたい。</p>
+
+<p>今回では触れられなかったところを備忘録としてリストする。</p>
+
+<ul>
+<li>grpcを利用するのでBazelのビルド定義は今のところ分からない。grpc-javaやgoもexampleはあるようなので見ていきたい。</li>
+<li>container_imageのビルドまでをまとめたが実際のプロジェクトではcontainer_pushを利用することになる。CI視点の知見も貯めていきたい。</li>
+<li>KtorやSpring-fu、Goであれば各種ライブラリが依存するような実戦形式のBUILDファイルの運用知見も引き続きまとめていきたい。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>このエントリで紹介したコード一式は次のレポジトリに置いてあるので参照してください。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="bazel-multiprojects" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/bazel/">Bazel</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/go/">Go</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">Kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/multiprojects/">Multiprojects</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

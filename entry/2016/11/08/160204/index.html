@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Logstash &#43; Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, dateなど） - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="LogstashからElasticsearchへデータを送信する仕組みを試しました。Logstashのconfの参考になれば幸い。 json側">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Logstash &#43; Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, dateなど）</h1>
+    <div class="post-meta">2016.11.8</div>
+  </header>
+  <div class="post-content">
+
+<p>LogstashからElasticsearchへデータを送信する仕組みを試しました。Logstashのconfの参考になれば幸い。<br/>
+json側のフィールドをElasticsearchのdate型にconvertしたり、文字列を数値にconvertしたりしました。</p>
+
+<h3 id="ログはjsonフォーマット">ログはjsonフォーマット</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span><span class="nt">&#34;reportDate&#34;</span><span class="p">:</span><span class="s2">&#34;2016-11-08 00:00:00&#34;</span><span class="p">,</span><span class="nt">&#34;reportType&#34;</span><span class="p">:</span><span class="s2">&#34;report&#34;</span><span class="p">,</span><span class="nt">&#34;gender&#34;</span><span class="p">:</span><span class="s2">&#34;female&#34;</span><span class="p">,</span><span class="nt">&#34;ageBracket&#34;</span><span class="p">:</span><span class="s2">&#34;18-24&#34;</span><span class="p">,</span><span class="nt">&#34;value&#34;</span><span class="p">:</span><span class="s2">&#34;269&#34;</span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="logstashのconfファイル">Logstashのconfファイル</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">input</span> <span class="p">{</span>
+  <span class="err">file</span> <span class="err">{</span>
+    <span class="err">path</span> <span class="err">=&gt;</span> <span class="nt">&#34;/path_to_log_file&#34;</span>
+    <span class="err">codec</span> <span class="err">=&gt;</span> <span class="s2">&#34;json&#34;</span>
+  <span class="p">}</span>
+<span class="err">}</span>
+
+<span class="err">filter</span> <span class="p">{</span>
+  <span class="err">date</span> <span class="err">{</span>
+    <span class="err">match</span> <span class="err">=&gt;</span> <span class="err">[</span><span class="nt">&#34;reportDate&#34;</span><span class="p">,</span> <span class="nt">&#34;YYYY-MM-dd HH:mm:ss&#34;</span> <span class="err">]</span>
+  <span class="p">}</span>
+  <span class="err">date</span> <span class="p">{</span>
+	  <span class="err">match</span> <span class="err">=&gt;</span> <span class="err">[</span><span class="nt">&#34;reportDate&#34;</span><span class="p">,</span> <span class="nt">&#34;yyyy-MM-dd HH:mm:ss&#34;</span><span class="err">]</span>
+	  <span class="err">target</span> <span class="err">=&gt;</span> <span class="s2">&#34;reportDate&#34;</span>
+  <span class="p">}</span>
+  <span class="err">mutate</span> <span class="p">{</span>
+    <span class="err">convert</span> <span class="err">=&gt;</span> <span class="err">{</span>
+      <span class="nt">&#34;value&#34;</span> <span class="err">=&gt;</span> <span class="s2">&#34;integer&#34;</span>
+    <span class="p">}</span>
+  <span class="err">}</span>
+<span class="err">}</span>
+
+<span class="err">output</span> <span class="p">{</span>
+  <span class="err">elasticsearch</span> <span class="err">{</span>
+    <span class="err">hosts</span> <span class="err">=&gt;</span> <span class="err">[</span><span class="nt">&#34;localhost:9200&#34;</span><span class="err">]</span>
+    <span class="err">index</span> <span class="err">=&gt;</span> <span class="s2">&#34;test&#34;</span>
+  <span class="p">}</span>
+<span class="err">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Logstashはinput/codec/filter/outputのそれぞれの処理を理解する必要がある。<br/>
+今回の例でいうと以下のように整理できる。<br/></p>
+
+<h4 id="１-input">１： input</h4>
+
+<ul>
+<li>inputはログファイル（file）から行う</li>
+</ul>
+
+<h4 id="２-codec">２：codec</h4>
+
+<ul>
+<li>inputから受け取ったログファイルをjson形式に整形する</li>
+</ul>
+
+<h4 id="３-filter">３：filter</h4>
+
+<ul>
+<li>reportDateをElasticsearchの@timestampへ適応させている。（以下のコードが参考箇所）</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json">  <span class="err">date</span> <span class="p">{</span>
+    <span class="err">match</span> <span class="err">=&gt;</span> <span class="err">[</span><span class="nt">&#34;reportDate&#34;</span><span class="p">,</span> <span class="nt">&#34;YYYY-MM-dd HH:mm:ss&#34;</span> <span class="err">]</span>
+  <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>また、reportDateの値はElasticsearchの1つのvalueとしてインデックスされるが型がdate型に変換している。（以下のコードが参考箇所）</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json">  <span class="err">date</span> <span class="p">{</span>
+	  <span class="err">match</span> <span class="err">=&gt;</span> <span class="err">[</span><span class="nt">&#34;reportDate&#34;</span><span class="p">,</span> <span class="nt">&#34;yyyy-MM-dd HH:mm:ss&#34;</span><span class="err">]</span>
+	  <span class="err">target</span> <span class="err">=&gt;</span> <span class="s2">&#34;reportDate&#34;</span>
+  <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>最後にvalueの値をinteger型に変換している（以下のコードが参考箇所）</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json">  <span class="err">mutate</span> <span class="p">{</span>
+    <span class="err">convert</span> <span class="err">=&gt;</span> <span class="err">{</span>
+      <span class="nt">&#34;value&#34;</span> <span class="err">=&gt;</span> <span class="s2">&#34;integer&#34;</span>
+    <span class="p">}</span>
+  <span class="err">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="４-output">４：output</h4>
+
+<ul>
+<li>ログの出力先にElasticsearchを指定している。インデックスはtest。</li>
+</ul>
+
+<h3 id="関連エントリ">関連エントリ</h3>
+
+<p><a href="https://blog.soushi.me/entry/2016/12/10/170633">fluentd + logstash_formatの難点をrecord_reformerで解決した話 - 平日インプット週末アウトプットぶろぐ</a></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/logstash/">logstash</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/elasticsearch/">elasticsearch</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

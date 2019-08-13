@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Prowの真骨頂であるTideでPRの自動マージを導入する。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="前回のエントリ「ProwではじめるChatOps on GitHub。」からProwを完全理解した！と言ってはいけない。Prowの真骨頂はTide">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Prowの真骨頂であるTideでPRの自動マージを導入する。</h1>
+    <div class="post-meta">2019.1.9</div>
+  </header>
+  <div class="post-content">
+
+<p>前回のエントリ「<a href="https://blog.soushi.me/entry/2019/01/08/123752">ProwではじめるChatOps on GitHub。</a>」からProwを完全理解した！と言ってはいけない。Prowの真骨頂はTideにあると思う。</p>
+
+<figure>
+    <img src="/images/20190109113455.png"/> 
+</figure>
+
+
+<p><a href="https://github.com/kubernetes/kubernetes/pull/70875">Enable kustomize in kubectl by Liujingfang1 · Pull Request #70875 · kubernetes/kubernetes · GitHub</a></p>
+
+<p>上記のProwが有効になったPRのフローの最後を見てほしい。BotアカウントがPRをマージしているのだ。この仕組みはProwのTideが実現してくれる。</p>
+
+<p><div class="github-card" data-user="kubernetes/test-infra/blob/master/prow/cmd/tide" data-repo="README.md" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>Tideは一定の条件を満たした上でPRをマージしてくれる。マージを行うアカウントはProwに設定したGitHubのアクセストークンになるのでBotアカウントになる。一定の条件は下記のようなyamlでセットアップを行う。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml">tide<span class="p">:</span><span class="w">
+</span><span class="w">  </span>merge_method<span class="p">:</span><span class="w">
+</span><span class="w">    </span>kubeflow/community<span class="p">:</span><span class="w"> </span>squash<span class="w">
+</span><span class="w">
+</span><span class="w">  </span>target_url<span class="p">:</span><span class="w"> </span>https<span class="p">:</span>//prow.k8s.io/tide.html<span class="w">
+</span><span class="w">
+</span><span class="w">  </span>queries<span class="p">:</span><span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>repos<span class="p">:</span><span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>kubeflow/community<span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>kubeflow/examples<span class="w">
+</span><span class="w">    </span>labels<span class="p">:</span><span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>lgtm<span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>approved<span class="w">
+</span><span class="w">    </span>missingLabels<span class="p">:</span><span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>do-not-merge<span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>do-not-merge/hold<span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>do-not-merge/work-in-progress<span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>needs-ok-to-test<span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>needs-rebase</code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のqueriesに含まれるreposやlabelsの条件を満たせばTideがPRをマージしてくれる。</p>
+
+<h3 id="このエントリでは">このエントリでは</h3>
+
+<p>このエントリでは、Tideのセットアップの方法とPRフローに必要そうなProwプラグインのセットアップ方法をまとめていく。</p>
+
+<h3 id="triggerプラグインを有効にする">Triggerプラグインを有効にする</h3>
+
+<p>Triggerプラグインは <code>/ok-to-test</code>, <code>/test xxxx</code>, <code>/retest</code>などのキーワード入力からProwJobsを実行するプラグインである。（<a href="https://github.com/kubernetes/test-infra/blob/master/prow/cmd/tide/README.md">Prow Plugin Catalog</a>のtriggerを参照）</p>
+
+<p>Triggerプラグインのセットアップ手順をまとめていく。次のようなconfig.yamlを用意する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml">presubmits<span class="p">:</span><span class="w">
+</span><span class="w">  </span>soushin/bazel-multiprojects<span class="p">:</span><span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>unit-test<span class="w">
+</span><span class="w">    </span>always_run<span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span><span class="w">    </span>skip_report<span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span><span class="w">    </span>spec<span class="p">:</span><span class="w">
+</span><span class="w">      </span>containers<span class="p">:</span><span class="w">
+</span><span class="w">      </span>-<span class="w"> </span>image<span class="p">:</span><span class="w"> </span>alpine<span class="w">
+</span><span class="w">        </span>command<span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;/bin/printenv&#34;</span><span class="p">]</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のコンフィグレーションにより <code>/test unit-test</code>というキーワードが有効になった。Prowはキーワードとレポジトリ（soushin/bazel-multiprojects）がマッチすればPodを起動してalpineイメージから <code>/bin/printenv</code>のコマンドを実行する。e2eテストが実行できるコンテナイメージを用意すればGitHubのコメントからe2eテストが実行できるようになる。ここらへんはプロジェクトに応じてしっかりとした準備と検討が必要なところだ。</p>
+
+<p>always_runやskip_reportはプロジェクトに応じてセットアップする。詳細は<a href="https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md">jobs.md</a>にまとまっているので参照してほしい。</p>
+
+<p>上記のconfig.yamlを用意したらConfigMapに反映する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ cat config.yaml
+presubmits:
+  soushin/bazel-multiprojects:
+  - name: unit-tests
+    always_run: false
+    skip_report: false
+    spec:
+      containers:
+      - image: alpine
+        command: [&#34;/bin/printenv&#34;]
+(test-infra) $ kubectl create configmap config \
+  --from-file=config.yaml=config.yaml --dry-run -o yaml \
+  | kubectl replace configmap config -f -</pre></td></tr></table>
+</div>
+</div>
+<p>またplugin.yamlにはTriggerプラグインを有効にした上でConfigMapに反映する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ cat plugins.yaml
+plugins:
+  soushin/bazel-multiprojects:
+  - size
+  - trigger
+(test-infra) $ kubectl create configmap plugins \
+  --from-file=plugins.yaml=plugins.yaml --dry-run -o yaml  \
+  | kubectl replace configmap plugins -f -</pre></td></tr></table>
+</div>
+</div>
+<p>これでProwのhookポッドにTriggerプラグインとTrigger対象のProwJobs（unit-tests）が有効になった。</p>
+
+<h4 id="triggerを実行する">Triggerを実行する</h4>
+
+<p>任意のPRを作成して <code>/test unit-tests</code>を入力した後にCheckにProwJobsが加わっている。</p>
+
+<figure>
+    <img src="/images/20190109124032.png"/> 
+</figure>
+
+
+<p>もしProwJobs（unit-tests）がエラーになればBotアカウントがお知らせしてくれる。</p>
+
+<figure>
+    <img src="/images/20190109124440.png"/> 
+</figure>
+
+
+<p>エラーになればコードを修正して <code>/retest</code>を入力して全てのテストを実行する。Prowは登録されているProwJobsを実行して結果をGitHubに返す。</p>
+
+<h4 id="triggerの流れを整理">Triggerの流れを整理</h4>
+
+<p>Triggerプラグインを有効にしたProwは次のような流れになる。</p>
+
+<ul>
+<li>ReviewerはPRコードを確認してOKなら <code>/ok-to-test</code>を入力する。</li>
+<li>Prowは <code>ok-to-test</code>のラベルを付与する。</li>
+<li>Comitter（またはReviewer）は <code>/test xxxx</code>を入力してProwJobsを実行する。</li>
+<li>Prowはレポジトリに有効になったProwJobsを実行して結果を報告する。</li>
+<li>エラーの場合は <code>/retest</code>を促す。</li>
+<li>ReviewerはChecksを確認して必要なProwJobsがすべてSuccessedになっているか確認する。</li>
+</ul>
+
+<p>上記のChatOpsのフローを交えてPRマージまで進める。</p>
+
+<h3 id="lgtm-holdプラグインを有効にする">LGTM, Holdプラグインを有効にする</h3>
+
+<p>Tideを有効にする前にLGTM, Holdプラグインを確認していきたい。（<a href="https://github.com/kubernetes/test-infra/blob/master/prow/cmd/tide/README.md">Prow Plugin Catalog</a>のlgtm, holdを参照）</p>
+
+<p>このプラグインは<code>/lgtm</code>,<code>/hold</code>のキーワードを入力するとそれぞれ<code>lgtm</code>,<code>do-not-merge/hold</code>のラベルを付与してくれるプラグインである。これを有効にしてTideの設定値であるlabelと組み合わせる。</p>
+
+<p>次のように<code>lgtm</code>と<code>hold</code>を有効にしてConfigMapに反映する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ cat plugins.yaml
+plugins:
+  soushin/bazel-multiprojects:
+  - size
+  - trigger
+  - lgtm
+  - hold
+(test-infra) $ kubectl create configmap plugins \
+  --from-file=plugins.yaml=plugins.yaml --dry-run -o yaml  \
+  | kubectl replace configmap plugins -f -</pre></td></tr></table>
+</div>
+</div>
+<p><code>/hold</code>、<code>/hold cancel</code>で<code>do-not-merge/hold</code>ラベルの付与と取外しを行い<code>/lgtm</code>で<code>lgtm</code>ラベルを付与している。</p>
+
+<figure>
+    <img src="/images/20190109130622.png"/> 
+</figure>
+
+
+<p>※ 1人でエントリをまとめていたので<code>/lgtm</code>と<code>/hold cancel</code>をBotアカウントが行ってしまっているが本来はコントリビューターが行うことになる。</p>
+
+<h3 id="tideを有効にする">Tideを有効にする</h3>
+
+<p>PRマージを行うまでに必要なテスト（Trigger）とラベル付与（LGTM, Hold)を有効にするプラグインをまとめきた。これでTideを有効にしたPRフローの準備ができた。</p>
+
+<p>Tideはconfig.yamlに次のようなコンフィグレーションを追加して有効にした。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml">tide<span class="p">:</span><span class="w">
+</span><span class="w">  </span>queries<span class="p">:</span><span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>repos<span class="p">:</span><span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>soushin/bazel-multiprojects<span class="w">
+</span><span class="w">    </span>labels<span class="p">:</span><span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>lgtm<span class="w">
+</span><span class="w">    </span>missingLabels<span class="p">:</span><span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>do-not-merge/hold</code></pre></td></tr></table>
+</div>
+</div>
+<p>PRマージの対象のレポジトリと必要なラベルと必要ないラベルの設定が有効になっている。</p>
+
+<p>これまでと同様にconfig.yamlをConfigMapに反映する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(test-infra) $ kubectl create configmap config \
+  --from-file=config.yaml=config.yaml --dry-run -o yaml \
+  | kubectl replace configmap config -f -</pre></td></tr></table>
+</div>
+</div>
+<h3 id="tideが有効になったprフローを確認する">Tideが有効になったPRフローを確認する</h3>
+
+<p>Tideが有効になったPRにはChecksに<code>tide</code>が追加されている。</p>
+
+<figure>
+    <img src="/images/20190109131832.png"/> 
+</figure>
+
+
+<p><code>lgtm</code>のラベルが必要なのでラベルを付与するとProwが自動でPRをマージしくれる。</p>
+
+<figure>
+    <img src="/images/20190109132118.png"/> 
+</figure>
+
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>ProwのTideを有効にする方法をまとめた。</li>
+<li>またTideをPRフローに合わせるために必要なProwプラグインをまとめた。</li>
+<li>TideがあればマージまでのPRフローが明確になる。オープンなレポジトリを運営する際のコントリビュートのルールやプロジェクトチームのPRルールにProwを導入すればコミッターは迷わずPRフローを進めることができる。</li>
+<li>Prowプラグインには<code>assign</code>や<code>wip</code>などPRフローに必要なものがあるのでチームにフィットしたプラグイン選びをしていきたい。</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/prow/">Prow</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kubernetes/">Kubernetes</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/tide/">Tide</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/github/">GitHub</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

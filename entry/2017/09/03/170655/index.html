@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>protobuf typeに値が入っているか確認するにはgoogle/protobuf/wrappers.protoをつかうとよい - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="今回のエントリも前回に続きprotobufの数あるtypeの中から１つの使い方まとめていきたい。今回は google/protobuf/wra">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">protobuf typeに値が入っているか確認するにはgoogle/protobuf/wrappers.protoをつかうとよい</h1>
+    <div class="post-meta">2017.9.3</div>
+  </header>
+  <div class="post-content">
+
+<p>今回のエントリも<a href="https://blog.soushi.me/entry/2017/08/25/225809">前回</a>に続きprotobufの数あるtypeの中から１つの使い方まとめていきたい。今回は <code>google/protobuf/wrappers.proto</code>をまとめていく。<br/>
+protobufのtypeのなかにはプリミティブなtypeとして<code>string</code>や<code>uint32</code>, <code>uint64</code>などが用意されている。プリミティブなtypeをリクエストに定義した場合、リクエストに値を定義しないとデフォルト値がセットされる。</p>
+
+<p><a href="https://developers.google.com/protocol-buffers/docs/proto3#default">Language Guide (proto3)  |  Protocol Buffers  |  Google Developers</a></p>
+
+<p>gRPC Clientが明示的に値をセットしないと<code>uint32</code>では<code>0</code>値をgRPC Serverで受け取ることになる。</p>
+
+<p>次のようなリクエストにつかうprotoを定義するケースを考えていく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="kd">message</span> <span class="nc">TaskListInbound</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>  <span class="kt">uint32</span> <span class="n">page</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>gRPC Clientからは <code>page</code>に値がセットされていなければ<code>page</code>の値を10にServer側でセットするとしよう。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">page</span> <span class="p">=</span> <span class="k">when</span> <span class="p">{</span>
+    <span class="n">request</span><span class="p">.</span><span class="n">page</span> <span class="p">==</span> <span class="n">UInt32Value</span><span class="p">.</span><span class="n">getDefaultInstance</span><span class="p">().</span><span class="n">value</span> <span class="p">-&gt;</span> <span class="n">DEFAULT_PAGE_LIMIT</span>
+    <span class="k">else</span> <span class="p">-&gt;</span> <span class="n">request</span><span class="p">.</span><span class="n">page</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>UInt32Value.getDefaultInstance().value</code> からuint32のデフォルト値をとることで判定をしている。<code>page</code>のケースであればこれでも良いかもしれないが、デフォルト値の<code>0</code>でも良いケースではデフォルト値判定をする必要がなくなるし、<code>Patch</code>のようなリクエストメソッドを提供したい場合などはprotoに定義したフィールドに値がセットされたのかどうかを素直に判定したい。</p>
+
+<p>そのようなケースに有効なprotobufのtypeに<code>google/protobuf/wrappers.proto</code>が用意されている。</p>
+
+<h3 id="protobuf-typeに値が入っているか確認できるwrappers-proto">protobuf typeに値が入っているか確認できるwrappers.proto</h3>
+
+<p>wrappers.protoはプリミティブなtypeに対応している。</p>
+
+<p>protoの定義は次のように書ける</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="kd">message</span> <span class="nc">TaskListInbound</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>  <span class="n">google.protobuf.UInt32Value</span> <span class="n">page</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>値がセットされているかどうかも<code>hasFiledName()</code>の関数が用意されている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">page</span> <span class="p">=</span> <span class="k">when</span> <span class="p">{</span>
+    <span class="n">request</span><span class="p">.</span><span class="n">hasPage</span><span class="p">()</span> <span class="p">-&gt;</span> <span class="n">request</span><span class="p">.</span><span class="n">page</span><span class="p">.</span><span class="n">value</span>
+    <span class="k">else</span> <span class="p">-&gt;</span> <span class="n">DEFAULT_PAGE_LIMIT</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>wrappers.protoの<code>UInt32Value</code>とプリミティブな<code>uint32</code>を使い分けることでgRPC Clientのリクエストパラメータをオプションか必須であるか明示的に定義することができる。</p>
+
+<h3 id="コード">コード</h3>
+
+<p>コードは次のレポジトリにコミットしてあります。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/proto/">proto</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/wrappers/">wrappers</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>KotlinでgRPC。grpc-javaのTLS with JDKとTLS with OpenSSLの使い方をまとめた。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="grpc-java/SECURITY.mdを読み進めるとTLSを有効にしたgRPCサーバの起動には２つのプロトコルプロバイダーを選択できる。">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">KotlinでgRPC。grpc-javaのTLS with JDKとTLS with OpenSSLの使い方をまとめた。</h1>
+    <div class="post-meta">2017.5.11</div>
+  </header>
+  <div class="post-content">
+
+<p><code>grpc-java/SECURITY.md</code>を読み進めるとTLSを有効にしたgRPCサーバの起動には２つのプロトコルプロバイダーを選択できる。
+<code>JDK</code>と<code>OpenSSL</code>がその２つである。それぞれを有効にする方法は異なりドキュメントも豊富ではない。この機会にまとめていきたいというのが今回のモチベーション。</p>
+
+<p><div class="github-card" data-user="grpc/grpc-java/blob/master" data-repo="SECURITY.md" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h3 id="tls-with-jdk">TLS with JDK</h3>
+
+<p>まずはJDKからみていきたい。<code>grpc-java/SECURITY.md</code>にも<a href="https://github.com/grpc/grpc-java/blob/master/SECURITY.md#tls-with-jdk-jetty-alpnnpn">記載がある</a>とおり、この方式は推奨されていない。
+JavaのTLS実装にALPNがサポートされるのはJava9からでありJava8（Java &lt; 8）を利用している場合は、JVMオプションに<code>javaagent</code>を加える。加えた<code>javaagent</code>に<code>jetty-alpn-agent</code>を指定する。
+起動までの流れとしては次ようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">mkdir -p /var/lib
+wget -q -O /var/lib/jetty-alpn-agent.jar https://repo.maven.apache.org/maven2/org/mortbay/jetty/alpn/jetty-alpn-agent/2.0.6/jetty-alpn-agent-2.0.6.jar
+
+java $JAVA_OPTS -javaagent:/var/lib/jetty-alpn-agent.jar -jar /usr/local/your-project/lib/app-name.jar</pre></td></tr></table>
+</div>
+</div>
+<p>これで<code>TLS with JDK</code>で起動できる。</p>
+
+<h3 id="tls-with-openssl">TLS with OpenSSL</h3>
+
+<p>次にOpenSSLである。<code>grpc-java/SECURITY.md</code>にも<a href="https://github.com/grpc/grpc-java/blob/master/SECURITY.md#openssl-dynamically-linked-netty-tcnative">記載がある</a>とおりstaticなnetty-tcnativeを使わない場合は<code>OpenSSL version &gt;= 1.0.2</code>、<code>Apache APR library (libapr-1) version &gt;= 1.5.2.</code>が必要になる。
+DockerコンテナでJVMを起動する場合は事前にインストールをしておく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">apt-get install -y ca-certificates openssl libc6 libapr1</pre></td></tr></table>
+</div>
+</div>
+<p><code>libc6</code>はprotoBufferを生成する際に必要となる。コンテナ起動時にビルドのタスクに<code>.proto</code>から<code>protoBuffer</code>を生成している。</p>
+
+<p>OpenSSLのハマりポイントがありalpineをコンテナイメージのベースにしていたが上手く起動できなかった。ubuntuベースにするとサクッと起動した。
+alpineで起動すると次のようなエラーに遭遇する。netty-tcnativeを使うためにalpineで何かが足りていないのだろう。今後深追いしていきたい。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">Caused by: java.lang.UnsatisfiedLinkError: /tmp/libnetty-tcnative3270913869898400045.so: Error relocating /tmp/libnetty-tcnative3270913869898400045.so: SSL_add0_chain_cert: symbol not found
+        at java.lang.ClassLoader$NativeLibrary.load(Native Method)
+        at java.lang.ClassLoader.loadLibrary0(ClassLoader.java:1941)
+        at java.lang.ClassLoader.loadLibrary(ClassLoader.java:1824)
+        at java.lang.Runtime.load0(Runtime.java:809)
+        at java.lang.System.load(System.java:1086)
+        at io.netty.util.internal.NativeLibraryUtil.loadLibrary(NativeLibraryUtil.java:36)
+        ... 21 more</pre></td></tr></table>
+</div>
+</div>
+<p>ubutuを許容できるのであればubuntuベースでOpenSSLを利用するのがよさそう。</p>
+
+<p>最後に必要なnetty-tcnativeはドキュメントの<a href="https://github.com/grpc/grpc-java/blob/master/SECURITY.md#getting-netty-tcnative-from-gradle">Getting netty-tcnative from Gradle</a>が参考になる。</p>
+
+<p>これで<code>TLS with OpenSSL</code>が起動できる。</p>
+
+<h3 id="jdkとopensslを有効にしたdockerfileをまとめた">JDKとOpenSSLを有効にしたDockerfileをまとめた</h3>
+
+<p>ここまで<code>JDK</code>と<code>OpenSSL</code>についてまとめてきたがコードの断片しかなく参考にならないため、それぞれのDockerfileと動作確認環境をシュッと起動できるdocker-composeをまとめたので詳細はgithubを参照してほしい。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="grpc-kotlin-tls-test" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>READMEに動作確認手順をまとめているが、docker-composeでJDKとOpenSSLが有効になったgRPCサーバを起ち上げ、gRPCクライアントを含むアプリの起動時にサーバの環境変数を切り替えている。</p>
+
+<p>ここまでgrpc-javaについて触れていたけどgithubに置いているコードはkotlinで書いている。適宜javaに置き換えて参照いただきたい。</p>
+
+<p>grpc-javaはそこまでドキュメントが豊富とは言いづらい。積極的にアウトプットしていきたい。</p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/java/">Java</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/tls/">TLS</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

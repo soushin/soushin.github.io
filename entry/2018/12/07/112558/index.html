@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Knative Buildのbuild templateにBazelをつかいビルドする - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="KnativeはKubernetesを基盤としたプラットフォームをビルド、デプロイを管理するためフレームワークを提供する。Serving、B">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Knative Buildのbuild templateにBazelをつかいビルドする</h1>
+    <div class="post-meta">2018.12.7</div>
+  </header>
+  <div class="post-content">
+
+<p>KnativeはKubernetesを基盤としたプラットフォームをビルド、デプロイを管理するためフレームワークを提供する。Serving、Build、そしてEventingの３つのコンポーネントで構成されている。これら３つが疎結合に連携する。</p>
+
+<p><a href="https://cloud.google.com/knative/">Knative  |  Google Cloud</a></p>
+
+<p>Kubernetesを基盤にサービスをデプロイするにはDeploymentやService、Ingressなどの理解が必要であるがKnativeはそれらを抽象化してよりフレームワークに沿った扱い方を提供してくれている印象がある。</p>
+
+<h3 id="モチベーション">モチベーション</h3>
+
+<p>今回のエントリでは３つのコンポーネントのうち <code>Build</code>に注目していきたい。これまでBazelをつかいGoプロジェクトをビルドする方法をまとめてきた。KnativeのBuildにはbuild templateという概念がありテンプレートの１つにBazelがサポートされている。KnativeのBuildのbuild templateにBazelをつかいGoプロジェクトをビルドする手順をまとめる。</p>
+
+<h3 id="インストール">インストール</h3>
+
+<p>Kubernetes環境が整っていれば次のリソースをapplyすればKnative Buildの環境がセットアップできる。</p>
+
+<h4 id="istioのインストール">istioのインストール</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"># Install istio
+$ kubectl apply --filename https://raw.githubusercontent.com/knative/serving/v0.2.2/third_party/istio-1.0.2/istio.yaml
+# Label the default namespace with istio-injection=enabled:
+$ kubectl label namespace default istio-injection=enabled</pre></td></tr></table>
+</div>
+</div>
+<p>istio関連のPodがRunningかCompletedになれば完了</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">$ kubectl get pods --namespace istio-system --watch
+
+NAME                                        READY     STATUS              RESTARTS   AGE
+istio-citadel-84fb7985bf-shfdl              0/1       ContainerCreating   0          54s
+istio-cleanup-secrets-zg9n6                 0/1       Completed           0          1m
+istio-egressgateway-bd9fb967d-z7gfr         0/1       ContainerCreating   0          54s
+istio-galley-655c4f9ccd-d9mgh               0/1       ContainerCreating   0          54s
+istio-ingressgateway-688865c5f7-2p5gk       0/1       ContainerCreating   0          54s
+istio-pilot-6cd69dc444-ts67c                0/2       ContainerCreating   0          54s
+istio-policy-6b9f4697d-d4ndh                0/2       ContainerCreating   0          54s
+istio-sidecar-injector-8975849b4-8x722      0/1       ContainerCreating   0          54s
+istio-statsd-prom-bridge-7f44bb5ddb-qwdqv   1/1       Running             0          55s
+istio-telemetry-6b5579595f-g2vm4            0/2       ContainerCreating   0          54s</pre></td></tr></table>
+</div>
+</div>
+<p>参考： <a href="https://github.com/knative/docs/blob/master/install/Knative-with-any-k8s.md">https://github.com/knative/docs/blob/master/install/Knative-with-any-k8s.md</a></p>
+
+<h4 id="knative-buildのインストール">Knative Buildのインストール</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">$ kubectl apply --filename https://raw.githubusercontent.com/knative/serving/v0.2.2/third_party/config/build/release.yaml</pre></td></tr></table>
+</div>
+</div>
+<p>Build関連のPodがRunningになれば完了</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">kubectl get pods --namespace knative-build --watch
+NAME                                READY     STATUS              RESTARTS   AGE
+build-controller-747b8fd966-dwbdd   0/1       ContainerCreating   0          16s
+build-webhook-6dc78d8f6d-vvkqm      0/1       ContainerCreating   0          16s</pre></td></tr></table>
+</div>
+</div>
+<p><code>knative-build</code>のnamespaceが追加されている。以降に追加するリソースはknative-buildのnamespaceに追加していくのでcontextを切り替える。</p>
+
+<h3 id="knative-buildを理解するための４つの要素">Knative Buildを理解するための４つの要素</h3>
+
+<p>Knative Buildを理解するために次の４つの要素は抑えておきたい。</p>
+
+<ul>
+<li>Build</li>
+<li>BuildTemplate</li>
+<li>Builder</li>
+<li>ServiceAccount</li>
+</ul>
+
+<h4 id="build">Build</h4>
+
+<p><a href="https://github.com/knative/docs/blob/master/build/builds.md">docs/builds.md at master · knative/docs · GitHub</a></p>
+
+<p>BuildはBuildTemplate、Builder、ServiceAccountを集約した概念であり、それらをまとめたmanifestを作成する。</p>
+
+<h4 id="buildtemplate">BuildTemplate</h4>
+
+<p><a href="https://github.com/knative/docs/blob/master/build/build-templates.md">docs/build-templates.md at master · knative/docs · GitHub</a></p>
+
+<p>BuildTemplateは<code>parameter</code>と<code>steps</code>を定義する。stepはビルド手順をまとめビルドに必要な変数をparameterで定義する。テンプレートはBazelがサポートされている。今後もその他のサポートが追加されることが期待される。</p>
+
+<p><a href="https://github.com/knative/build-templates">GitHub - knative/build-templates: A library of build templates.</a></p>
+
+<h4 id="builder">Builder</h4>
+
+<p><a href="https://github.com/knative/docs/blob/master/build/builder-contract.md">docs/builder-contract.md at master · knative/docs · GitHub</a></p>
+
+<p>BuilderはBuildTemplateでも触れた<code>steps</code>の概念である。ビルドするために複数の手順があればstepsに追加していく。ビルドの完了までにBazelのtargerを複数実行したい場合はstepsにtargetを定義していく。</p>
+
+<h4 id="serviceaccount">ServiceAccount</h4>
+
+<p><a href="https://github.com/knative/docs/blob/master/build/auth.md">docs/auth.md at master · knative/docs · GitHub</a></p>
+
+<p>ServiceAccountはKnative Buildにおける新概念ではなくビルドする過程で必要な認証をsecretリソースと一緒にセットアップすることでBuildリソースにアサインする。GitHubからソースのチェックアウトやリモートレジストリへのプッシュなどに必要な認証アカウントをServiceAccountリソースとして定義する。</p>
+
+<h3 id="knative-buildでbazelをつかいビルドする">Knative BuildでBazelをつかいビルドする</h3>
+
+<p>先述した４つの概念を頭に入れてBazelでビルドする方法をまとめていく。</p>
+
+<h4 id="serviceaccountを作成する">ServiceAccountを作成する</h4>
+
+<p>BazelのtargetにはDocker hubにイメージをプッシュする工程が含まれているのでDocker hubに認証するSecretリソースを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="c"># pkg/ops/k8s/knative-build/secret.yaml</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span>apiVersion<span class="p">:</span><span class="w"> </span>v1<span class="w">
+</span><span class="w"></span>kind<span class="p">:</span><span class="w"> </span>Secret<span class="w">
+</span><span class="w"></span>metadata<span class="p">:</span><span class="w">
+</span><span class="w">  </span>name<span class="p">:</span><span class="w"> </span>docker-hub-account<span class="w">
+</span><span class="w">  </span>annotations<span class="p">:</span><span class="w">
+</span><span class="w">    </span>build.knative.dev/docker<span class="m">-0</span><span class="p">:</span><span class="w"> </span>https<span class="p">:</span>//index.docker.io/v1/<span class="w">
+</span><span class="w"></span>type<span class="p">:</span><span class="w"> </span>kubernetes.io/basic-auth<span class="w">
+</span><span class="w"></span>stringData<span class="p">:</span><span class="w">
+</span><span class="w">  </span>username<span class="p">:</span><span class="w"> </span><span class="s2">&#34;&lt;username&gt;&#34;</span>&lt;/username&gt;<span class="w"> </span><span class="c"># not base64 encoded</span><span class="w">
+</span><span class="w">  </span>password<span class="p">:</span><span class="w"> </span><span class="s2">&#34;&lt;password&gt;&#34;</span>&lt;/password&gt;<span class="w"> </span><span class="c"># not base64 encoded</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>リソースを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ kubectl apply -f pkg/ops/k8s/knative-build/secret.yaml
+secret/docker-hub-account created</pre></td></tr></table>
+</div>
+</div>
+<p>次にServiceAccountリソースを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="c"># pkg/ops/k8s/knative-build/service-account.yaml</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span>apiVersion<span class="p">:</span><span class="w"> </span>v1<span class="w">
+</span><span class="w"></span>kind<span class="p">:</span><span class="w"> </span>ServiceAccount<span class="w">
+</span><span class="w"></span>metadata<span class="p">:</span><span class="w">
+</span><span class="w">  </span>name<span class="p">:</span><span class="w"> </span>docker-hub-account<span class="w">
+</span><span class="w"></span>secrets<span class="p">:</span><span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>docker-hub-account</code></pre></td></tr></table>
+</div>
+</div>
+<p>リソースを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ kubectl apply -f service-account.yaml
+serviceaccount/docker-hub-account created</pre></td></tr></table>
+</div>
+</div>
+<p>これでDocker hubに認証するSecretリソースを参照している<code>docker-hub-account</code>のServiceAccountが追加できた。</p>
+
+<h4 id="buildtemplateリソースの追加">BuildTemplateリソースの追加</h4>
+
+<p>BuildTemplateリソースを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="c"># pkg/ops/k8s/knative-build/build-template-bazel.yaml</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span>apiVersion<span class="p">:</span><span class="w"> </span>build.knative.dev/v1alpha1<span class="w">
+</span><span class="w"></span>kind<span class="p">:</span><span class="w"> </span>BuildTemplate<span class="w">
+</span><span class="w"></span>metadata<span class="p">:</span><span class="w">
+</span><span class="w">  </span>name<span class="p">:</span><span class="w"> </span>bazel<span class="w">
+</span><span class="w"></span>spec<span class="p">:</span><span class="w">
+</span><span class="w">  </span>parameters<span class="p">:</span><span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>TARGET<span class="w">
+</span><span class="w">    </span>description<span class="p">:</span><span class="w"> </span>The<span class="w"> </span>name<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>Bazel<span class="w"> </span><span class="s2">&#34;container_push&#34;</span><span class="w"> </span>target<span class="w"> </span>to<span class="w"> </span>run<span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>IMAGE_TAG<span class="w">
+</span><span class="w">    </span>description<span class="p">:</span><span class="w"> </span>The<span class="w"> </span>tag<span class="w"> </span>of<span class="w"> </span>image<span class="w">
+</span><span class="w">
+</span><span class="w">  </span>steps<span class="p">:</span><span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>build-and-push<span class="w">
+</span><span class="w">    </span>image<span class="p">:</span><span class="w"> </span>gcr.io/cloud-builders/bazel<span class="w">
+</span><span class="w">    </span>args<span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;run&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;--define&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;IMAGE_TAG=${IMAGE_TAG}&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;${TARGET}&#39;</span><span class="p">]</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>bazel run</code>コマンドのオプションを変数化して必要な変数をparameterとして定義している。</p>
+
+<p>リソースを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ kubectl apply -f pkg/ops/k8s/knative-build/build-template-bazel.yaml
+buildtemplate.build.knative.dev/bazel created</pre></td></tr></table>
+</div>
+</div>
+<p>これでBuildTemplateリソースの<code>bazel</code>が追加できた。</p>
+
+<h4 id="buildリソースの追加">Buildリソースの追加</h4>
+
+<p>Buildリソースを定義する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="c"># pkg/ops/k8s/knative-build/bazel-build.yaml</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span>apiVersion<span class="p">:</span><span class="w"> </span>build.knative.dev/v1alpha1<span class="w">
+</span><span class="w"></span>kind<span class="p">:</span><span class="w"> </span>Build<span class="w">
+</span><span class="w"></span>metadata<span class="p">:</span><span class="w">
+</span><span class="w">  </span>name<span class="p">:</span><span class="w"> </span>bazel-build<span class="w">
+</span><span class="w"></span>spec<span class="p">:</span><span class="w">
+</span><span class="w">  </span>serviceAccountName<span class="p">:</span><span class="w"> </span>docker-hub-account<span class="w">
+</span><span class="w">  </span>source<span class="p">:</span><span class="w">
+</span><span class="w">    </span>git<span class="p">:</span><span class="w">
+</span><span class="w">      </span>url<span class="p">:</span><span class="w"> </span>https<span class="p">:</span>//github.com/soushin/bazel-multiprojects<span class="w">
+</span><span class="w">      </span>revision<span class="p">:</span><span class="w"> </span>master<span class="w">
+</span><span class="w">  </span>template<span class="p">:</span><span class="w">
+</span><span class="w">    </span>name<span class="p">:</span><span class="w"> </span>bazel<span class="w">
+</span><span class="w">    </span>arguments<span class="p">:</span><span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>TARGET<span class="w">
+</span><span class="w">      </span>value<span class="p">:</span><span class="w"> </span>//pkg/public_go<span class="p">:</span>container_push<span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>IMAGE_TAG<span class="w">
+</span><span class="w">      </span>value<span class="p">:</span><span class="w"> </span>latest</code></pre></td></tr></table>
+</div>
+</div>
+<p><code>spec.serviceAccountName</code>に追加したServiceAccount <code>docker-hub-account</code>を参照している。そして<code>spec.template.name</code>には追加したBuildTemplate <code>bazel</code>を参照している。また<code>//pkg/public_go:container_push</code>のBazel targetを実行するためのソースを<code>spec.source</code>に定義している。</p>
+
+<h3 id="ビルドの実行">ビルドの実行</h3>
+
+<p>Buildリソースである<code>pkg/ops/k8s/knative-build/bazel-build.yaml</code>をapplyしてビルドを実行する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ kubectl apply -f pkg/ops/k8s/knative-build/bazel-build.yaml
+build.build.knative.dev/bazel-build created</pre></td></tr></table>
+</div>
+</div>
+<p>ポッドが起動しているのを確認する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ kubectl get pods --namespace knative-build --watch
+NAME                                READY     STATUS     RESTARTS   AGE
+bazel-build-9jzhc                   0/1       Init:2/3   0          1m
+build-controller-747b8fd966-dwbdd   1/1       Running    0          1h
+build-webhook-6dc78d8f6d-vvkqm      1/1       Running    0          1h</pre></td></tr></table>
+</div>
+</div>
+<p>Completedになればビルド完了。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ kubectl get pods --namespace knative-build --watch
+NAME                                READY     STATUS      RESTARTS   AGE
+dbuild-controller-747b8fd966-dwbdd   1/1       Running     0          3h
+build-webhook-6dc78d8f6d-vvkqm      1/1       Running     0          3h
+bazel-build-9jzhc   0/1       Pending   0         0s
+bazel-build-9jzhc   0/1       Pending   0         0s
+bazel-build-9jzhc   0/1       Init:0/3   0         0s
+bazel-build-9jzhc   0/1       Init:1/3   0         1s
+bazel-build-9jzhc   0/1       Init:1/3   0         3s
+bazel-build-9jzhc   0/1       Init:2/3   0         4s
+bazel-build-9jzhc   0/1       Init:2/3   0         6s
+bazel-build-9jzhc   0/1       PodInitializing   0         5m
+bazel-build-9jzhc   0/1       Completed   0         5m</pre></td></tr></table>
+</div>
+</div>
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>Knative Buildのbuild templateにBazelをつかいビルドする方法をまとめた</li>
+<li>ビルドを実行するとPodが立ち上がりPod内でビルドが行われる。BazelやDockerといったビルドに必要なコンポーネントのセットアップをせずにビルドできるのは便利である。</li>
+<li>ビルドが完了するとPodがCompletedになるが再度同じようにapplyを実行してもビルドが行われない。Podを削除した後にapplyを実行すると再度ビルドができた。
+
+<ul>
+<li>もしかすると定義したBuildはEventingと結合して進化を発揮するのかしれない。EventigはGitHubのイベントをソースに扱える。マージのイベントでKnative Buildを実行するイメージである。</li>
+<li>Evenitngの理解がまだ浅いので引き続きEventingの理解も進めていく。</li>
+</ul>
+</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>紹介したyamlコードは次のレポジトリに置いてあります。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="bazel-multiprojects" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/knative/">Knative</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/build/">Build</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/bazel/">Bazel</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

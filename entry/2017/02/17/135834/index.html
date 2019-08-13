@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>nginx-rtmp-module &#43; FFmpeg &#43; HLSで動画配信ができるdocker-composeをつくった - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="タイトルのdocker-composeをつくっていきます。ローカルで配信確認したいときにシュッと起動できるようにします。 次のような構成でつく">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">nginx-rtmp-module &#43; FFmpeg &#43; HLSで動画配信ができるdocker-composeをつくった</h1>
+    <div class="post-meta">2017.2.17</div>
+  </header>
+  <div class="post-content">
+
+<p>タイトルのdocker-composeをつくっていきます。ローカルで配信確認したいときにシュッと起動できるようにします。<br/>
+次のような構成でつくりました。</p>
+
+<h2 id="コンテナ構成">コンテナ構成</h2>
+
+<p><img src="/images/20170217102235.png" /></p>
+
+<h3 id="rtmp-server">RTMP server</h3>
+
+<ul>
+<li>nginx-rtmp-moduleをつかってRTMP serverをたてる。</li>
+</ul>
+
+<div class="github-card" data-user="arut" data-repo="nginx-rtmp-module/" data-width="400" data-height="" data-theme="default"></div>
+
+<ul>
+<li>RTMP serverは`rtmp context`でストリームを受け取るapplicationを追加（`application encoder`）。</li>
+<li>`application encoder`はストリームを受け取るとFFmpegで動画を３つのビットレードにエンコードする。</li>
+<li>`application encoder`でエンコードした動画をHLS変換する`application hls`へストリームする。</li>
+<li>`application hls`は変換したm3u8、tsファイルを`/data/hls`に配置する。</li>
+<li>`/data/hls`はホストで同期されていてStreaming serverからもm3u8、tsファイルを参照できるようにしている。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">rtmp</span> <span class="p">{</span>
+    <span class="err">server</span> <span class="err">{</span>
+        <span class="err">listen</span> <span class="err">1935;</span>
+
+        <span class="err">application</span> <span class="err">encoder</span> <span class="err">{</span>
+            <span class="err">live</span> <span class="err">on;</span>
+
+            <span class="err">exec</span> <span class="err">ffmpeg</span> <span class="err">-i</span> <span class="err">rtmp://localhost:1935/$app/$name</span>
+                        <span class="err">-c:a</span> <span class="err">aac</span> <span class="err">-strict</span> <span class="err">-2</span> <span class="err">-b:a</span> <span class="err">32k</span> <span class="err">-c:v</span> <span class="err">libx264</span> <span class="err">-x264opts</span> <span class="err">bitrate=128:vbv-maxrate=128:vbv-bufsize=128</span> <span class="err">-rtbufsize</span> <span class="err">100M</span> <span class="err">-bufsize</span> <span class="err">256k</span> <span class="err">-preset</span> <span class="err">veryfast</span> <span class="err">-f</span> <span class="err">flv</span> <span class="err">rtmp://localhost:1935/hls/${name</span><span class="p">}</span><span class="err">_low</span>
+                        <span class="err">-c:a</span> <span class="err">aac</span> <span class="err">-strict</span> <span class="mi">-2</span> <span class="err">-b:a</span> <span class="mi">64</span><span class="err">k</span> <span class="err">-c:v</span> <span class="err">libx</span><span class="mi">264</span> <span class="err">-x</span><span class="mi">264</span><span class="err">opts</span> <span class="err">bitrate=</span><span class="mi">256</span><span class="err">:vbv-maxrate=</span><span class="mi">256</span><span class="err">:vbv-bufsize=</span><span class="mi">256</span> <span class="err">-rtbufsize</span> <span class="mi">100</span><span class="err">M</span> <span class="err">-bufsize</span> <span class="mi">512</span><span class="err">k</span> <span class="err">-preset</span> <span class="err">veryfast</span> <span class="err">-f</span> <span class="err">flv</span> <span class="err">rtmp://localhost:</span><span class="mi">1935</span><span class="err">/hls/$</span><span class="p">{</span><span class="err">name</span><span class="p">}</span><span class="err">_mid</span>
+                        <span class="err">-c:a</span> <span class="err">aac</span> <span class="err">-strict</span> <span class="mi">-2</span> <span class="err">-b:a</span> <span class="mi">128</span><span class="err">k</span> <span class="err">-c:v</span> <span class="err">libx</span><span class="mi">264</span> <span class="err">-x</span><span class="mi">264</span><span class="err">opts</span> <span class="err">bitrate=</span><span class="mi">512</span><span class="err">:vbv-maxrate=</span><span class="mi">512</span><span class="err">:vbv-bufsize=</span><span class="mi">512</span> <span class="err">-rtbufsize</span> <span class="mi">100</span><span class="err">M</span> <span class="err">-bufsize</span> <span class="mi">1024</span><span class="err">k</span> <span class="err">-preset</span> <span class="err">veryfast</span> <span class="err">-f</span> <span class="err">flv</span> <span class="err">rtmp://localhost:</span><span class="mi">1935</span><span class="err">/hls/$</span><span class="p">{</span><span class="err">name</span><span class="p">}</span><span class="err">_high;</span>
+        <span class="err">}</span>
+
+        <span class="err">application</span> <span class="err">hls</span> <span class="p">{</span>
+            <span class="err">live</span> <span class="err">on;</span>
+
+            <span class="err">hls</span> <span class="err">on;</span>
+            <span class="err">hls_path</span> <span class="err">/data/hls;</span>
+            <span class="err">hls_nested</span> <span class="err">on;</span>
+            <span class="err">hls_fragment</span> <span class="err">2s;</span>
+
+            <span class="err">hls_variant</span> <span class="err">_low</span> <span class="err">BANDWIDTH=160000;</span>
+            <span class="err">hls_variant</span> <span class="err">_mid</span> <span class="err">BANDWIDTH=320000;</span>
+            <span class="err">hls_variant</span> <span class="err">_high</span>  <span class="err">BANDWIDTH=640000;</span>
+        <span class="p">}</span>
+    <span class="err">}</span>
+<span class="err">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="broadcast-server">Broadcast server</h3>
+
+<ul>
+<li>mp4ファイルをFFmpegを使いループ再生させRTMP serverへストリームしている。</li>
+<li>Broadcast serverはコンテナの１つのためlocalhostではRTMP serverに接続できない。</li>
+<li>次のように環境変数を参照するようにしている。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">ffmpeg -re -stream_loop -1 -i <span class="s1">&#39;/data/broadcast_source.mp4&#39;</span> -f flv <span class="s2">&#34;</span><span class="si">${</span><span class="nv">RTMP_SERVER_URL</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">STREAM_NAME</span><span class="si">}</span><span class="s2">&#34;</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>docker-composeで環境変数 'RTMP_SERVER_URL'と'STREAM_NAME'を定義している。</li>
+</ul>
+
+<h3 id="streaming-server">Streaming server</h3>
+
+<ul>
+<li>NginxでHTTP serverをたてる。</li>
+<li>typesに'm3u8'と'ts'を追加している。</li>
+<li>rootを'/data'としてRTMP serverと同期しているm3u8とtsファイルにアクセスしている。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">server</span> <span class="p">{</span>
+        <span class="err">listen</span> <span class="err">80;</span>
+
+        <span class="err">location</span> <span class="err">/hls</span> <span class="err">{</span>
+            <span class="err">types</span> <span class="err">{</span>
+                <span class="err">application/vnd.apple.mpegurl</span> <span class="err">m3u8;</span>
+                <span class="err">video/mp2t</span> <span class="err">ts;</span>
+            <span class="p">}</span>
+            <span class="err">root</span> <span class="err">/data;</span>
+            <span class="err">add_header</span> <span class="err">Cache-Control</span> <span class="err">no-cache;</span>
+            <span class="err">add_header</span> <span class="err">Access-Control-Allow-Origin</span> <span class="err">*;</span>
+        <span class="err">}</span>
+    <span class="err">}</span>
+<span class="err">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="docker-compose">docker-compose</h2>
+
+<p>ホストとコンテナでファイルを同期しているのでdindを使いホストもコンテナ化しています。</p>
+
+<h3 id="ホスト側のdocker-compose">ホスト側のdocker-compose</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">version:</span> <span class="s2">&#34;3&#34;</span>
+
+<span class="err">services:</span>
+  <span class="err">dind_streaming_host:</span>
+    <span class="err">container_name:</span> <span class="err">streaming_host</span>
+    <span class="err">image:</span> <span class="err">docker:</span><span class="mf">1.13</span><span class="err">.</span><span class="mi">0</span><span class="err">-dind</span>
+    <span class="err">privileged:</span> <span class="kc">true</span>
+    <span class="err">ports:</span>
+      <span class="err">-</span> <span class="mi">5301</span><span class="err">:</span><span class="mi">2375</span>
+      <span class="err">-</span> <span class="mi">1935</span><span class="err">:</span><span class="mi">1935</span>
+      <span class="err">-</span> <span class="mi">80</span><span class="err">:</span><span class="mi">80</span>
+      <span class="err">-</span> <span class="mi">5000</span><span class="err">:</span><span class="mi">5000</span>
+    <span class="err">volumes:</span>
+      <span class="err">-</span> <span class="err">./video/clouds_over_the_mountain_hd_stock_video.mp</span><span class="mi">4</span><span class="err">.mp</span><span class="mi">4</span><span class="err">:/var/container/data/broadcast_source.mp</span><span class="mi">4</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>コンテナに必要なポートと<code>Broadcast server</code>から配信する動画をコンテナに同期しています。</p>
+
+<h3 id="コンテナ群のdocker-compose">コンテナ群のdocker-compose</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">version:</span> <span class="s2">&#34;3&#34;</span>
+
+<span class="err">services:</span>
+  <span class="err">rtmp:</span>
+    <span class="err">container_name:</span> <span class="err">rtmp_server</span>
+    <span class="err">build:</span> <span class="err">./container/nginx_rtmp</span>
+    <span class="err">ports:</span>
+      <span class="err">-</span> <span class="mi">1935</span><span class="err">:</span><span class="mi">1935</span>
+    <span class="err">volumes:</span>
+      <span class="err">-</span> <span class="err">/var/container/data:/data</span>
+      <span class="err">-</span> <span class="err">/var/container/log/rtmp/nginx/:/var/log/nginx</span>
+
+  <span class="err">stream:</span>
+    <span class="err">container_name:</span> <span class="err">stream_server</span>
+    <span class="err">build:</span> <span class="err">./container/nginx_stream</span>
+    <span class="err">ports:</span>
+      <span class="err">-</span> <span class="mi">80</span><span class="err">:</span><span class="mi">80</span>
+    <span class="err">volumes:</span>
+      <span class="err">-</span> <span class="err">/var/container/data:/data</span>
+      <span class="err">-</span> <span class="err">/var/container/log/stream/nginx/:/var/log/nginx</span>
+
+  <span class="err">broadcast:</span>
+    <span class="err">container_name:</span> <span class="err">broadcast_server</span>
+    <span class="err">build:</span> <span class="err">./container/ffmpeg_broadcast</span>
+    <span class="err">depends_on:</span>
+      <span class="err">-</span> <span class="err">rtmp</span>
+    <span class="err">environment:</span>
+      <span class="err">RTMP_SERVER_URL:</span> <span class="s2">&#34;rtmp://rtmp:1935/encoder&#34;</span>
+      <span class="err">STREAM_NAME:</span> <span class="err">broadcast</span>
+    <span class="err">volumes:</span>
+      <span class="err">-</span> <span class="err">/var/container/data/:/data</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="起動方法と動画配信方法">起動方法と動画配信方法</h2>
+
+<p>ホストとコンテナでファイルを同期しているのでdindを使いホストもコンテナ化しているので起動にはdindとdirenvが必要です。</p>
+
+<ul>
+<li><a href="https://hub.docker.com/_/docker/">Docker in Docker!</a></li>
+<li><a href="https://github.com/direnv/direnv">GitHub - direnv/direnv: Unclutter your .profile</a></li>
+</ul>
+
+<h3 id="docker-composeの起動方法">docker-composeの起動方法</h3>
+
+<p>まずはホスト側の起動から。<br/>
+もしdindのイメージがなければプルします。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">docker pull docker:1.13.0-dind</code></pre></td></tr></table>
+</div>
+</div>
+<p>ホスト側を起動します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ <span class="nb">cd</span> <span class="o">(</span>path-to <span class="s1">&#39;streaming-host-sample&#39;</span><span class="o">)</span>
+$ docker-compose up -d</code></pre></td></tr></table>
+</div>
+</div>
+<p>続いてコンテナ群をまとめているdocker-composeを起動します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ <span class="nb">cd</span> <span class="o">(</span>path-to <span class="s1">&#39;streaming_host&#39;</span><span class="o">)</span>
+direnv: loading .envrc
+direnv: <span class="nb">export</span> +DOCKER_HOST
+$ docker-compose up -d</code></pre></td></tr></table>
+</div>
+</div>
+<p>※ &lsquo;streaming_host&rsquo;ディレクトではdirenvによってディレクトリでは環境変数<code>DOCKER_HOST</code>が先に起動したdockerのホストに切り替わっています。これですべてのコンテナが起動できました。</p>
+
+<h4 id="動画の確認方法">動画の確認方法</h4>
+
+<p>コンテナが起動できたらsafariで<code>&lt;a href=&quot;http://localhost/hls/broadcast.m3u8&quot;&gt;http://localhost/hls/broadcast.m3u8&lt;/a&gt;</code>にアクセスすると<code>Broadcast server</code>から配信している動画を再生できます。<br/>
+今回はプレイヤーを用意せずsafariで直接m3u8を参照しています。
+<img src="/images/20170217113815.png" /></p>
+
+<p>サンプルの動画はDISTILLからDLしました。<a href="http://www.wedistill.io/">Distill: Free HD Stock Video &amp; HD Video Clips</a><br/></p>
+
+<h4 id="ライブ配信方法">ライブ配信方法</h4>
+
+<p>wirecastなどの配信ツールを使うことでライブ配信ができます。<a href="http://www.telestream.net/wirecast/overview.htm">Live Webcasting Software | Telestream Wirecast | Overview</a>出力先のRTMPサーバに&rsquo;rtmp://localhost:1935/encoder&rsquo;を指定します。<br/>
+ストリームを&rsquo;live&rsquo;として配信した場合は<a href="http://localhost/hls/live.m3u8">http://localhost/hls/live.m3u8</a>にアクセスするとライブ配信した動画を確認できます。</p>
+
+<h2 id="まとめ">まとめ</h2>
+
+<ul>
+<li>nginx-rtmp-moduleを使ったRTMPサーバのたて方が理解できた。有償なツールもあるがローカルでシュッと構築して確認するくらいなら今回の構成でもできる。</li>
+<li>ほとんど素の使い方なので低遅延に対する取り組みやm3u8,tsファイルの同期方法など現場では様々な工夫がされている。</li>
+<li>FFmpegのエンコードオプション周りはこれだけで新しいエントリが書けそうなくらいインプットがありそうな領域と感じた。今回は次のブログを参考にエンコード部分を参照させていただいた。</li>
+<li><a href="http://plaza.rakuten.co.jp/pirorin55/diary/201610100002/">Nginx rtmp配信 ffmpegを利用したマルチビットレート化成功 | パソコン王者 - 楽天ブログ</a></li>
+</ul>
+
+<h2 id="ソースを公開しています">ソースを公開しています</h2>
+
+<div class="github-card" data-user="nsoushi" data-repo="streaming-host-sample" data-width="400" data-height="" data-theme="default"></div>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/nginx/">nginx</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/rtmp/">rtmp</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/ffmpeg/">ffmpeg</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/docker/">Docker</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/hls/">HLS</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

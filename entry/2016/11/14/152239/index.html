@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Spring Boot &#43; Kotlinでmockitoを使ってモック化したテストコードを書く - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="今回はkotlinでmockito使って処理をモック化したテストコードを書いてみた。Mockito framework site セットアップ 1 2 3 4 5 6 7 dependencies { ... testCompile &#34;org.springframework.boot:spring-boot-starter-test&#34; testCompile">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Spring Boot &#43; Kotlinでmockitoを使ってモック化したテストコードを書く</h1>
+    <div class="post-meta">2016.11.14</div>
+  </header>
+  <div class="post-content">
+
+<p>今回はkotlinでmockito使って処理をモック化したテストコードを書いてみた。<a href="http://site.mockito.org/">Mockito framework site</a><br/></p>
+
+<h4 id="セットアップ">セットアップ</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">dependencies</span> <span class="p">{</span>
+   <span class="err">...</span>
+
+    <span class="err">testCompile</span> <span class="nt">&#34;org.springframework.boot:spring-boot-starter-test&#34;</span>
+    <span class="err">testCompile</span> <span class="s2">&#34;org.mockito:mockito-core:$mockito_core_version&#34;</span>
+    <span class="err">testCompile</span> <span class="err">&#39;junit</span><span class="p">:</span><span class="err">junit</span><span class="p">:</span><span class="err">$junit_version&#39;</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>※ mockitoは1.10.19を使いました。</p>
+
+<h4 id="モック化するクラス">モック化するクラス</h4>
+
+<ul>
+<li>Elasticsearchからデータを取得するサービスクラスを想定してモック化します。</li>
+<li>今回はモック化メインなのでElasticsearch側の処理は適当です。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">interface</span> <span class="nf">ElasticsearchClient</span> <span class="p">{</span>
+    <span class="n">fun</span> <span class="nf">foo</span><span class="p">()</span> <span class="o">:</span> <span class="n">String</span>
+<span class="p">}</span>
+
+<span class="nd">@Service</span>
+<span class="kd">class</span> <span class="nf">ElasticsearchClientImpl</span> <span class="o">:</span> <span class="n">ElasticsearchClient</span> <span class="p">{</span>
+    <span class="n">override</span> <span class="nf">fun</span> <span class="n">foo</span><span class="p">()</span> <span class="o">:</span> <span class="n">String</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s">&#34;foo&#34;</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>foo()メソッドは"foo"を返すように実装しています。</li>
+<li>このfoo()メソッドをコントローラーから呼び出し、コントローラーのテストでfoo()メソッドをモック化します。</li>
+</ul>
+
+<h4 id="テスト対象のコントローラー">テスト対象のコントローラー</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="nd">@RestController</span>
+<span class="nd">@EnableAutoConfiguration</span>
+<span class="nd">@ComponentScan</span>
+<span class="nd">@Api</span><span class="p">(</span><span class="n">description</span> <span class="o">=</span> <span class="s">&#34;ヘルスチェック&#34;</span><span class="p">)</span>
+<span class="n">open</span> <span class="nf">class</span> <span class="n">HealthCheckController</span> <span class="nf">constructor</span><span class="p">(</span><span class="n">val</span> <span class="nf">elasticsearchClient</span><span class="o">:</span> <span class="n">ElasticsearchClient</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="nd">@ApiModel</span>
+    <span class="n">data</span> <span class="nf">class</span> <span class="n">HealthCheck</span><span class="p">(</span>
+            <span class="nd">@ApiModelProperty</span><span class="p">(</span><span class="n">required</span> <span class="o">=</span> <span class="kc">true</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="s">&#34;結果&#34;</span><span class="p">,</span> <span class="n">example</span> <span class="o">=</span> <span class="s">&#34;true&#34;</span><span class="p">)</span>
+            <span class="n">val</span> <span class="nf">result</span><span class="o">:</span> <span class="n">Boolean</span><span class="p">,</span>
+            <span class="nd">@ApiModelProperty</span><span class="p">(</span><span class="n">required</span> <span class="o">=</span> <span class="kc">true</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="s">&#34;ステータス&#34;</span><span class="p">,</span> <span class="n">example</span> <span class="o">=</span> <span class="s">&#34;OK&#34;</span><span class="p">)</span>
+            <span class="n">val</span> <span class="nf">status</span><span class="o">:</span> <span class="n">String</span>
+    <span class="p">)</span>
+
+    <span class="nd">@ApiOperation</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&#34;ヘルスチェック&#34;</span><span class="p">)</span>
+    <span class="nd">@RequestMapping</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&#34;/health-check&#34;</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">arrayOf</span><span class="p">(</span><span class="n">RequestMethod</span><span class="p">.</span><span class="na">GET</span><span class="p">))</span>
+    <span class="n">fun</span> <span class="nf">index</span><span class="p">()</span><span class="o">:</span> <span class="n">Response</span><span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">HealthCheck</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">HealthCheck</span><span class="p">(</span><span class="kc">true</span><span class="p">,</span> <span class="s">&#34;OK&#34;</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="nd">@ApiOperation</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&#34;ヘルスチェック&#34;</span><span class="p">)</span>
+    <span class="nd">@RequestMapping</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&#34;/health-check/elasticsearch&#34;</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">arrayOf</span><span class="p">(</span><span class="n">RequestMethod</span><span class="p">.</span><span class="na">GET</span><span class="p">))</span>
+    <span class="n">fun</span> <span class="nf">elasticsearch</span><span class="p">()</span><span class="o">:</span> <span class="n">Response</span><span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">HealthCheck</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">HealthCheck</span><span class="p">(</span><span class="kc">true</span><span class="p">,</span> <span class="n">elasticsearchClient</span><span class="p">.</span><span class="na">foo</span><span class="p">()))</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>elasticsearch()ではfoo()メソッドを利用しています。</li>
+<li>運用時ではelasticsearch()はElasticsearchへリクエストを送信し正常に稼働しているかのヘルスチェックに利用します。</li>
+<li>では、テストコードでfoo()メソッドをモック化します。</li>
+</ul>
+
+<h4 id="テストコード">テストコード</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="nd">@RunWith</span><span class="p">(</span><span class="n">SpringJUnit4ClassRunner</span><span class="o">::</span><span class="n">class</span><span class="p">)</span>
+<span class="nd">@ContextConfiguration</span><span class="p">(</span><span class="n">classes</span> <span class="o">=</span> <span class="n">arrayOf</span><span class="p">(</span><span class="n">Application</span><span class="o">::</span><span class="n">class</span><span class="p">))</span>
+<span class="nd">@WebAppConfiguration</span>
+<span class="kd">class</span> <span class="nf">HealthCheckControllerTest</span> <span class="p">{</span>
+
+    <span class="n">lateinit</span> <span class="nf">var</span> <span class="n">mvc</span><span class="o">:</span> <span class="n">MockMvc</span>
+    <span class="nf">lateinit</span> <span class="n">var</span> <span class="nf">elasticsearchClient</span><span class="o">:</span> <span class="n">ElasticsearchClient</span>
+    <span class="nf">lateinit</span> <span class="n">var</span> <span class="nf">target</span><span class="o">:</span> <span class="n">HealthCheckController</span>
+
+    <span class="nd">@Before</span>
+    <span class="n">fun</span> <span class="nf">setup</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">elasticsearchClient</span> <span class="o">=</span> <span class="n">Mockito</span><span class="p">.</span><span class="na">mock</span><span class="p">(</span><span class="n">ElasticsearchClient</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">)</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">HealthCheckController</span><span class="p">(</span><span class="n">elasticsearchClient</span><span class="p">)</span>
+
+        <span class="n">MockitoAnnotations</span><span class="p">.</span><span class="na">initMocks</span><span class="p">(</span><span class="k">this</span><span class="p">)</span>
+        <span class="n">mvc</span> <span class="o">=</span> <span class="n">MockMvcBuilders</span><span class="p">.</span><span class="na">standaloneSetup</span><span class="p">(</span><span class="n">target</span><span class="p">).</span><span class="na">build</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="nd">@Test</span>
+    <span class="n">fun</span> <span class="nf">testElasticsearch</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">val</span> <span class="nf">type</span> <span class="o">=</span> <span class="n">Types</span><span class="p">.</span><span class="na">newParameterizedType</span><span class="p">(</span><span class="n">Response</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">,</span> <span class="n">HealthCheckController</span><span class="p">.</span><span class="na">HealthCheck</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">)</span>
+        <span class="n">val</span> <span class="nf">adapter</span><span class="o">:</span> <span class="n">JsonAdapter</span><span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Response</span><span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">HealthCheckController</span><span class="p">.</span><span class="na">HealthCheck</span><span class="o">&gt;&gt;</span> <span class="o">=</span> <span class="n">Moshi</span><span class="p">.</span><span class="na">Builder</span><span class="p">().</span><span class="na">build</span><span class="p">().</span><span class="na">adapter</span><span class="p">(</span><span class="n">type</span><span class="p">)</span>
+
+        <span class="n">Mockito</span><span class="p">.</span><span class="err">`</span><span class="n">when</span><span class="err">`</span><span class="p">(</span><span class="n">elasticsearchClient</span><span class="p">.</span><span class="na">foo</span><span class="p">()).</span><span class="na">thenReturn</span><span class="p">(</span><span class="s">&#34;NG&#34;</span><span class="p">)</span>
+
+        <span class="n">val</span> <span class="nf">result</span><span class="o">:</span> <span class="n">MvcResult</span> <span class="o">=</span> <span class="n">mvc</span><span class="p">.</span><span class="na">perform</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="s">&#34;/health-check/elasticsearch&#34;</span><span class="p">))</span>
+                <span class="p">.</span><span class="na">andExpect</span><span class="p">(</span><span class="n">status</span><span class="p">().</span><span class="na">isOk</span><span class="p">()).</span><span class="na">andReturn</span><span class="p">()</span>
+        <span class="n">val</span> <span class="nf">response</span> <span class="o">=</span> <span class="n">adapter</span><span class="p">.</span><span class="na">fromJson</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">response</span><span class="p">.</span><span class="na">contentAsString</span><span class="p">)</span>
+
+        <span class="n">assertThat</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="na">value</span><span class="p">.</span><span class="na">result</span><span class="p">,</span> <span class="n">Is</span><span class="p">.</span><span class="err">`</span><span class="n">is</span><span class="err">`</span><span class="p">(</span><span class="kc">true</span><span class="p">))</span>
+        <span class="n">assertThat</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="na">value</span><span class="p">.</span><span class="na">status</span><span class="p">,</span> <span class="n">Is</span><span class="p">.</span><span class="err">`</span><span class="n">is</span><span class="err">`</span><span class="p">(</span><span class="s">&#34;NG&#34;</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h5 id="setup-メソッド">setup()メソッド</h5>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java">    <span class="nd">@Before</span>
+    <span class="n">fun</span> <span class="nf">setup</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">elasticsearchClient</span> <span class="o">=</span> <span class="n">Mockito</span><span class="p">.</span><span class="na">mock</span><span class="p">(</span><span class="n">ElasticsearchClient</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">)</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">HealthCheckController</span><span class="p">(</span><span class="n">elasticsearchClient</span><span class="p">)</span>
+
+        <span class="n">MockitoAnnotations</span><span class="p">.</span><span class="na">initMocks</span><span class="p">(</span><span class="k">this</span><span class="p">)</span>
+        <span class="n">mvc</span> <span class="o">=</span> <span class="n">MockMvcBuilders</span><span class="p">.</span><span class="na">standaloneSetup</span><span class="p">(</span><span class="n">target</span><span class="p">).</span><span class="na">build</span><span class="p">()</span>
+    <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>上記のコードでHealthCheckControllerのElasticsearchClientクラスインスタンスをモック化しています。</li>
+</ul>
+
+<h5 id="モック化はどこで">モック化はどこで？</h5>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">Mockito</span><span class="p">.</span><span class="err">`</span><span class="n">when</span><span class="err">`</span><span class="p">(</span><span class="n">elasticsearchClient</span><span class="p">.</span><span class="na">foo</span><span class="p">()).</span><span class="na">thenReturn</span><span class="p">(</span><span class="s">&#34;NG&#34;</span><span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>上記のコードでfoo()メソッドの返り値が"NG"になるようにしています。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">assertThat</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="na">value</span><span class="p">.</span><span class="na">result</span><span class="p">,</span> <span class="n">Is</span><span class="p">.</span><span class="err">`</span><span class="n">is</span><span class="err">`</span><span class="p">(</span><span class="kc">true</span><span class="p">))</span>
+<span class="n">assertThat</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="na">value</span><span class="p">.</span><span class="na">status</span><span class="p">,</span> <span class="n">Is</span><span class="p">.</span><span class="err">`</span><span class="n">is</span><span class="err">`</span><span class="p">(</span><span class="s">&#34;NG&#34;</span><span class="p">))</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>アサーションでは正しく"NG"になるかチェックを行っています。</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/springboot/">springboot</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/mock/">mock</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

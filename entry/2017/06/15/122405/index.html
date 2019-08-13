@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Spring5.0 &#43; KotlinではDoma、Request Interceptorあたりはどうなっているのか調べてみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Spring5.0のリリースが迫るなか、プロジェクトへ導入に向けて色々と調べている。インタセプターなどのSpring Frameworkにおけ">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Spring5.0 &#43; KotlinではDoma、Request Interceptorあたりはどうなっているのか調べてみた</h1>
+    <div class="post-meta">2017.6.15</div>
+  </header>
+  <div class="post-content">
+
+<p>Spring5.0のリリースが迫るなか、プロジェクトへ導入に向けて色々と調べている。インタセプターなどのSpring Frameworkにおける作法はどうなっているか、便利に使えていたライブラリとの相性はどうなのか、などをアウトプットしていく。</p>
+
+<p>次の２つの<code>はてな？</code>を調べてみた。</p>
+
+<ul>
+<li>DBアクセスには<a href="http://doma.readthedocs.io/ja/stable/">Doma</a>を使いたい。Spring Transactionalの<code>@Transactional</code>も合わせて使える？</li>
+<li><code>HandlerInterceptorAdapter</code>や<code>@ControllerAdvice</code>などAOPが<a href="https://spring.io/blog/2016/09/22/new-in-spring-5-functional-web-framework#routerfunction">RouterFunction</a>で使いたいけど、どうすれば？</li>
+</ul>
+
+<p>それでは１つずつ整理していく。</p>
+
+<h3 id="domaとの相性">Domaとの相性</h3>
+
+<p>Spring Boot 1.5系とDomaの相性は良くSpring Transactionalの<code>@Transactional</code>も問題なく使えている。<br/>
+<code>@Transactional</code>の使い勝手は良くアノテーションを付けたメソッド無いでRuntimeExceptionが発生すればロールバックしてくれる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Transactional</span>
+<span class="k">override</span> <span class="k">fun</span> <span class="nf">invoke</span><span class="p">(</span><span class="n">command</span><span class="p">:</span> <span class="n">CreateTaskCommand</span><span class="p">):</span> <span class="n">Task</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">taskRepository</span><span class="p">.</span><span class="n">create</span><span class="p">(</span><span class="n">command</span><span class="p">.</span><span class="n">title</span><span class="p">).</span><span class="n">fold</span><span class="p">({</span>
+        <span class="n">task</span> <span class="p">-&gt;</span> <span class="n">task</span>
+    <span class="p">},</span> <span class="p">{</span>
+        <span class="n">error</span> <span class="p">-&gt;</span> <span class="k">throw</span> <span class="n">handle</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+    <span class="p">})</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>com.mysql.jdbc.ReplicationDriver</code>のドライバを使い <code>@Transactional(readOnly = true)</code>をつければスレーブに対してDBアクセスが行われる。</p>
+
+<p><a href="https://doma.readthedocs.io/ja/stable/kotlin-support/">DomaのKotlinサポートの対応方法</a>をベースにSpringBoot 2.0で試してみたところ、<strong>問題なく使えた！</strong></p>
+
+<p>Domaとの相性は問題ないと結果が得られたのでDBアクセスには引き続きDomaを使っていく。</p>
+
+<p>動いているコードは<a href="https://github.com/nsoushi/spring5-kotlin-application/tree/master/backend">github</a>にあるので合わせて参照ください。</p>
+
+<h3 id="routerfunctionでリクエストやexceptionを良しなに処理したい">RouterFunctionでリクエストやExceptionを良しなに処理したい</h3>
+
+<p><strong><span style="color: #ff5252">注意！FilterFunctionを用いたエラーハンドリングは正しくありません。Exceptionをエラーハンドリングしたい場合は <code>WebExceptionHandler</code>を使います。
+詳細は次のエントリにまとまっています。</span></strong></p>
+
+<p><a href="http://blog.soushi.me/entry/2017/12/27/210902">SpringBoot 2.0.0でRouterFunctionのエラーハンドリングをWebExceptionHandlerで行う - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<hr/>
+
+<p>HTTPリクエストをハンドリングするアプリケーションの関心事として次のようなものがある。</p>
+
+<ul>
+<li>HTTPリクエストをインターセプトして共通の処理を入れたい</li>
+<li>エラーレスポンスの扱いを共通化したい</li>
+</ul>
+
+<p>これらの関心事をSpring5.0から導入される<a href="https://spring.io/blog/2016/09/22/new-in-spring-5-functional-web-framework#routerfunction">RouterFunction</a>では、どのように解決すれば良いか。<br/>
+Spring4系であればHTTPリクエストのインターセプトには<code>HandlerInterceptorAdapter</code>を実装したクラスを用意すれば良かった。サービス層で発生したエクセプションに応じてエラーレスポンスを定義するクラスを<code>@ControllerAdvice</code>のアノテーションをつけたクラスを用意すれば良かった。</p>
+
+<p>RouterFunctionでは、<code>FilterFunction</code>をつかって２つの関心事を解決できる。<br/>
+コードとしては次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Configuration</span>
+<span class="k">class</span> <span class="nc">TaskRoutes</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">taskHandler</span><span class="p">:</span> <span class="n">TaskHandler</span><span class="p">,</span> <span class="k">private</span> <span class="k">val</span> <span class="py">exceptionFilter</span><span class="p">:</span> <span class="n">ExceptionFilter</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">@Bean</span>
+    <span class="k">fun</span> <span class="nf">taskRouter</span><span class="p">()</span> <span class="p">=</span> <span class="n">router</span> <span class="p">{</span>
+        <span class="p">(</span><span class="n">accept</span><span class="p">(</span><span class="n">APPLICATION_JSON</span><span class="p">)</span> <span class="n">and</span> <span class="s">&#34;/api&#34;</span><span class="p">).</span><span class="n">nest</span> <span class="p">{</span>
+            <span class="s">&#34;/task&#34;</span><span class="p">.</span><span class="n">nest</span> <span class="p">{</span>
+                <span class="n">POST</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">create</span><span class="p">)</span>
+                <span class="n">GET</span><span class="p">(</span><span class="s">&#34;/{id}&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">fetchByTaskId</span><span class="p">)</span>
+                <span class="n">PUT</span><span class="p">(</span><span class="s">&#34;/{id}&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">updateByTaskId</span><span class="p">)</span>
+                <span class="n">DELETE</span><span class="p">(</span><span class="s">&#34;/{id}&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">deleteByTaskId</span><span class="p">)</span>
+                <span class="n">PUT</span><span class="p">(</span><span class="s">&#34;/{id}/finish&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">finishByTaskId</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="s">&#34;/tasks&#34;</span><span class="p">.</span><span class="n">nest</span> <span class="p">{</span>
+                <span class="n">GET</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">fetchAll</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}.</span><span class="n">filter</span><span class="p">(</span><span class="n">exceptionFilter</span><span class="p">())</span>
+<span class="p">}</span>
+
+<span class="n">@Component</span>
+<span class="k">class</span> <span class="nc">ExceptionFilter</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">logger</span> <span class="p">=</span> <span class="n">KotlinLogging</span><span class="p">.</span><span class="n">logger</span> <span class="p">{}</span>
+
+    <span class="k">operator</span> <span class="k">fun</span> <span class="nf">invoke</span><span class="p">():</span> <span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">ServerRequest</span><span class="p">,</span> <span class="n">next</span><span class="p">:</span> <span class="n">HandlerFunction</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ServerResponse</span><span class="p">&gt;)</span> <span class="p">-&gt;</span> <span class="n">Mono</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ServerResponse</span><span class="p">&gt;</span> <span class="p">=</span> <span class="p">{</span> <span class="n">request</span><span class="p">,</span> <span class="n">next</span> <span class="p">-&gt;</span>
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="n">next</span><span class="p">.</span><span class="n">handle</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">Exception</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">when</span> <span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">is</span> <span class="n">SystemException</span> <span class="p">-&gt;</span> <span class="n">status</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">status</span><span class="p">).</span><span class="n">json</span><span class="p">().</span><span class="n">body</span><span class="p">(</span><span class="n">Mono</span><span class="p">.</span><span class="n">just</span><span class="p">(</span><span class="n">ErrorItem</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">message</span> <span class="o">?:</span> <span class="s">&#34;web application error&#34;</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">status</span><span class="p">.</span><span class="n">value</span><span class="p">().</span><span class="n">toString</span><span class="p">(),</span> <span class="k">null</span><span class="p">)))</span>
+                <span class="k">else</span> <span class="p">-&gt;</span> <span class="p">{</span>
+                    <span class="n">logger</span><span class="p">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="p">{</span> <span class="s">&#34;unknown exception: %s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">message</span> <span class="o">?:</span> <span class="s">&#34;unknown error&#34;</span><span class="p">)</span> <span class="p">}</span>
+                    <span class="n">status</span><span class="p">(</span><span class="n">HttpStatus</span><span class="p">.</span><span class="n">INTERNAL_SERVER_ERROR</span><span class="p">).</span><span class="n">json</span><span class="p">().</span><span class="n">body</span><span class="p">(</span><span class="n">Mono</span><span class="p">.</span><span class="n">just</span><span class="p">(</span><span class="n">ErrorItem</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">message</span> <span class="o">?:</span> <span class="s">&#34;internal server error&#34;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="k">null</span><span class="p">)))</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>.filter(exceptionFilter())</code>の箇所でFilter Functionを定義している。<br/>
+コードの例では<code>ExceptionFilter</code>クラスでは各APIで発生したExceptionをフィルタリングしている。Exceptionが発生した場合はエラーレスポンスを返すようにしている。これで例外処理をハンドリングできるインタセプターをRouterFunctionに追加できる。</p>
+
+<p>Spring4系で <code>HandlerInterceptorAdapter</code>と<code>@ControllerAdvice</code>で分かれていたところが<code>FilterFunction</code>に集約された格好である。</p>
+
+<h3 id="コード">コード</h3>
+
+<p>コードを書きながら調べたのでgithubと合わせて確認いただけます。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>Domaとの相性が問題ないことやHTTPハンドリングの関心事もRouterFunctionでも解決できることが分かった。</li>
+<li>並行してSpringFoxとの相性も調べている。APIドキュメントの快適さもSpring4系を使う恩恵があったのでSpring5.0からも問題なく使えることを期待している。</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/springboot/">springboot</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

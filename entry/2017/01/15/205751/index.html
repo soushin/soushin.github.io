@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Kotlin &#43; SelenideでE2E自動テストのアプリケーションをつくってみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="昨年末のAdvent Calendarを読み漁ってたときにSelenideやE2E、kotlinなどのキーワードが頭に残っていました。キーワー">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Kotlin &#43; SelenideでE2E自動テストのアプリケーションをつくってみた</h1>
+    <div class="post-meta">2017.1.15</div>
+  </header>
+  <div class="post-content">
+
+<p>昨年末のAdvent Calendarを読み漁ってたときにSelenideやE2E、kotlinなどのキーワードが頭に残っていました。キーワードを全部ひっくるめてkotlinでSelenideを使いE2Eテストをつくってみたいなぁと思いを馳せていたところ、プロジェクトでもE2Eテストの必要性が高まっている機運を感じ保守性と拡張性が高い設計を考えながらkotlinでE2Eテストアプリケーションをつくってみました。</p>
+
+<h2 id="はじめに">はじめに</h2>
+
+<h3 id="selenideについて">Selenideについて</h3>
+
+<p>SelenideはSeleniumeのラッパーです。<br/>
+<a href="http://selenide.org/">Selenide: concise UI tests in Java</a>SelenideではWebDriverは自動で閉じたりElementの取得にCSSセレクタが使えます。かなり使いやすい感じになっています。</p>
+
+<h4 id="selenium-webdriver">Selenium WebDriver:</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">WebElement</span> <span class="nf">customer</span> <span class="o">=</span> <span class="n">driver</span><span class="p">.</span><span class="na">findElement</span><span class="p">(</span><span class="n">By</span><span class="p">.</span><span class="na">id</span><span class="p">(</span><span class="s">&#34;customerContainer&#34;</span><span class="p">));</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="selenide">Selenide:</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">WebElement</span> <span class="nf">customer</span> <span class="o">=</span> <span class="n">$</span><span class="p">(</span><span class="s">&#34;#customerContainer&#34;</span><span class="p">);</span> </code></pre></td></tr></table>
+</div>
+</div>
+<p>次の比較ページが参考になります。<br/>
+<a href="https://github.com/codeborne/selenide/wiki/Selenide-vs-Selenium">Selenide vs Selenium · codeborne/selenide Wiki · GitHub</a><br/></p>
+
+<h3 id="e2eテスト自動化の必要性">E2Eテスト自動化の必要性</h3>
+
+<p>次の一休.comのスライドにあるように、<strong>ユーザに価値を届けるスピードを向上</strong>に限ります。<br/>
+<a href="https://speakerdeck.com/shotaakasaka/seleniumjp4-ikyu">一休.comのE2Eテスト事情 ~Selenium 3.0 対応~ /seleniumjp4_ikyu // Speaker Deck</a>また継続的インテグレーションの一環として必要なテストです。</p>
+
+<h2 id="何をテストするのか">何をテストするのか</h2>
+
+<p>前置きが長くなりましたが、ここからはアプリケーションについてまとめます。<br/>
+はじめにテスト内容は認証処理にしました。<a href="https://freshlive.tv/">FRESH!（フレッシュ） - 生放送がログイン不要・高画質で見放題</a>をテスト対象サイトにします。<a href="https://freshlive.tv/">FRESH!（フレッシュ） - 生放送がログイン不要・高画質で見放題</a>テスト対象ページにはコード認証画面があります。以下、認証画面で行う内容がE2Eテストの内容になります。</p>
+
+<ul>
+<li>認証画面のモジュールの整合性／画面内に必要な認証フォームが表示されているか、画面要素の崩れがないか（スクリーンショットを撮る）</li>
+<li>認証画面に遷移してコードを入力してログインできるか</li>
+</ul>
+
+<p>Specテストのステップにすると次のようになります。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin">    <span class="k">val</span> <span class="py">targetUrl</span> <span class="p">=</span> <span class="s">&#34;https://freshlive.tv/auth/code&#34;</span>
+    <span class="n">init</span> <span class="p">{</span>
+        <span class="n">given</span><span class="p">(</span><span class="s">&#34;GET: $targetUrl&#34;</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">`when`</span><span class="p">(</span><span class="s">&#34;非ログイン状態で認証ページを表示する&#34;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">then</span><span class="p">(</span><span class="s">&#34;画面構成に必要なモジュールがある&#34;</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="c1">// 認証ページへアクセスする
+</span><span class="c1"></span>                    <span class="c1">// スクリーンショットを保存する
+</span><span class="c1"></span>                    <span class="c1">// 認証フォームがあるか
+</span><span class="c1"></span>                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="n">`when`</span><span class="p">(</span><span class="s">&#34;非ログイン状態で認証ページに遷移して認証コードを入力する&#34;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">then</span><span class="p">(</span><span class="s">&#34;ログインができる&#34;</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="c1">// 認証ページへアクセスする
+</span><span class="c1"></span>                    <span class="c1">// 認証コードを入力する
+</span><span class="c1"></span>                    <span class="c1">// トップへアクセスしてログインできているか確認する
+</span><span class="c1"></span>                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="保守性と拡張性が高い設計を考える">保守性と拡張性が高い設計を考える</h3>
+
+<p>先程の一休.comのスライドでもふれていますが<strong>Page Object Design Pattern</strong>で作るのが定石です。画面を１つのオブジェクトとして扱いページオブジェクトとテストシナリオを分離するような設計をベースにします。<br/>
+またテストシナリオとテストデータを分離することでテストコードの拡張性の高さを保ちます。<br/>
+各オブジェクトクラスをまとめるパッケージ構成は次のスライドを参考にまとめました。<br/>
+<a href="http://www.slideshare.net/ssusere4f193/selenium2-36100497">Selenium2でつくるテストケースの構成について</a><br/></p>
+
+<h4 id="パッケージ構成">パッケージ構成</h4>
+
+<p>次のようなパッケージ構成にそれぞれ機能ごとのクラスを配置しページオブジェクトとテストシナリオ、テストシナリオとテストデータを分離します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">spec-test
+├── features
+├── fixtures
+├── modules
+├── operators
+├── pages
+└── support</code></pre></td></tr></table>
+</div>
+</div>
+<p>ここからは各パッケージについての解説です。<strong>featuresパッケージについて</strong><br/>
+テストシナリオをまとめるパッケージです。このパッケージ配下にテストシナリオのクラスをまとめます。<strong>fixturesパッケージについて</strong><br/>
+fixturesパッケージにはテストに必要なデータの雛形をまとめます。テストの度にシナリオにテストデータを記述することは面倒なので定型データは容易に参照できるようにオブジェクトにまとめます。fixturesパッケージのクラスにはdata classを使いました。kotlinのdata classは引数にデフォルト値を与えられることで雛形にするデータはデフォルト値にして上書きしたいデータは引数に渡すことでテストデータの拡張性を高く保てます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="c1">// ログインに必要な認証コードの雛形データ
+</span><span class="c1"></span><span class="k">data</span> <span class="k">class</span> <span class="nc">AuthCodeFixture</span><span class="p">(</span><span class="k">val</span> <span class="py">code</span><span class="p">:</span> <span class="n">String</span> <span class="p">=</span> <span class="s">&#34;123456789012&#34;</span><span class="p">)</span> </code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>modulesパッケージについて</strong><br/>
+参考にしたスライドにはないパッケージとなりますが、ページはモジュールの集合体です。１つのモジュールを複数のページで使うこともあります。１つのモジュールをオブジェクトクラスとしてmodulesパッケージにまとめます。このモジュールクラスは後述するページクラスから参照されます。以下、モジュールクラスの例です。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">interface</span> <span class="nc">Module</span> <span class="p">{</span>
+    <span class="cm">/**
+</span><span class="cm">     * WebElementの取得
+</span><span class="cm">     */</span>
+    <span class="k">fun</span> <span class="nf">getElement</span><span class="p">():</span> <span class="n">SelenideElement</span>
+<span class="p">}</span>
+
+<span class="k">abstract</span> <span class="k">class</span> <span class="nc">AuthCodeBodyModuleBase</span> <span class="p">:</span> <span class="n">Module</span> <span class="p">{</span>
+
+    <span class="k">companion</span> <span class="k">object</span> <span class="p">{</span>
+        <span class="k">const</span> <span class="k">val</span> <span class="py">cssSelector</span><span class="p">:</span> <span class="n">String</span> <span class="p">=</span> <span class="s">&#34;.AuthCode__body&#34;</span>
+    <span class="p">}</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * 認証コード入力モジュールの取得
+</span><span class="cm">     */</span>
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">getElement</span><span class="p">():</span> <span class="n">SelenideElement</span> <span class="p">=</span> <span class="n">Selenide</span><span class="p">.</span><span class="err">`$`</span><span class="p">(</span><span class="n">cssSelector</span><span class="p">)</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * 認証コード入力フィールドの取得
+</span><span class="cm">     */</span>
+    <span class="k">protected</span> <span class="k">fun</span> <span class="nf">authCodeInputElement</span><span class="p">():</span> <span class="n">SelenideElement</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">getElement</span><span class="p">().</span><span class="err">`$`</span><span class="p">(</span><span class="s">&#34;span input&#34;</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * 認証コード送信ボタンの取得
+</span><span class="cm">     */</span>
+    <span class="k">protected</span> <span class="k">fun</span> <span class="nf">authSubmitElement</span><span class="p">():</span> <span class="n">SelenideElement</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">getElement</span><span class="p">().</span><span class="err">`$`</span><span class="p">(</span><span class="s">&#34;button[type=submit]&#34;</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">AuthCodeBodyModule</span> <span class="p">:</span> <span class="n">AuthCodeBodyModuleBase</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">fun</span> <span class="nf">setAuthCodeInputValue</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">authCodeInputElement</span><span class="p">().</span><span class="n">`val`</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">fun</span> <span class="nf">getAuthSubmitElement</span><span class="p">()</span> <span class="p">=</span> <span class="n">authSubmitElement</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>上記はログイン認証を入力するフォームを表したモジュールクラスです。</li>
+<li>抽象クラス（AuthCodeBodyModuleBase）はモジュール内の各要素（SelenideElement）を取得するセレクタ記述を担当します。SelenideElementを返す役割に徹底させます。</li>
+<li>具象クラス（AuthCodeBodyModule）は抽象クラスの要素（SelenideElement）を外部クラスへ公開したり、要素から見出しテキストなどのプリミティブな型オブジェクトを返す役割を担当します。</li>
+<li>抽象クラスにメンテナンス性の高いコードを寄せ、具象クラスで利用をコントロールさせることで保守性と拡張性を高めます。</li>
+</ul>
+
+<p><strong>operatorsパッケージについて</strong><br/>
+operatorsパッケージにはログインをする、検索するなどページのオペレーションをまとめます。以下、オペレータクラスの例です。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">interface</span> <span class="nc">AuthCodeOperatorBase</span> <span class="p">{</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * 認証コードを入力します
+</span><span class="cm">     */</span>
+    <span class="k">fun</span> <span class="nf">input</span><span class="p">(</span><span class="n">module</span><span class="p">:</span> <span class="n">AuthCodeBodyModule</span><span class="p">,</span> <span class="n">code</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * 認証します
+</span><span class="cm">     */</span>
+    <span class="k">fun</span> <span class="nf">submit</span><span class="p">(</span><span class="n">module</span><span class="p">:</span> <span class="n">AuthCodeBodyModule</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">AuthCodeOperatorImpl</span> <span class="p">:</span> <span class="n">AuthCodeOperatorBase</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">input</span><span class="p">(</span><span class="n">module</span><span class="p">:</span> <span class="n">AuthCodeBodyModule</span><span class="p">,</span> <span class="n">code</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 認証コードのinputフィールドに認証コードを入力
+</span><span class="c1"></span>        <span class="n">module</span><span class="p">.</span><span class="n">setAuthCodeInputValue</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">submit</span><span class="p">(</span><span class="n">module</span><span class="p">:</span> <span class="n">AuthCodeBodyModule</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 認証処理を送信
+</span><span class="c1"></span>        <span class="n">module</span><span class="p">.</span><span class="n">getAuthSubmitElement</span><span class="p">().</span><span class="n">submit</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のように認証コードを入力して送信ボタンを押下するオペレーションがまとまりました。モジュールクラスから要素を取得しsetValueやsubmitなどのオペレーションを実行します。<strong>オペレータクラスの機能をページクラスに委譲させる</strong><br/>
+オペレータクラスは委譲を利用してページクラスに機能を委譲させます。次のようなコードでページクラスへオペレータクラスの処理を委譲させます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">abstract</span> <span class="k">class</span> <span class="nc">AuthCodePageBase</span> <span class="k">constructor</span><span class="p">(</span>
+        <span class="k">private</span> <span class="k">val</span> <span class="py">authCodeOperator</span><span class="p">:</span> <span class="n">AuthCodeOperatorBase</span><span class="p">,</span>
+        <span class="k">private</span> <span class="k">val</span> <span class="py">authCodeBodyModule</span><span class="p">:</span> <span class="n">AuthCodeBodyModule</span>
+<span class="p">)</span> <span class="p">:</span> <span class="n">PageBase</span><span class="p">(</span><span class="n">ScreenshotSupportImpl</span><span class="p">()),</span> <span class="n">AuthCodeOperatorBase</span> <span class="k">by</span> <span class="n">authCodeOperator</span> <span class="err">←</span> <span class="err">委譲させる</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>supportパッケージについて</strong>テストに共通して必要なユーティリティをパッケージにまとめます。<br/>
+スクリーンショットを撮る機能をsupportパッケージに配置しました。以下、スクリーンショットのユーティリティクラスです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">interface</span> <span class="nc">ScreenshotSupport</span> <span class="p">{</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * スクリーンショットを撮る
+</span><span class="cm">     */</span>
+    <span class="k">fun</span> <span class="nf">takeScreenshot</span><span class="p">(</span><span class="n">driver</span><span class="p">:</span> <span class="n">WebDriver</span><span class="p">):</span> <span class="n">BufferedImage</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * スクリーンショットをFilesystem保存する
+</span><span class="cm">     */</span>
+    <span class="k">fun</span> <span class="nf">storeImageToFs</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n">BufferedImage</span><span class="p">,</span> <span class="n">storePath</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">ScreenshotSupportImpl</span> <span class="p">:</span> <span class="n">ScreenshotSupport</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">takeScreenshot</span><span class="p">(</span><span class="n">driver</span><span class="p">:</span> <span class="n">WebDriver</span><span class="p">):</span> <span class="n">BufferedImage</span> <span class="p">{</span>
+        <span class="k">val</span> <span class="py">screenshot</span> <span class="p">=</span> <span class="n">AShot</span><span class="p">()</span>
+                <span class="p">.</span><span class="n">shootingStrategy</span><span class="p">(</span><span class="n">ShootingStrategies</span><span class="p">.</span><span class="n">viewportPasting</span><span class="p">(</span><span class="m">100</span><span class="p">))</span>
+                <span class="p">.</span><span class="n">takeScreenshot</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">screenshot</span><span class="p">.</span><span class="n">image</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">storeImageToFs</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n">BufferedImage</span><span class="p">,</span> <span class="n">storePath</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">ImageIO</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="s">&#34;PNG&#34;</span><span class="p">,</span> <span class="n">File</span><span class="p">(</span><span class="n">storePath</span><span class="p">));</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のユーティリティクラスはashotライブラリを利用して画面のスクリーンショットをサポートします。
+<div class="github-card" data-user="yandex-qatools" data-repo="ashot" data-width="400" data-height="" data-theme="default"></div>
+<br/>
+ashotを使うことでchromeブラウザで縦長な画面でも画面全体を撮ることができます。<br/>
+※画面をスクロールして撮るためヘッダー要素が追随する場合はヘッダー要素が連続して写ります。<strong>ユーティリティクラスの機能をページクラスに委譲させる</strong><br/>
+ユーティリティクラスも同様に委譲を利用してページクラスに機能を委譲させます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">abstract</span> <span class="k">class</span> <span class="nc">PageBase</span><span class="p">(</span><span class="n">screenshot</span><span class="p">:</span> <span class="n">ScreenshotSupport</span><span class="p">)</span> <span class="p">:</span> <span class="n">Page</span><span class="p">,</span> <span class="n">ScreenshotSupport</span> <span class="k">by</span> <span class="n">screenshot</span>　<span class="err">←</span>　<span class="err">委譲させる</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>pagesパッケージについて</strong><br/>
+pagesパッケージには先述したモジュールクラスを参照しページを表すページクラスをまとめます。またオペレータクラス、サポートクラスの処理を委譲させることでページクラスに全ての機能が集約されます。以下、ページクラスのコードです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">abstract</span> <span class="k">class</span> <span class="nc">PageBase</span><span class="p">(</span><span class="n">screenshot</span><span class="p">:</span> <span class="n">ScreenshotSupport</span><span class="p">)</span> <span class="p">:</span> <span class="n">Page</span><span class="p">,</span> <span class="n">ScreenshotSupport</span> <span class="k">by</span> <span class="n">screenshot</span>
+
+<span class="k">abstract</span> <span class="k">class</span> <span class="nc">AuthCodePageBase</span> <span class="k">constructor</span><span class="p">(</span>
+        <span class="k">private</span> <span class="k">val</span> <span class="py">authCodeOperator</span><span class="p">:</span> <span class="n">AuthCodeOperatorBase</span><span class="p">,</span>
+        <span class="k">private</span> <span class="k">val</span> <span class="py">authCodeBodyModule</span><span class="p">:</span> <span class="n">AuthCodeBodyModule</span>
+<span class="p">)</span> <span class="p">:</span> <span class="n">PageBase</span><span class="p">(</span><span class="n">ScreenshotSupportImpl</span><span class="p">()),</span> <span class="n">AuthCodeOperatorBase</span> <span class="k">by</span> <span class="n">authCodeOperator</span> <span class="p">{</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * 認証コードの入力フォームモジュールが配置されているか
+</span><span class="cm">     */</span>
+    <span class="k">protected</span> <span class="k">fun</span> <span class="nf">codeBodyModule</span><span class="p">():</span> <span class="n">AuthCodeBodyModule</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">authCodeBodyModule</span>
+    <span class="p">}</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * 認証コードを入力して認証する
+</span><span class="cm">     */</span>
+    <span class="k">protected</span> <span class="k">fun</span> <span class="nf">auth</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">authCodeOperator</span><span class="p">.</span><span class="n">input</span><span class="p">(</span><span class="n">authCodeBodyModule</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>
+        <span class="n">authCodeOperator</span><span class="p">.</span><span class="n">submit</span><span class="p">(</span><span class="n">authCodeBodyModule</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">AuthCodePage</span> <span class="p">:</span> <span class="n">AuthCodePageBase</span><span class="p">(</span><span class="n">AuthCodeOperatorImpl</span><span class="p">(),</span> <span class="n">AuthCodeBodyModule</span><span class="p">())</span> <span class="p">{</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * 認証コードの入力フォームモジュールが配置されているか
+</span><span class="cm">     */</span>
+    <span class="k">fun</span> <span class="nf">hasCodeBodyModule</span><span class="p">():</span> <span class="n">Boolean</span> <span class="p">=</span> <span class="n">codeBodyModule</span><span class="p">().</span><span class="n">getElement</span><span class="p">().</span><span class="n">`is`</span><span class="p">(</span><span class="n">enabled</span><span class="p">)</span>
+
+    <span class="cm">/**
+</span><span class="cm">     * 認証コードを入力して認証する
+</span><span class="cm">     */</span>
+    <span class="k">fun</span> <span class="nf">executeAuth</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">auth</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>こちらもmodulesパッケージと同様に抽象クラスと具象クラスで役割を分けます。</li>
+<li>抽象クラス（AuthCodePageBase）ではページに必要なモジュールを取得する役割やオペレータクラスから委譲された機能の利用を管理します。</li>
+<li>具象クラス（AuthCodePage）ではモジュール要素にアクセスしながらプリミティブな型を外部クラスに公開したり、オペレータクラスの機能を実行させるメソッドを提供します。</li>
+<li>具象クラスの各メソッドの返り値の型をプリミティブな型にすることでページクラスを利用するSpecテストではSelenide、Seleniumの機能の理解が必要なくページクラスの機能を扱えます。</li>
+</ul>
+
+<h3 id="完成したspecテスト">完成したSpecテスト</h3>
+
+<p>上記のパッケージ構成と各クラスの実装からSpecテストは次のようになりました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin">    <span class="k">val</span> <span class="py">url</span><span class="p">:</span> <span class="n">String</span> <span class="p">=</span> <span class="s">&#34;https://freshlive.tv/auth/code&#34;</span>
+    <span class="k">val</span> <span class="py">page</span> <span class="p">=</span> <span class="n">AuthCodePage</span><span class="p">()</span>
+
+    <span class="n">init</span> <span class="p">{</span>
+
+        <span class="n">given</span><span class="p">(</span><span class="s">&#34;GET: $targetUrl&#34;</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">`when`</span><span class="p">(</span><span class="s">&#34;非ログイン状態で認証ページを表示する&#34;</span><span class="p">)</span> <span class="p">{</span>
+
+                <span class="n">then</span><span class="p">(</span><span class="s">&#34;画面構成に必要なモジュールがある&#34;</span><span class="p">)</span> <span class="p">{</span>
+
+                    <span class="c1">// 認証ページへアクセス
+</span><span class="c1"></span>                    <span class="k">val</span> <span class="py">driver</span> <span class="p">=</span> <span class="n">page</span><span class="p">.</span><span class="k">open</span><span class="p">(</span><span class="n">targetUrl</span><span class="p">,</span> <span class="n">cookies</span> <span class="p">=</span> <span class="k">null</span><span class="p">)</span>
+                    <span class="c1">// スクリーンショットを撮って./screenshotsに画像を保存
+</span><span class="c1"></span>                    <span class="n">page</span><span class="p">.</span><span class="n">storeImageToFs</span><span class="p">(</span><span class="n">targetPage</span><span class="p">.</span><span class="n">takeScreenshot</span><span class="p">(</span><span class="n">driver</span><span class="p">),</span> <span class="s">&#34;./screenshots/auth_code.png&#34;</span><span class="p">)</span>
+                    <span class="c1">// 認証フォームがあるか
+</span><span class="c1"></span>                    <span class="n">page</span><span class="p">.</span><span class="n">hasCodeBodyModule</span><span class="p">()</span> <span class="n">shouldBe</span> <span class="k">true</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="n">`when`</span><span class="p">(</span><span class="s">&#34;非ログイン状態で認証ページに遷移して認証コードを入力する&#34;</span><span class="p">)</span> <span class="p">{</span>
+
+                <span class="n">then</span><span class="p">(</span><span class="s">&#34;ログインができる&#34;</span><span class="p">)</span> <span class="p">{</span>
+
+                    <span class="c1">// テストデータを参照する
+</span><span class="c1"></span>                    <span class="k">val</span> <span class="py">authCode</span> <span class="p">=</span> <span class="n">AuthCodeFixture</span><span class="p">(</span><span class="s">&#34;test_code:xxxxx&#34;</span><span class="p">)</span>
+                    <span class="c1">// 認証ページへアクセス
+</span><span class="c1"></span>                    <span class="k">val</span> <span class="py">driver</span> <span class="p">=</span> <span class="n">page</span><span class="p">.</span><span class="k">open</span><span class="p">(</span><span class="n">targetUrl</span><span class="p">,</span> <span class="n">cookies</span> <span class="p">=</span> <span class="k">null</span><span class="p">)</span>
+                    <span class="c1">// 認証コードの入力
+</span><span class="c1"></span>                    <span class="n">page</span><span class="p">.</span><span class="n">executeAuth</span><span class="p">(</span><span class="n">authCode</span><span class="p">.</span><span class="n">code</span><span class="p">)</span>
+                    <span class="c1">// トップへアクセス
+</span><span class="c1"></span>                    <span class="n">page</span><span class="p">.</span><span class="k">open</span><span class="p">(</span><span class="n">driver</span><span class="p">,</span> <span class="s">&#34;https://freshlive.tv/&#34;</span><span class="p">,</span> <span class="n">cookies</span> <span class="p">=</span> <span class="k">null</span><span class="p">)</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>fixtures, modules, operators, pagesが用途ごとに分離することで各パッケージとクラスの役割が明確になりました。</li>
+<li>委譲を利用することでページクラスに全ての機能を集約させることができました。</li>
+<li>Specテストは見通しの良いコードになりました。（ページクラスのメソッド返り値をプリミティブ型の返り値にまとめることが鍵です）</li>
+<li>kotlinで書いた所感として、data classや委譲など良い形で活用できたのとkotlinでもSelenideをベースにしたE2Eアプリケーションを書けたのでE2E自動テストのベース言語にkotlinいけるのではないかと感じました。</li>
+</ul>
+
+<h2 id="ソースを公開しています">ソースを公開しています</h2>
+
+<p>今回はポイントごとにコードをコピペしたので全容はgithubを参照ください。<br/></p>
+
+<p><a href="https://github.com/soushin/selenide-test">https://github.com/soushin/selenide-test</a></p>
+
+<h3 id="参考にさせていただいたページ">参考にさせていただいたページ</h3>
+
+<p>アプリケーション開発にあたって次のページを参考にさせていただきました。先駆者の方々ありがとうございます。</p>
+
+<p><ul>
+<li><a href="http://www.slideshare.net/ssusere4f193/selenium2-36100497">Selenium2でつくるテストケースの構成について</a></li>
+<li><a href="http://qiita.com/shimashima35/items/6d39be9a4fea05dcc84f">SelenideによるDSL風E2E自動テスト基盤開発の実例 - Qiita</a></li>
+<li><a href="http://qiita.com/hainet/items/423732f075d523f06d25">【pom+5行で解決】Selenium WebDriverでブラウザを問わずページ全体のスクリーンショットを撮影する - Qiita</a></li>
+</ul>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/e2e/">E2E</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/selenide/">Selenide</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/selenium/">Selenium</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/test/">Test</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Pact Broker DockerコンテナをつかってPact Broker環境を構築してみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Consumer-Driven Contract テストをフレームワークさせるPactをつかったサンプルプロジェクトを前回のエントリでは紹介しました。 golang - kotlinのmicroserv">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Pact Broker DockerコンテナをつかってPact Broker環境を構築してみた</h1>
+    <div class="post-meta">2017.2.5</div>
+  </header>
+  <div class="post-content">
+
+<p>Consumer-Driven Contract テストをフレームワークさせるPactをつかったサンプルプロジェクトを前回のエントリでは紹介しました。<br/>
+<a href="https://blog.soushi.me/entry/2017/01/28/215229">golang - kotlinのmicroservice構成のConsumer-Driven Contract testingをpactをつかって作ってみた - 平日インプット週末アウトプットぶろぐ</a>前回のエントリではPactファイルをConsumerとProviderともにファイルシステムを用いて参照していました。<br/>
+Pact Brokerを導入すればPactファイルのレポジトリ環境が構築できます。<br/>
+今回のエントリではPact Brokerの構築を紹介します。</p>
+
+<h2 id="pact-broker">Pact Broker</h2>
+
+<p>Pact Brokerはこちらのgithubレポジトリから参照できます。<br/></p>
+
+<div class="github-card" data-user="bethesque" data-repo="pact_broker" data-width="400" data-height="" data-theme="default"></div>
+
+<p>Pact Brokerの特徴を抜粋すると</p>
+
+<ul>
+<li>ConsumerとProviderの間のPact共有の課題を解決する</li>
+<li>Pactの管理をPact Brokerが一元管理するためConsumerとProviderともにPact管理／Pactリリースの手間がなくなる</li>
+<li>最新のAPIドキュメント管理をPact Borkerが保証する</li>
+<li>サービスが提供するAPIのインタラクションが確認できる</li>
+<li>microserviceの依存関係をビジュアライズする</li>
+</ul>
+
+<p>特徴については<a href="https://github.com/bethesque/pact_broker#screenshots">スクリーンショット</a>も合わせて参照ください。</p>
+
+<h3 id="pact-broker-docker-container">Pact Broker Docker container</h3>
+
+<p>Pact Brokerをローカルに構築していきます。Pact BrokerのDockerコンテナが用意されていますので今回はこちらを使います。<a href="https://hub.docker.com/r/dius/pact_broker/">https://hub.docker.com/r/dius/pact_broker/</a>DBにPostgresを推奨していますので合わせてPostgresのDocker Containerを使います。<br/>
+ここで２つのコンテナが必要になったのでDocker Composeで構成をまとめるついでにMackerelのコンテナも構成に入れてコンテナ監視もさせてみます。</p>
+
+<h3 id="dind-docker-in-docker-をつかってローカルでpact-brokerを動かす">dind（Docker in Docker）をつかってローカルでPact Brokerを動かす</h3>
+
+<p>Mackerelコンテナはホストのdocker.sockをvolumesを用いてコンテナにリンクさせる必要があるのでローカルで動かすときはDocker In Dockerがしたくなります。<br/>
+ローカルPCにホストとなるコンテナを立てて、その中にPact Broker、Postgres、Mackerelのコンテナをぶら下げたいのですが、この課題を解決してくれるのがこちらの記事です。<br/>
+<a href="http://blog.stormcat.io/entry/docker-dind-compose">dind(Docker in Docker)で複数のdocker-composeを管理する - tehepero note(・ω&lt;)</a>この記事に習い次のような構成でDocker in DockerをローカルPCに構築しました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">pact-broker-host
+├── container
+│   ├── mackerel-agent
+│   │   ├── Dockerfile
+│   │   ├── mackerel-agent
+│   │   │   └── mackerel-agent.conf
+│   │   └── startup.sh
+│   ├── pact-broker
+│   │   └── Dockerfile
+│   └── postgres
+│       ├── Dockerfile
+│       └── init_db.sql
+└── docker-compose.yml</code></pre></td></tr></table>
+</div>
+</div>
+<p>dind + direnvコンボのローカル環境構築はとても捗ります。ぜひ参考に。</p>
+
+<h3 id="pact-brokerの機能をザッと確認">Pact Brokerの機能をザッと確認</h3>
+
+<p>先のコンテナ構成を起動しlocalhost:8080にアクセスするとPact Brokerの管理ツールがお目見えします。</p>
+
+<h4 id="１-consumerがpactファイルをpact-brokerにパブリッシュする">１：ConsumerがPactファイルをPact Brokerにパブリッシュする</h4>
+
+<p>Pact BrokerにPactファイルがないと機能が確認できませんので次のPactファイルをPact Brokerへパブリッシュします。<strong>Pactファイル</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+	<span class="nt">&#34;consumer&#34;</span><span class="p">:</span> <span class="p">{</span>
+		<span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;gateway_service&#34;</span>
+	<span class="p">},</span>
+	<span class="nt">&#34;provider&#34;</span><span class="p">:</span> <span class="p">{</span>
+		<span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;user_service&#34;</span>
+	<span class="p">},</span>
+	<span class="nt">&#34;interactions&#34;</span><span class="p">:</span> <span class="p">[</span>
+		<span class="p">{</span>
+			<span class="nt">&#34;provider_state&#34;</span><span class="p">:</span> <span class="s2">&#34;there is a user named 1192-User&#34;</span><span class="p">,</span>
+			<span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;a get request for a user&#34;</span><span class="p">,</span>
+			<span class="nt">&#34;request&#34;</span><span class="p">:</span> <span class="p">{</span>
+				<span class="nt">&#34;method&#34;</span><span class="p">:</span> <span class="s2">&#34;GET&#34;</span><span class="p">,</span>
+				<span class="nt">&#34;path&#34;</span><span class="p">:</span> <span class="s2">&#34;/user/1192&#34;</span>
+			<span class="p">},</span>
+			<span class="nt">&#34;response&#34;</span><span class="p">:</span> <span class="p">{</span>
+				<span class="nt">&#34;body&#34;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="nt">&#34;Name&#34;</span><span class="p">:</span> <span class="s2">&#34;1192-User&#34;</span>
+				<span class="p">},</span>
+				<span class="nt">&#34;headers&#34;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="nt">&#34;Content-Type&#34;</span><span class="p">:</span> <span class="s2">&#34;application/json&#34;</span>
+				<span class="p">},</span>
+				<span class="nt">&#34;status&#34;</span><span class="p">:</span> <span class="mi">200</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">],</span>
+	<span class="nt">&#34;metaData&#34;</span><span class="p">:</span> <span class="p">{</span>
+		<span class="nt">&#34;pactSpecificationVersion&#34;</span><span class="p">:</span> <span class="s2">&#34;1.1.0&#34;</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Pactファイルをパブリッシュする</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">curl -v -XPUT <span class="se">\-</span>H <span class="s2">&#34;Content-Type: application/json&#34;</span> <span class="se">\
+</span><span class="se"></span>-d@pacts/gateway_service-user_service.json <span class="se">\
+</span><span class="se"></span>http://localhost:8080/pacts/provider/user_service/consumer/gateway_service/version/1.0.1</code></pre></td></tr></table>
+</div>
+</div>
+<p>運用イメージとしてはこのパブリッシュアクションをCircleCIなどのビルドタスクに入れます。※ 1.0.1のバージョンを更新していくことでPact Brokerがバージョン管理をしてくれます。</p>
+
+<h4 id="２-pact-brokerではgateway-service-consumer-とuser-serivce-provider-の関係が管理されている">２：Pact Brokerではgateway_service（Consumer）とuser_serivce（Provider）の関係が管理されている</h4>
+
+<p><strong>ConsumerとProviderのリスト</strong><br/>
+<img src="/images/20170204232556.png"/></p>
+
+<ul>
+<li>user_serviceのConsumerがProviderであることが明確になっています。</li>
+</ul>
+
+<p><strong>パブリッシュしたPactファイルから生成されたAPIドキュメント</strong></p>
+
+<p><img src="/images/20170204232645.png" /></p>
+
+<ul>
+<li>今回はAPIのインタラクションが１つだけでしたが複数登録すればAPIドキュメントがPact Brokerに一元管理できます。</li>
+</ul>
+
+<p><strong>ConsumerとProviderのNetwork Graph</strong></p>
+
+<p><img src="/images/20170204235439.png" /></p>
+
+<ul>
+<li>サービスから矢印が向いているとConsumer→Providerの関係を表します。</li>
+<li>このサービスはどのサービスから参照されているか図解してくれます。</li>
+</ul>
+
+<p>※ 関係図を充実させるためにgateway_serviceとuser_serivce以外のサービスも増やしました。</p>
+
+<h4 id="３-pact-brokerからpactファイルを参照してprovider側でcdcテストを実行する">３：Pact BrokerからPactファイルを参照してProvider側でCDCテストを実行する</h4>
+
+<p>サンプルのProviderは<a href="https://github.com/DiUS/pact-jvm">pact-jvm</a>を使っています。<br/>
+Pact Brokerと簡単に連携できる@アノテーションが用意されています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="nd">@PactBroker</span><span class="p">(</span><span class="n">host</span> <span class="o">=</span> <span class="s">&#34;localhost&#34;</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="s">&#34;8080&#34;</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">arrayOf</span><span class="p">(</span><span class="s">&#34;latest&#34;</span><span class="p">))</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のアノテーションを加えテストを実行するとPact BrokerからPactファイルを取り出しCDCテストが行われます。</p>
+
+<h2 id="まとめ">まとめ</h2>
+
+<p>Pactを使えばCDCテストのフレームワーク化の恩恵が受けられ更にPact Brokerを導入することでPactファイルの管理からAPIドキュメント、ConsumerとProviderのNetwork GraphなどなどCDCテストの運用の手助けが手厚く受けられます。<br/>
+管理下のmicroserviceすべてにCDCテスト + Pactの導入は腰が重いのでクリティカルなmicroservice間の連携の一部から導入を開始したり、外部に公開するAPIはProviderとしてPactファイルのテストを導入してConsumer側にAPI仕様をクリアにすることもできますしCDCテスト+Pactの知見を活かせるところを今後は探っていきます。</p>
+
+<h2 id="ソースを公開しています">ソースを公開しています</h2>
+
+<div class="github-card" data-user="nsoushi" data-repo="cdc-test-sample" data-width="400" data-height="" data-theme="default"></div>
+
+<h2 id="関連エントリ">関連エントリ</h2>
+
+<p><a href="https://blog.soushi.me/entry/2017/01/28/215229">golang - kotlinのmicroservice構成のConsumer-Driven Contract testingをpactをつかって作ってみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/cdc/">CDC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/pact/">Pact</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/docker/">Docker</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/pact-broker/">Pact Broker</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/e2e/">E2E</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

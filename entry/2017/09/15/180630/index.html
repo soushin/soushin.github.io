@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>jackson.datatypeをつかってiOSのレシートの日付文字列をデシアライズする - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="iOSアプリで購入したアイテムのレシート検証を実装する過程でレシートに含まれる日付文字列をdata classにデシアライズしてみた。 レシート">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">jackson.datatypeをつかってiOSのレシートの日付文字列をデシアライズする</h1>
+    <div class="post-meta">2017.9.15</div>
+  </header>
+  <div class="post-content">
+
+<p>iOSアプリで購入したアイテムのレシート検証を実装する過程でレシートに含まれる日付文字列をdata classにデシアライズしてみた。</p>
+
+<p>レシートに含まれる日付は次のような形となっている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">&#34;expires_date&#34;: &#34;2016-06-17 01:32:28 Etc/GMT&#34;</pre></td></tr></table>
+</div>
+</div>
+<p>見慣れないタイムゾーンを表す<code>Etc/GMT</code>の文字列があった。</p>
+
+<p><a href="https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html#patterns">DateTimeFormatter (Java Platform SE 8 )</a></p>
+
+<p>上記を参照すると次のように定義されている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">V       time-zone ID                zone-id           America/Los_Angeles; Z; -08:30</pre></td></tr></table>
+</div>
+</div>
+<p>この定義からDateTimeFormatter は次のように定義する必要がある。※ Vは２つ<code>VV</code>。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">&#34;yyyy-MM-dd HH:mm:ss VV&#34;</pre></td></tr></table>
+</div>
+</div>
+<p>このフォーマットをもとにJson文字列から定義したdata classへデシアライズしてみよう。</p>
+
+<h3 id="デシアライズするdata-classを定義する">デシアライズするdata classを定義する</h3>
+
+<p>デシアライズするdata classは次のようなに定義した。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">data</span> <span class="k">class</span> <span class="nc">MyState</span><span class="p">(</span>
+        <span class="n">@JsonProperty</span><span class="p">(</span><span class="s">&#34;expiration_date&#34;</span><span class="p">)</span>
+        <span class="n">@JsonFormat</span><span class="p">(</span><span class="n">pattern</span> <span class="p">=</span> <span class="s">&#34;yyyy-MM-dd HH:mm:ss VV&#34;</span><span class="p">)</span>
+        <span class="k">val</span> <span class="py">expirationDate</span><span class="p">:</span> <span class="n">ZonedDateTime</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>JSONにある<code>expiration_date</code>はdata classでは文字列ではなく日付系の型に変換したい。<br/>
+ここで重要な点がある。<br/>
+日付文字列には<code>Etc/GMT</code>のタイムゾーンが含まれるためLocalDateTimeには変換できない。LocalDateTimeはタイムゾーンを持たないからである。<br/>
+そのため<code>ZonedDateTime</code>に変換し <code>expirationDate.toLocalDateTime()</code>とすることでLocalDateTimeが取得することができる。</p>
+
+<p>data classの準備はこれで整った。</p>
+
+<h3 id="jackson-datatypeをつかう">jackson.datatypeをつかう</h3>
+
+<p>ここでエントリのタイトルにもある<code>jackson.datatype</code>が登場する。<br/>
+Json &lt;-&gt; DataClassのシリアライズ／デシアライズにはkotlinモジュールも整っているので<code>jackson</code>を採用したい。</p>
+
+<p>日付型に変換が必要であれば<code>jackson.datatype</code>が必要である。gradleに依存を追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">compile &#39;com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.1&#39;</pre></td></tr></table>
+</div>
+</div>
+<p>そしてObjectMapperの初期化に<code>JavaTimeModule</code>を追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">objectMapper</span> <span class="p">=</span> <span class="n">ObjectMapper</span><span class="p">()</span>
+        <span class="p">.</span><span class="n">registerModule</span><span class="p">(</span><span class="n">KotlinModule</span><span class="p">())</span>
+        <span class="p">.</span><span class="n">configure</span><span class="p">(</span><span class="n">DeserializationFeature</span><span class="p">.</span><span class="n">FAIL_ON_UNKNOWN_PROPERTIES</span><span class="p">,</span> <span class="k">false</span><span class="p">)</span>
+        <span class="p">.</span><span class="n">registerModule</span><span class="p">(</span><span class="n">JavaTimeModule</span><span class="p">())</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>これでiOSのレシートでつかわれる日付文字列を日付型に定義したdata classにデシアライズできる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">SandboxTest</span> <span class="p">{</span>
+
+    <span class="n">@Test</span>
+    <span class="k">fun</span> <span class="nf">deserialize</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">Sandbox</span><span class="p">.</span><span class="n">deserialize</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">MyState</span><span class="p">&gt;(</span><span class="n">json</span><span class="p">).</span><span class="n">let</span> <span class="p">{</span>
+            <span class="n">format</span><span class="p">(</span><span class="n">formatter</span><span class="p">)(</span><span class="n">it</span><span class="p">.</span><span class="n">expirationDate</span><span class="p">.</span><span class="n">toLocalDateTime</span><span class="p">())</span> <span class="n">shouldBe</span> <span class="s">&#34;2016-06-17 01:27:28&#34;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">fun</span> <span class="nf">format</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">DateTimeFormatter</span><span class="p">):</span> <span class="p">(</span><span class="n">LocalDateTime</span><span class="p">)</span> <span class="p">-&gt;</span> <span class="n">String</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="p">{</span> <span class="n">date</span> <span class="p">-&gt;</span> <span class="n">f</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">date</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">formatter</span> <span class="p">=</span> <span class="n">DateTimeFormatter</span><span class="p">.</span><span class="n">ofPattern</span><span class="p">(</span><span class="s">&#34;yyyy-MM-dd HH:mm:ss&#34;</span><span class="p">)</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">json</span> <span class="p">=</span> <span class="s">&#34;&#34;&#34;
+</span><span class="s"></span><span class="p">{</span>
+  <span class="s">&#34;expiration_date&#34;</span><span class="p">:</span> <span class="s">&#34;2016-06-17 01:27:28 Etc/GMT&#34;</span>
+<span class="p">}</span>
+<span class="s">&#34;&#34;&#34;
+</span><span class="s"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li><code>2016-06-17 01:32:28 Etc/GMT</code>のようなフォーマットをjacksonでデシアライズする方法をまとめた。</li>
+<li>タイトルのナレッジの日本語エントリが少なかったのとレシート検証している人も多いだろうし備忘録として溜めておく。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>コードはgithubにあります。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="sandbox-kt" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p><code>soushin.sandbox.kt.jackson</code> を参照してください。</p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/jackson/">jackson</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/json/">json</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/datetype/">datetype</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

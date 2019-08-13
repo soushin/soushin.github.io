@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>KotlinでMockテストのまとめ - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="1ヶ月ほどkotlinで開発をしてきて、不慣れなkotlinであってもテストをしっかり書いていこうと目標を立て臨んだ1ヶ月。 おかげでkotl">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">KotlinでMockテストのまとめ</h1>
+    <div class="post-meta">2017.1.9</div>
+  </header>
+  <div class="post-content">
+
+<p>1ヶ月ほどkotlinで開発をしてきて、不慣れなkotlinであってもテストをしっかり書いていこうと目標を立て臨んだ1ヶ月。<br/>
+おかげでkotlinにおけるMockテストの知見が溜まってきたので、この機会にまとめていきます。javaではJMockitでMockテストを書いてきたけど、いざkotlinでとなると弊害が多くMockitoやPowerMockに置き換えながら試していった。</p>
+
+<h3 id="どんなテストをするのか">どんなテストをするのか</h3>
+
+<p>トランザクションで扱う複数の関数のテストを次のように実現できるとプログラムを網羅的にテストできるでしょう。</p>
+
+<ul>
+<li>クラス全体のパブリック関数のモック</li>
+<li>クラス一部分のパブリック関数のモック</li>
+<li>呼び出す関数の引数のモック（anyString()やany()を使う）</li>
+<li>クラスのプライベート関数のモック</li>
+<li>クラスのプライベート関数のアサーションテスト</li>
+</ul>
+
+<h3 id="何をつかったか">何をつかったか</h3>
+
+<p>次のテストライブラリを使いました。
+<div class="github-card" data-user="powermock" data-repo="powermock" data-width="400" data-height="" data-theme="default"></div></p>
+
+<ul>
+<li>Powermockはトランザクションで実行されるプライベート関数のモックに使います。</li>
+<li>PowermockにはMockitoが内包されています。Mockitはクラス全体のパブリック関数のモックや一部分のパブリック関数のモックに使います。</li>
+</ul>
+
+<p><a href="http://jmockit.org/">The JMockit testing toolkit</a></p>
+
+<ul>
+<li>JMockitはプライベート関数のアサーションテストに使います。（特にJMockitでなくても良いかなという感じです）</li>
+</ul>
+
+<div class="github-card" data-user="kotlintest" data-repo="kotlintest" data-width="400" data-height="" data-theme="default"></div>
+
+<p>テストケースはJUnitではなく、kotlintestを使いました。BehaviorSpecを使うとテストコードの見通しが良くなりますね。後述しますがPowermockを使う場合はJUnitでないと動かないところがあるのでJUnitも使っています。</p>
+
+<h3 id="それではテストコードのまとめです">それではテストコードのまとめです</h3>
+
+<h4 id="テスト対象とするクラスの説明">テスト対象とするクラスの説明</h4>
+
+<p>次のようなinterfaceを用意しました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">interface</span> <span class="nc">Ppap</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">leftHand</span><span class="p">(</span><span class="n">sing</span><span class="p">:</span> <span class="n">Boolean</span><span class="p">):</span> <span class="n">String</span>
+    <span class="k">fun</span> <span class="nf">rightHand</span><span class="p">(</span><span class="n">sing</span><span class="p">:</span> <span class="n">Boolean</span><span class="p">):</span> <span class="n">String</span>
+    <span class="k">fun</span> <span class="nf">woo</span><span class="p">(</span><span class="n">right</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">left</span><span class="p">:</span> <span class="n">String</span><span class="p">):</span> <span class="n">String</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>ピコ太郎のPPAPソングをクラス表現しました。</p>
+
+<ul>
+<li>leftHand(sing: Boolean)関数は左手に持っているモノを返す関数です。引数のsingがtrueだと歌詞を返し、falseだとモノの名前を返します。（rightHand(sing: Boolean)関数も右手に持つモノで振る舞いは一緒です）</li>
+<li>woo(right: String, left: String)は右手と左手のモノを合わせた歌詞を返します。</li>
+</ul>
+
+<p>Ppapの実装クラスです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">open</span> <span class="k">class</span> <span class="nc">PpapImpl</span> <span class="k">constructor</span><span class="p">(</span><span class="k">val</span> <span class="py">right</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="k">val</span> <span class="py">left</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">:</span> <span class="n">Ppap</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">iHaveA</span> <span class="p">=</span> <span class="s">&#34;I have&#34;</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">leftHand</span><span class="p">(</span><span class="n">sing</span><span class="p">:</span> <span class="n">Boolean</span><span class="p">):</span> <span class="n">String</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">sing</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s">&#34;$iHaveA $left.&#34;</span>
+        <span class="k">else</span>
+            <span class="k">return</span> <span class="n">getObj</span><span class="p">(</span><span class="n">left</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">rightHand</span><span class="p">(</span><span class="n">sing</span><span class="p">:</span> <span class="n">Boolean</span><span class="p">):</span> <span class="n">String</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">sing</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s">&#34;$iHaveA $right.&#34;</span>
+        <span class="k">else</span>
+            <span class="k">return</span> <span class="n">getObj</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">woo</span><span class="p">(</span><span class="n">right</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">left</span><span class="p">:</span> <span class="n">String</span><span class="p">):</span> <span class="n">String</span> <span class="p">=</span> <span class="s">&#34;%s%s.&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
+
+    <span class="k">private</span> <span class="k">fun</span> <span class="nf">getObj</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">obj</span><span class="p">.</span><span class="n">split</span><span class="p">(</span><span class="n">Regex</span><span class="p">(</span><span class="s">&#34;\\s+&#34;</span><span class="p">)).</span><span class="k">get</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>こちらの<a href="https://github.com/nsoushi/kotlin-mock-test/blob/master/src/test/kotlin/nsoushi/mocktest/PpapImplTest.kt#L20-L45">テストコード</a>を見て頂くとプログラムのイメージが伝わるはずです。PpapImplを使ってPPAPソングを歌うPpapSongクラスを用意しました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">PpapSong</span> <span class="k">constructor</span><span class="p">(</span><span class="k">val</span> <span class="py">ppap</span><span class="p">:</span> <span class="n">PpapImpl</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">fun</span> <span class="nf">sing</span><span class="p">():</span> <span class="n">String</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s">&#34;%s %s woo %s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">ppap</span><span class="p">.</span><span class="n">rightHand</span><span class="p">(</span><span class="k">true</span><span class="p">),</span>
+                <span class="n">ppap</span><span class="p">.</span><span class="n">leftHand</span><span class="p">(</span><span class="k">true</span><span class="p">),</span>
+                <span class="n">ppap</span><span class="p">.</span><span class="n">woo</span><span class="p">(</span><span class="n">ppap</span><span class="p">.</span><span class="n">rightHand</span><span class="p">(</span><span class="k">false</span><span class="p">),</span> <span class="n">ppap</span><span class="p">.</span><span class="n">leftHand</span><span class="p">(</span><span class="k">false</span><span class="p">)))</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>PpapImplの関数をrightHand()からleftHand()、woo()と順番に呼び出しています。<br/>
+PpapImplクラスの関数をモックしながらPpapSongクラスのテストをしました。<br/>
+<br/></p>
+
+<h5 id="クラス全体のパブリック関数のモック">クラス全体のパブリック関数のモック</h5>
+
+<p>はじめにクラス全体のパブリック関数のモックです。Mockitoを活用していきます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">ppapMock</span><span class="p">:</span> <span class="n">PpapImpl</span> <span class="p">=</span> <span class="n">mock</span><span class="p">(</span><span class="n">PpapImpl</span><span class="o">::</span><span class="k">class</span><span class="p">.</span><span class="n">java</span><span class="p">)</span> <span class="c1">// PpapImplをモック対象にする
+</span><span class="c1"></span>
+<span class="k">val</span> <span class="py">ppapSong</span> <span class="p">=</span> <span class="n">PpapSong</span><span class="p">(</span><span class="n">ppapMock</span><span class="p">)</span>
+
+<span class="n">Mockito</span><span class="p">.</span><span class="n">`when`</span><span class="p">(</span><span class="n">ppapMock</span><span class="p">.</span><span class="n">rightHand</span><span class="p">(</span><span class="n">sing</span> <span class="p">=</span> <span class="k">true</span><span class="p">)).</span><span class="n">thenReturn</span><span class="p">(</span><span class="s">&#34;I have a Ebi.&#34;</span><span class="p">)</span> <span class="c1">// 各メソッドをモック
+</span><span class="c1"></span><span class="n">Mockito</span><span class="p">.</span><span class="n">`when`</span><span class="p">(</span><span class="n">ppapMock</span><span class="p">.</span><span class="n">leftHand</span><span class="p">(</span><span class="n">sing</span> <span class="p">=</span> <span class="k">true</span><span class="p">)).</span><span class="n">thenReturn</span><span class="p">(</span><span class="s">&#34;I have a Bin.&#34;</span><span class="p">)</span>
+
+<span class="n">Mockito</span><span class="p">.</span><span class="n">`when`</span><span class="p">(</span><span class="n">ppapMock</span><span class="p">.</span><span class="n">rightHand</span><span class="p">(</span><span class="n">sing</span> <span class="p">=</span> <span class="k">false</span><span class="p">)).</span><span class="n">thenReturn</span><span class="p">(</span><span class="s">&#34;Ebi&#34;</span><span class="p">)</span>
+<span class="n">Mockito</span><span class="p">.</span><span class="n">`when`</span><span class="p">(</span><span class="n">ppapMock</span><span class="p">.</span><span class="n">leftHand</span><span class="p">(</span><span class="n">sing</span> <span class="p">=</span> <span class="k">false</span><span class="p">)).</span><span class="n">thenReturn</span><span class="p">(</span><span class="s">&#34;Bin&#34;</span><span class="p">)</span>
+
+<span class="n">Mockito</span><span class="p">.</span><span class="n">`when`</span><span class="p">(</span><span class="n">ppapMock</span><span class="p">.</span><span class="n">woo</span><span class="p">(</span><span class="s">&#34;Ebi&#34;</span><span class="p">,</span> <span class="s">&#34;Bin&#34;</span><span class="p">)).</span><span class="n">thenReturn</span><span class="p">(</span><span class="s">&#34;EbiInBin.&#34;</span><span class="p">)</span>
+
+<span class="k">val</span> <span class="py">actual</span> <span class="p">=</span> <span class="n">ppapSong</span><span class="p">.</span><span class="n">sing</span><span class="p">()</span>
+
+<span class="k">actual</span> <span class="n">shouldBe</span> <span class="s">&#34;I have a Ebi. I have a Bin. woo EbiInBin.&#34;</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Mockitoをkotlinで使ってみた、のようなコードです。</p>
+
+<h5 id="クラス一部分のパブリック関数のモック">クラス一部分のパブリック関数のモック</h5>
+
+<p>次に一部分の関数をモックするパターンです。Mockitoのspyを使います。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">target</span><span class="p">:</span> <span class="n">PpapImpl</span> <span class="p">=</span> <span class="n">PpapImpl</span><span class="p">(</span><span class="n">right</span> <span class="p">=</span> <span class="s">&#34;a Pen&#34;</span><span class="p">,</span> <span class="n">left</span> <span class="p">=</span> <span class="s">&#34;an Apple&#34;</span><span class="p">)</span>
+<span class="k">val</span> <span class="py">spy</span> <span class="p">=</span> <span class="n">spy</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="c1">// PpapImplをspy対象にする
+</span><span class="c1"></span>
+<span class="k">val</span> <span class="py">ppapSong</span> <span class="p">=</span> <span class="n">PpapSong</span><span class="p">(</span><span class="n">spy</span><span class="p">)</span>
+
+<span class="n">Mockito</span><span class="p">.</span><span class="n">`when`</span><span class="p">(</span><span class="n">spy</span><span class="p">.</span><span class="n">leftHand</span><span class="p">(</span><span class="n">sing</span> <span class="p">=</span> <span class="k">true</span><span class="p">)).</span><span class="n">thenReturn</span><span class="p">(</span><span class="s">&#34;I have a PineApple.&#34;</span><span class="p">)</span> <span class="c1">// 左手をAppleからPineAppleにモックする
+</span><span class="c1"></span><span class="n">Mockito</span><span class="p">.</span><span class="n">`when`</span><span class="p">(</span><span class="n">spy</span><span class="p">.</span><span class="n">leftHand</span><span class="p">(</span><span class="n">sing</span> <span class="p">=</span> <span class="k">false</span><span class="p">)).</span><span class="n">thenReturn</span><span class="p">(</span><span class="s">&#34;PineApple&#34;</span><span class="p">)</span>
+
+<span class="k">val</span> <span class="py">actual</span> <span class="p">=</span> <span class="n">ppapSong</span><span class="p">.</span><span class="n">sing</span><span class="p">()</span>
+
+<span class="k">actual</span> <span class="n">shouldBe</span> <span class="s">&#34;I have a Pen. I have a PineApple. woo PineApplePen.&#34;</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>leftHandの呼び出しのみモックしました。他の関数はすべてモックされず実行しています。<br/>
+最後が<code>ApplePen</code>ではなく<code>PineApplePen</code>になっているのが確認できますね。</p>
+
+<h5 id="関数の引数のモック-anystring-やany-を使う">関数の引数のモック（anyString()やany()を使う）</h5>
+
+<p>次に関数の引数をany()などを使い任意の引数にマッチさせたりマッチが難しい場合にany()で任意の値でマッチさせるケースです。<br/>
+※マッチが難しいケースとしては引数にプリミティブな型を使っていないケースや、現在時刻のLocalDateTimeを引数にしているケースなどが考えられます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">target</span><span class="p">:</span> <span class="n">PpapImpl</span> <span class="p">=</span> <span class="n">PpapImpl</span><span class="p">(</span><span class="n">right</span> <span class="p">=</span> <span class="s">&#34;a Pen&#34;</span><span class="p">,</span> <span class="n">left</span> <span class="p">=</span> <span class="s">&#34;an Apple&#34;</span><span class="p">)</span>
+<span class="k">val</span> <span class="py">spy</span> <span class="p">=</span> <span class="n">spy</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+<span class="k">val</span> <span class="py">ppapSong</span> <span class="p">=</span> <span class="n">PpapSong</span><span class="p">(</span><span class="n">spy</span><span class="p">)</span>
+
+<span class="n">Mockito</span><span class="p">.</span><span class="n">`when`</span><span class="p">(</span><span class="n">spy</span><span class="p">.</span><span class="n">woo</span><span class="p">(</span><span class="n">anyString</span><span class="p">(),</span> <span class="n">anyString</span><span class="p">())).</span><span class="n">thenReturn</span><span class="p">(</span><span class="s">&#34;PenPineAppleApplePen.&#34;</span><span class="p">)</span> <span class="c1">// wooメソッドの引数は任意でマッチさせてReturnの文字列を書き換えています
+</span><span class="c1"></span>
+<span class="k">val</span> <span class="py">actual</span> <span class="p">=</span> <span class="n">ppapSong</span><span class="p">.</span><span class="n">sing</span><span class="p">()</span>
+
+<span class="k">actual</span> <span class="n">shouldBe</span> <span class="s">&#34;I have a Pen. I have an Apple. woo PenPineAppleApplePen.&#34;</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>このケースではプリミティブな型のためanyString()を利用しています。<br/>
+プリミティブ型以外の場合はany()やanyObject()を使うところですが、kotlinでは嵌まりました。<br/>
+詳細は以下の記事に詳しく載っていますので参照ください。<br/>
+<a href="http://jabnz.blog69.fc2.com/blog-entry-935.html">Kotlin + Mockitoでany&lt;T&gt;()やeq&lt;T&gt;()を使いたい - JDBな人生</a>テスト対象の関数の引数がNon-Nullなオブジェクトかどうかkotlinがチェックするため起こる現象で解決する方法も記載頂いています。<br/>
+私はこのケースでド嵌まりしまして、この記事に救われました。</p>
+
+<h5 id="クラスのプライベート関数のモック">クラスのプライベート関数のモック</h5>
+
+<p>次にクラスのプライベート関数のモックです。このケースはPowerMockを使います。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@RunWith</span><span class="p">(</span><span class="n">PowerMockRunner</span><span class="o">::</span><span class="k">class</span><span class="p">)</span> 
+<span class="n">@PrepareForTest</span><span class="p">(</span><span class="n">PpapImpl</span><span class="o">::</span><span class="k">class</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">PpapSong_Private_Method_MockTest</span> <span class="p">{</span>
+
+    <span class="n">@Test</span>
+    <span class="k">fun</span> <span class="nf">rightHand_test</span><span class="p">()</span> <span class="p">{</span>
+
+        <span class="k">val</span> <span class="py">target</span><span class="p">:</span> <span class="n">PpapImpl</span> <span class="p">=</span> <span class="n">PpapImpl</span><span class="p">(</span><span class="n">right</span> <span class="p">=</span> <span class="s">&#34;a Pen&#34;</span><span class="p">,</span> <span class="n">left</span> <span class="p">=</span> <span class="s">&#34;an Apple&#34;</span><span class="p">)</span>
+        <span class="k">val</span> <span class="py">spy</span> <span class="p">=</span> <span class="n">PowerMockito</span><span class="p">.</span><span class="n">spy</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+
+        <span class="n">PowerMockito</span><span class="p">.</span><span class="n">doReturn</span><span class="p">(</span><span class="s">&#34;Ebi&#34;</span><span class="p">).</span><span class="n">`when`</span><span class="p">(</span><span class="n">spy</span><span class="p">,</span> <span class="s">&#34;getObj&#34;</span><span class="p">,</span> <span class="s">&#34;a Pen&#34;</span><span class="p">)</span>
+
+        <span class="k">val</span> <span class="py">actual</span> <span class="p">=</span> <span class="n">spy</span><span class="p">.</span><span class="n">rightHand</span><span class="p">(</span><span class="k">false</span><span class="p">)</span>
+
+        <span class="n">assertThat</span><span class="p">(</span><span class="k">actual</span><span class="p">,</span> <span class="n">`is`</span><span class="p">(</span><span class="s">&#34;Ebi&#34;</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>PpapImplのrightHand関数をモックしています。doReturn()を`Ebi`にしました。</li>
+<li>クラスに@RunWithと@PrepareForTestのアノテーションを指定します。</li>
+<li>@PrepareForTestにはテスト対象のクラスを指定します。今回はPpapImplクラスになります。</li>
+<li>PowerMockRunnerクラスの実装を見ると今のところは<a href="https://github.com/powermock/powermock/blob/master/modules/module-impl/junit4/src/main/java/org/powermock/modules/junit4/PowerMockRunner.java#L44">JUnitのみをサポートしている</a>ようなので、PowerMockを使う場合はJUnitでテストケースを書きます。</li>
+</ul>
+
+<h4 id="クラスのプライベート関数のアサーションテスト">クラスのプライベート関数のアサーションテスト</h4>
+
+<p>最後にクラスのプライベート関数のアサーションテストです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">given</span><span class="p">(</span><span class="s">&#34;getObj method&#34;</span><span class="p">)</span> <span class="p">{</span>
+
+   <span class="k">val</span> <span class="py">target</span> <span class="p">=</span> <span class="n">PpapImpl</span><span class="p">(</span><span class="n">right</span> <span class="p">=</span> <span class="s">&#34;a Pen&#34;</span><span class="p">,</span> <span class="n">left</span> <span class="p">=</span> <span class="s">&#34;an Apple&#34;</span><span class="p">)</span>
+   <span class="k">var</span> <span class="py">param</span><span class="p">:</span> <span class="n">String</span>
+
+   <span class="n">`when`</span><span class="p">(</span><span class="s">&#34;param is &#39;a Pen&#39;&#34;</span><span class="p">)</span> <span class="p">{</span>
+       <span class="n">then</span><span class="p">(</span><span class="s">&#34;method should return &#39;Pen&#39;&#34;</span><span class="p">)</span> <span class="p">{</span>
+           <span class="n">param</span> <span class="p">=</span> <span class="s">&#34;a Pen&#34;</span>
+           <span class="k">val</span> <span class="py">actual</span> <span class="p">=</span> <span class="n">Deencapsulation</span><span class="p">.</span><span class="n">invoke</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;(</span><span class="n">target</span><span class="p">,</span> <span class="s">&#34;getObj&#34;</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span>
+           <span class="k">actual</span> <span class="n">shouldBe</span> <span class="s">&#34;Pen&#34;</span>
+       <span class="p">}</span>
+   <span class="p">}</span>
+
+   <span class="n">`when`</span><span class="p">(</span><span class="s">&#34;param is &#39;an Apple&#39;&#34;</span><span class="p">)</span> <span class="p">{</span>
+       <span class="n">then</span><span class="p">(</span><span class="s">&#34;method should return &#39;Apple&#39;&#34;</span><span class="p">)</span> <span class="p">{</span>
+           <span class="n">param</span> <span class="p">=</span> <span class="s">&#34;an Apple&#34;</span>
+           <span class="k">val</span> <span class="py">actual</span> <span class="p">=</span> <span class="n">Deencapsulation</span><span class="p">.</span><span class="n">invoke</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;(</span><span class="n">target</span><span class="p">,</span> <span class="s">&#34;getObj&#34;</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span>
+           <span class="k">actual</span> <span class="n">shouldBe</span> <span class="s">&#34;Apple&#34;</span>
+       <span class="p">}</span>
+   <span class="p">}</span>
+
+   <span class="n">`when`</span><span class="p">(</span><span class="s">&#34;param is &#39;Ebi&#39;&#34;</span><span class="p">)</span> <span class="p">{</span>
+       <span class="n">then</span><span class="p">(</span><span class="s">&#34;method throws exception&#34;</span><span class="p">)</span> <span class="p">{</span>
+           <span class="n">param</span> <span class="p">=</span> <span class="s">&#34;Ebi&#34;</span>
+           <span class="n">shouldThrow</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ArrayIndexOutOfBoundsException</span><span class="p">&gt;</span> <span class="p">{</span>
+               <span class="n">Deencapsulation</span><span class="p">.</span><span class="n">invoke</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;(</span><span class="n">target</span><span class="p">,</span> <span class="s">&#34;getObj&#34;</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span>
+           <span class="p">}</span>
+       <span class="p">}</span>
+   <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>JMockitを使ってプライベート関数のアサーションテストをしています。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<p>objectやenumクラスの例はありませんでしたがプロジェクト内ではテストケースを書いており上記で紹介した書き方と同様な書き方でテストができています。<br/>
+kotlinでもモックテストをガシガシ書けますし、これからはJava製のモックライブラリではなくkotlin純正のライブラリが出てくることを期待しています。<br/>
+<a href="https://github.com/nhaarman/mockito-kotlin">mockito-kotlin</a>というkotlinで書かれたモックライブラリがありましたがMockitoをラッピングしているライブラリとなっています。どこかのエントリでこちらの使用感の報告もできればしたいです。</p>
+
+<h3 id="ソースを公開しています">ソースを公開しています</h3>
+
+<p>ソースコードを公開しています。<br/></p>
+
+<p><a href="https://github.com/soushin/kotlin-mock-test">https://github.com/soushin/kotlin-mock-test</a></p>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/mock/">mock</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/mockito/">Mockito</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/powermock/">PowerMock</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/jmockit/">JMockit</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

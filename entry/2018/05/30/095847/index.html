@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Android Support LibraryのChipを触ってみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Android Support LibraryのChipの使い方をまとめていく。ChipはMaterial DesignにあるがSupport Libraryに組み込まれた">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Android Support LibraryのChipを触ってみた</h1>
+    <div class="post-meta">2018.5.30</div>
+  </header>
+  <div class="post-content">
+
+<p>Android Support LibraryのChipの使い方をまとめていく。ChipはMaterial DesignにあるがSupport Libraryに組み込まれたのは28.0.0.Alpha 1からである。</p>
+
+<p><a href="https://material.io/design/components/chips.html#usage">Chips</a></p>
+
+<p><a href="https://developer.android.com/topic/libraries/support-library/revisions?authuser=1#28-0-0-alpha1">Recent Support Library Revisions  |  Android Developers</a></p>
+
+<p>よってgradle settingを次のように更新する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">ext {
+    compileSdkVersion = &#39;android-P&#39;
+    appCompatVersion = &#39;28.0.0-alpha1&#39;
+}</pre></td></tr></table>
+</div>
+</div>
+<p>このエントリでは <code>com.android.support:design:$appCompatVersion</code>を使っているがAndroid Xの登場によりnamespaceが代わりversioningも更新されている。詳しくは次のページを参照してほしい。</p>
+
+<ul>
+<li><a href="https://android-developers.googleblog.com/2018/05/hello-world-androidx.html?m=1">Android Developers Blog: Hello World, AndroidX</a></li>
+<li><a href="https://developer.android.com/topic/libraries/support-library/refactor">AndroidX refactoring  |  Android Developers</a></li>
+</ul>
+
+<p><code>Hello World, AndroidX</code>のページに<code>Migration from 28.0.0-alpha1</code>にあるとおりandroid.supportからandroidx-packagedAndroidのマイグレーション機能がStudio 3.2から提供されている。</p>
+
+<h3 id="chipのcustom-viewを作っていく">ChipのCustom Viewを作っていく</h3>
+
+<p>gradleを更新すると <code>android.support.design.chip.Chip</code>が使えるようになる。Chipのアイコンをコードから変更したいのでCustom Viewを実装していく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="c">&lt;!--?--&gt;</span>xml version=&#34;1.0&#34; encoding=&#34;utf-8&#34;?&gt;
+
+    xmlns:android=&#34;http://schemas.android.com/apk/res/android&#34;
+    xmlns:app=&#34;http://schemas.android.com/apk/res-auto&#34;&gt;
+
+    .support.design.chip.Chip
+        android:id=&#34;@+id/chip&#34;
+        android:layout_width=&#34;wrap_content&#34;
+        android:layout_height=&#34;wrap_content&#34;
+        style=&#34;@style/Base.Widget.MaterialComponents.Chip&#34;
+        app:chipBackgroundColor=&#34;@color/color_primary_white&#34;
+        app:chipStrokeColor=&#34;@color/color_gray&#34;
+        app:chipStrokeWidth=&#34;1dp&#34;
+        app:checkedIconEnabled=&#34;false&#34;
+        app:iconStartPadding=&#34;4dp&#34;
+        app:closeIconEnabled=&#34;false&#34;
+        /&gt;</code></pre></td></tr></table>
+</div>
+</div>
+<p>layoutは上記のようにした。chipにはいくつかのstyleが用意されているので用途に合わせて参照すると良い。このlayoutではBase Styleをもとに必要な要素を調整した。</p>
+
+<ul>
+<li>chipの背景色、外線色と太さ</li>
+<li>iconのpadding（paddingはchip内の要素で細かく定義できる）</li>
+<li>chipをcheckしたときの振る舞い（checkedIconEnabled="false"）</li>
+<li>closeボタンを表示しない</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">ForecastChipView</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">attrs</span><span class="p">:</span> <span class="n">AttributeSet</span><span class="p">?,</span>
+                       <span class="n">defStyleAttr</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="p">:</span> <span class="n">RelativeLayout</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">attrs</span><span class="p">,</span> <span class="n">defStyleAttr</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">chip</span><span class="p">:</span> <span class="n">Chip</span> <span class="k">by</span> <span class="n">bindView</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">chip</span><span class="p">)</span>
+
+    <span class="n">init</span> <span class="p">{</span>
+        <span class="n">LayoutInflater</span><span class="p">.</span><span class="n">from</span><span class="p">(</span><span class="n">context</span><span class="p">).</span><span class="n">inflate</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">layout</span><span class="p">.</span><span class="n">forecast_chip_view</span><span class="p">,</span> <span class="k">this</span><span class="p">,</span> <span class="k">true</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">constructor</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">attrs</span><span class="p">:</span> <span class="n">AttributeSet</span><span class="p">?)</span> <span class="p">:</span> <span class="k">this</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">attrs</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+
+    <span class="k">constructor</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">Context</span><span class="p">)</span> <span class="p">:</span> <span class="k">this</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+
+    <span class="k">fun</span> <span class="nf">bindForecast</span><span class="p">(</span><span class="n">forecast</span><span class="p">:</span> <span class="n">Forecast</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">forecast</span><span class="p">.</span><span class="n">let</span> <span class="p">{</span>
+            <span class="n">chip</span><span class="p">.</span><span class="n">chipText</span> <span class="p">=</span> <span class="n">DateUtils</span><span class="p">.</span><span class="n">formatDateTime</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">forecast</span><span class="p">.</span><span class="n">dt</span> <span class="p">*</span> <span class="m">1000L</span><span class="p">,</span> <span class="n">DateUtils</span><span class="p">.</span><span class="n">FORMAT_NO_YEAR</span><span class="p">)</span>
+            <span class="n">chip</span><span class="p">.</span><span class="n">setChipIconResource</span><span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="n">iconDrawableRes</span><span class="p">())</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>CustomViewクラスのForecastChipViewが上記のコードである。bindForecastでchipのテキストとchipIconをセットしている。コードからでもchipアイコンをダイナミックに変更できる。</p>
+
+<p>ForecastChipViewクラスのchipは次のようになった。</p>
+
+<figure>
+    <img src="/images/20180530094907.png"/> 
+</figure>
+
+
+<h3 id="chipgroupもあるよ">ChipGroupもあるよ</h3>
+
+<p>Support LibraryにはChipクラスだけではなくchip達を格納するChipGroupクラスが提供されている。ChipGroupはFlexboxLayoutクラスを継承しているViewGroupである。 ChipGroupにchipをaddViewしているコードは次のようにした。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">ForecastChipGroupBinder</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">V</span> <span class="p">:</span> <span class="n">ViewType</span><span class="p">&gt;(</span><span class="n">context</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">viewType</span><span class="p">:</span> <span class="n">V</span><span class="p">,</span>
+                                            <span class="k">private</span> <span class="k">val</span> <span class="py">forecasts</span><span class="p">:</span> <span class="n">List</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Forecast</span><span class="p">&gt;)</span> <span class="p">:</span> <span class="n">RecycleBinder</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">V</span><span class="p">&gt;(</span><span class="n">context</span><span class="p">,</span> <span class="n">viewType</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">layoutResId</span><span class="p">()</span> <span class="p">=</span> <span class="n">R</span><span class="p">.</span><span class="n">layout</span><span class="p">.</span><span class="n">forecast_chip_group_binder</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreateViewHolder</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n">View</span><span class="p">)</span> <span class="p">=</span> <span class="n">ViewHolder</span><span class="p">(</span><span class="n">view</span><span class="p">)</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onBindViewHolder</span><span class="p">(</span><span class="n">viewHolder</span><span class="p">:</span> <span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">viewHolder</span> <span class="k">as</span> <span class="n">ViewHolder</span>
+
+        <span class="n">forecasts</span><span class="p">.</span><span class="n">forEach</span> <span class="p">{</span>
+            <span class="n">viewHolder</span><span class="p">.</span><span class="n">chipGroup</span><span class="p">.</span><span class="n">addView</span><span class="p">(</span><span class="n">ForecastChipView</span><span class="p">(</span><span class="n">context</span><span class="p">).</span><span class="n">apply</span> <span class="p">{</span>
+                <span class="n">bindForecast</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+            <span class="p">})</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">open</span> <span class="k">class</span> <span class="nc">ViewHolder</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n">View</span><span class="p">)</span> <span class="p">:</span> <span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span><span class="p">(</span><span class="n">view</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">val</span> <span class="py">chipGroup</span><span class="p">:</span> <span class="n">ChipGroup</span> <span class="k">by</span> <span class="n">bindView</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">chipGroup</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="コード">コード</h3>
+
+<p>これまでのコードはgithubに置いてあるので参照していただきたい。参考になると嬉しいです。</p>
+
+<p><a href="https://github.com/soushin/sunshine-app/pull/9">Added sample chip view by soushin · Pull Request #9 · soushin/sunshine-app · GitHub</a></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/android/">android</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/support-library/">support library</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/chip/">chip</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

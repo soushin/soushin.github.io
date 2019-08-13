@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Spring5.0 &#43; Kotlinで１つのjarにHTTPサーバーとgRPCサーバーを相乗りさせてみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Spring Boot 2.0.0 M1がリリースされました。以前のエントリで試した当時は 2.0.0.BUILD-SNAPSHOTでありHTTPサーバーが起動している状態">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Spring5.0 &#43; Kotlinで１つのjarにHTTPサーバーとgRPCサーバーを相乗りさせてみた</h1>
+    <div class="post-meta">2017.6.8</div>
+  </header>
+  <div class="post-content">
+
+<p>Spring Boot 2.0.0 M1が<a href="https://spring.io/blog/2017/05/16/spring-boot-2-0-0-m1-available-now">リリース</a>されました。以前の<a href="https://blog.soushi.me/entry/2017/04/13/152657">エントリ</a>で試した当時は <code>2.0.0.BUILD-SNAPSHOT</code>でありHTTPサーバーが起動している状態でgRPCクライアントを動かすとエラーになっていた。</p>
+
+<p>2.0.0 M1のリリースに伴いHTTPサーバーとgRPCサーバーが１つのjarに相乗りできるようになっているか確認するのが今回のモチベーション。</p>
+
+<p>次のようなアプリケーション構成を実現したい。</p>
+
+<figure>
+    <img src="/images/20170608125908.png"/> 
+</figure>
+
+
+<ul>
+<li><code>API Server</code>は<code>HTTP1.1のリクエストのルーティング</code>と<code>gRPCサーバー</code>のエンドポイントを提供する</li>
+<li>API Serverに届いたリクエストは<code>Backend Server向け</code>の<code>gRPCクライアント</code>からBackend Serverにリクエストする</li>
+<li>API ServerとBackend Server間の通信はgRPCで行う</li>
+<li>エンドポイントには<code>HTTP1.1のリクエストのルーティング</code>と<code>gRPCサーバー</code>の２つの通信方式を用意する</li>
+<li>すべてのアプリケーションはSpring Boot 2.0.0 M1の上で動く</li>
+<li><a href="https://spring.io/blog/2017/01/04/introducing-kotlin-support-in-spring-framework-5-0">Introducing Kotlin support in Spring Framework 5.0</a>のエントリにあるようなSpring5.0で提供される新しい機能をつかう</li>
+</ul>
+
+<p>ここからは試した過程での気づきなどをアウトプットしていく。</p>
+
+<h3 id="commandlinerunnerでgrpcサーバーを起動する">CommandLineRunnerでgRPCサーバーを起動する</h3>
+
+<p>HTTPルーティングが動いている状態で <code>CommandLineRunner</code>をつかいgRPCサーバーを次のように起動させた。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Configuration</span>
+<span class="k">class</span> <span class="nc">GrpcServerRunner</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">appProperties</span><span class="p">:</span> <span class="n">AppProperties</span><span class="p">,</span>
+                       <span class="k">private</span> <span class="k">val</span> <span class="py">echoServer</span><span class="p">:</span> <span class="n">EchoServer</span><span class="p">,</span>
+                       <span class="k">private</span> <span class="k">val</span> <span class="py">taskServer</span><span class="p">:</span> <span class="n">TaskServer</span><span class="p">)</span> <span class="p">:</span> <span class="n">CommandLineRunner</span><span class="p">,</span> <span class="n">DisposableBean</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">logger</span> <span class="p">=</span> <span class="n">KotlinLogging</span><span class="p">.</span><span class="n">logger</span> <span class="p">{}</span>
+
+    <span class="k">lateinit</span> <span class="k">var</span> <span class="py">server</span><span class="p">:</span> <span class="n">Server</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">run</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">Array</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;)</span> <span class="p">{</span>
+
+        <span class="k">val</span> <span class="py">port</span> <span class="p">=</span> <span class="n">appProperties</span><span class="p">.</span><span class="n">grpc</span><span class="p">.</span><span class="n">server</span><span class="p">.</span><span class="n">port</span>
+
+        <span class="n">logger</span><span class="p">.</span><span class="n">info</span> <span class="p">{</span> <span class="s">&#34;Starting gRPC Server ...&#34;</span> <span class="p">}</span>
+        <span class="k">val</span> <span class="py">serverBuilder</span> <span class="p">=</span> <span class="n">NettyServerBuilder</span><span class="p">.</span><span class="n">forPort</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+        <span class="n">serverBuilder</span><span class="p">.</span><span class="n">addService</span><span class="p">(</span><span class="n">echoServer</span><span class="p">)</span>
+        <span class="n">serverBuilder</span><span class="p">.</span><span class="n">addService</span><span class="p">(</span><span class="n">taskServer</span><span class="p">)</span>
+        <span class="n">server</span> <span class="p">=</span> <span class="n">serverBuilder</span><span class="p">.</span><span class="n">build</span><span class="p">().</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">logger</span><span class="p">.</span><span class="n">info</span> <span class="p">{</span><span class="s">&#34;gRPC Server started, listening on port $port.&#34;</span><span class="p">}</span>
+
+        <span class="n">startDaemonAwaitThread</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>Spring Boot 2.0.0 M1</code>で試したところ<strong>問題なく起動した！</strong>（<code>2.0.0.BUILD-SNAPSHOT</code>ではエラーになっていたところ）<br/>
+2.0.0 M1では<a href="https://github.com/spring-projects/spring-boot/milestone/53?closed=1">300以上のissueやプルリクエスト</a>がマージされたので、その中のどれかで解消されたということだろう。</p>
+
+<h3 id="grpc-javaの-1-3-0はエラーになる">grpc-javaの 1.3.0はエラーになる</h3>
+
+<p>Spring Bootには直接関係はないところであるが最新のgrpc-javaの1.3.0を使うとエラーになった。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">java.lang.NoClassDefFoundError: io/netty/handler/codec/http2/internal/hpack/Decoder
+        at io.grpc.netty.GrpcHttp2HeadersDecoder.&amp;lt;init&gt;(GrpcHttp2HeadersDecoder.java:85) ~[grpc-netty-1.2.0.jar:1.2.0]
+        at io.grpc.netty.GrpcHttp2HeadersDecoder$GrpcHttp2ServerHeadersDecoder.&amp;lt;init&gt;(GrpcHttp2HeadersDecoder.java:135) ~[grpc-netty-1.2.0.jar:1.2.0]
+        at io.grpc.netty.NettyServerHandler.newHandler(NettyServerHandler.java:109) ~[grpc-netty-1.2.0.jar:1.2.0]
+        at io.grpc.netty.NettyServerTransport.createHandler(NettyServerTransport.java:132) ~[grpc-netty-1.2.0.jar:1.2.0]
+        at io.grpc.netty.NettyServerTransport.start(NettyServerTransport.java:77) ~[grpc-netty-1.2.0.jar:1.2.0]
+        at io.grpc.netty.NettyServer$1.initChannel(NettyServer.java:141) ~[grpc-netty-1.2.0.jar:1.2.0]
+・・・</pre></td></tr></table>
+</div>
+</div>
+<p><code>Netty 4.1.9</code>では<code>io.netty.handler.codec.http2.internal.hpack.Decoder</code>が削除されているのが原因。</p>
+
+<p><div class="github-card" data-user="grpc/grpc-java/issues" data-repo="2841" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>gradleは次のように<code>grpc-netty</code>のみ<code>1.4.0-SNAPSHOT</code>のバージョンを指定することで解消できる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">buildscript {
+    ext.grpc_version = &#34;1.3.0&#34;
+    ext.grpc_version_snapshot = &#34;1.4.0-SNAPSHOT&#34;
+
+    repositories {
+        mavenCentral()
+        maven { url &#34;https://repo.spring.io/milestone&#34; }
+        maven { url &#39;http://repo.spring.io/plugins-release&#39; }
+        maven { url &#34;https://oss.sonatype.org/content/repositories/snapshots&#34; }
+    }
+}
+
+・・・
+
+dependencies {
+・・・
+    // grpc
+    compile &#34;io.grpc:grpc-netty:${grpc_version_snapshot}&#34;
+    compile &#34;io.grpc:grpc-protobuf:${grpc_version}&#34;
+    compile &#34;io.grpc:grpc-stub:${grpc_version}&#34;
+    compile &#34;io.grpc:grpc-okhttp:${grpc_version}&#34;
+    compile &#34;com.google.api.grpc:googleapis-common-protos:0.0.3&#34;
+・・・
+}</pre></td></tr></table>
+</div>
+</div>
+<h3 id="backendサーバーにはhttpサーバーがいらない">BackendサーバーにはHTTPサーバーがいらない</h3>
+
+<p>BackendサーバーにはHTTPサーバーがいらないので次のように<code>@SpringBootApplication</code>がついたメインクラスの起動でWebアプリケーションを動かさないようにした。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@SpringBootApplication</span>
+<span class="n">@EnableConfigurationProperties</span><span class="p">(</span><span class="n">AppProperties</span><span class="o">::</span><span class="k">class</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Application</span> <span class="p">{</span>
+
+    <span class="k">companion</span> <span class="k">object</span> <span class="p">{</span>
+        <span class="n">@JvmStatic</span>
+        <span class="k">fun</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">Array</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;)</span> <span class="p">{</span>
+            <span class="n">SpringApplicationBuilder</span><span class="p">(</span><span class="n">Application</span><span class="o">::</span><span class="k">class</span><span class="p">).</span><span class="n">web</span><span class="p">(</span><span class="n">WebApplicationType</span><span class="p">.</span><span class="n">NONE</span><span class="p">).</span><span class="n">run</span><span class="p">(*</span><span class="n">args</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="コード">コード</h3>
+
+<p>今回試したコードはgithubに置いてあるので参考になれば嬉しい。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>理想の構成どおりにアプリケーションが組めた</li>
+<li>Spring5.0のkotlinサポートは魅力的であり実戦投入を検討したかったがgRPCとの相性が良くない印象であったが検証を経て問題ないことが確認できた</li>
+<li>いよいよSpring5.0の正式リリースに向けて整ってきている印象を受けた</li>
+<li>その他で利用しているSpringエコシステムの各種ライブラリとのSpring5.0／Spring Boot 2.0.0の相性が問題ないことを引き続き確認していき導入を検討していきたい</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/springboot/">springboot</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

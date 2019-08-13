@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>KotlinでgRPC。SSL/TLSを有効にする方法をまとめた。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="前回のエントリではgrpc/grpc-javaをベースにkotlinでgRPCを試しました。今回はSSL/TLSを有効にする方法をまとめてい">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">KotlinでgRPC。SSL/TLSを有効にする方法をまとめた。</h1>
+    <div class="post-meta">2017.4.21</div>
+  </header>
+  <div class="post-content">
+
+<p><a href="https://blog.soushi.me/entry/2017/04/13/152657">前回のエントリ</a>では<a href="https://github.com/grpc/grpc-java">grpc/grpc-java</a>をベースにkotlinでgRPCを試しました。今回はSSL/TLSを有効にする方法をまとめていきます。<a href="https://github.com/grpc/grpc-java/blob/master/SECURITY.md">grpc/grpc-java/SECURITY.md</a>を参照しながら進めました。</p>
+
+<h3 id="証明書を準備する">証明書を準備する</h3>
+
+<p>手元に適当な証明書がなかったので<a href="https://github.com/grpc/grpc-go/tree/master/testdata">grpc-go/testdata</a>にある証明書を利用しました。</p>
+
+<p><code>Subject Alternative Name</code> を確認するとマルチドメインに<code><em>.test.google.fr</code>, <code>waterzooi.test.google.be</code>, <code></em>.test.youtube.com</code>が定義されていますので、hostsに<code>waterzooi.test.google.be</code>を追加しました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">openssl x509 -text -in ./server1.pem</pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">127.0.0.1 waterzooi.test.google.be</pre></td></tr></table>
+</div>
+</div>
+<h3 id="opensslを有効にする">OpenSSLを有効にする</h3>
+
+<p><a href="https://github.com/netty/netty-tcnative">netty-tcnative</a>をプロジェクトに追加します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">buildscript {
+  repositories {
+    mavenCentral()
+  }
+}
+
+dependencies {
+    compile &#39;io.netty:netty-tcnative-boringssl-static:1.1.33.Fork26&#39;
+}</pre></td></tr></table>
+</div>
+</div>
+<p>netty-tcnativeは<code>Dynamic</code>と<code>Static</code>があります。このエントリでは<code>Static</code>を利用しました。<a href="https://github.com/grpc/grpc-java/blob/master/SECURITY.md">grpc/grpc-java/SECURITY.md</a>を参照すると<code>Static</code>の利用を推奨していますがOpenSSLのセキュリティパッチが提供された場合、<code>Static</code>ではパッチ反映が即座には行われないためプロジェクト方針によっては<code>Dynamic</code>の利用を検討する必要があります。</p>
+
+<h3 id="grpcsslcontextsでsslcontextを生成する">GrpcSslContextsでSslContextを生成する</h3>
+
+<p>サーバ側とクライアント側では<code>GrpcSslContexts</code>に定義されている<code>forServer</code>と<code>forClient</code>のメソッドをつかって<code>SslContext</code>を生成します。</p>
+
+<p><strong>サーバ側</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(serverBuilder as NettyServerBuilder).sslContext(
+        GrpcSslContexts.forServer(
+                File(classLoader.getResource(&#34;server1.pem&#34;).file),
+                File(classLoader.getResource(&#34;server1.key&#34;).file))
+                .clientAuth(ClientAuth.OPTIONAL)
+                .build())</pre></td></tr></table>
+</div>
+</div>
+<p><strong>クライアント側</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">NettyChannelBuilder.forAddress(&#34;waterzooi.test.google.be&#34;, 50051)
+        .sslContext(
+                GrpcSslContexts.forClient()
+                        .trustManager(File(classLoader.getResource(&#34;ca.pem&#34;).file))
+                        .build())
+        .build()</pre></td></tr></table>
+</div>
+</div>
+<p>上記の実装を行えばSSL/TLSが有効になります。</p>
+
+<h3 id="コードを公開しています">コードを公開しています</h3>
+
+<p>このエントリのコードはgithubに公開しています。<br/>
+SSL/TLSを有効にするにあたり情報が少ない印象をもちました。java or kotlinで実装をする方に少しでも参考になると嬉しいです。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="grpc-kotlin-tls-test" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h3 id="関連エントリ">関連エントリ</h3>
+
+<p><a href="https://blog.soushi.me/entry/2017/04/13/152657">KotlinでgRPC。実運用にも活かせるWEBアプリケーション構成で試してみた。 - 平日インプット週末アウトプットぶろぐ</a></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/ssl/">SSL</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/tls/">TLS</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Android JetpackのNavigationを試して導入手順をまとめた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Google IO 2018で発表されたJetpackの新しいコンポーネントのNavigationをアプリに導入してみた。 The Navigation Architecture Component | Android Developers TL;DR Toolbar、B">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Android JetpackのNavigationを試して導入手順をまとめた</h1>
+    <div class="post-meta">2018.6.4</div>
+  </header>
+  <div class="post-content">
+
+<p>Google IO 2018で発表された<a href="https://developer.android.com/jetpack/">Jetpack</a>の新しいコンポーネントのNavigationをアプリに導入してみた。</p>
+
+<p><a href="https://developer.android.com/topic/libraries/architecture/navigation/">The Navigation Architecture Component  |  Android Developers</a></p>
+
+<h3 id="tl-dr">TL;DR</h3>
+
+<ul>
+<li><code>Toolbar</code>、<code>Bottom Navigation</code>、<code>onClickイベント</code>に関わる画面遷移をNavigationに置き換えてみた。</li>
+<li>試した結果、コード短縮をゲットできるのでNavigation導入していきたい。</li>
+<li>Backボタン、Upボタンの挙動を制御してくれるNavigation氏、助かる。</li>
+<li>Bottom Navigationにアニメーションが入ってしまうの厄介（回避策をまとめた）。</li>
+<li>safe-argsの威力がすごかった。これ使うだけでも良さそう。</li>
+<li>onClickイベントだけNavigationに置き換え、とかできるのでプロジェクトに合わせて導入場面をチョイスできそう。</li>
+</ul>
+
+<h3 id="モチベーション">モチベーション</h3>
+
+<p>このエントリを通してNavigationを実践投入することがモチベーション。<code>Toolbar</code>、<code>Bottom Navigation</code>、<code>onClickイベント</code>に関わる画面遷移をNavigationでどのように実現するのかをコードと共にまとめていく。</p>
+
+<h3 id="gradle-settingにnavigationを追加する">gradle settingにnavigationを追加する</h3>
+
+<p>build.gradleに依存を追加していく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">    implementation &#34;android.arch.navigation:navigation-fragment:1.0.0-alpha01&#34;
+    implementation &#34;android.arch.navigation:navigation-ui:1.0.0-alpha01&#34;
+    implementation &#34;android.arch.navigation:navigation-fragment-ktx:1.0.0-alpha01&#34;
+    implementation &#34;android.arch.navigation:navigation-ui-ktx:1.0.0-alpha01&#34;</pre></td></tr></table>
+</div>
+</div>
+<p>これでNavigationを使える準備はOK。</p>
+
+<h3 id="navigation-editorを使い画面遷移を定義していく">Navigation Editorを使い画面遷移を定義していく</h3>
+
+<p>※ Navigation Editorを使うにはAndroid Studio 3.2が必要</p>
+
+<p>このエントリの画面遷移は単純でHome画面、天気予報一覧画面と詳細画面の３つとToolbarのメニューから選択ができる設定画面がある。<br/>
+resに<code>navigation</code>フォルダを追加すると新規作成メニューから <code>Navigation Resource File</code>が選択できる。</p>
+
+<figure>
+    <img src="/images/20180604093213.png"/> 
+</figure>
+
+
+<p>Navigation EditorをつかってFragment、Activityの遷移を定義した。Fragmentの遷移は天気予報一覧（forecastsFragment）から詳細画面（forecastFragment）に矢印が結ばれていることで表現されている。homeFragmentやsettingsActivityはToolbarやBottomNavigationからの遷移があるためEditorで追加をした。<br/>
+フラグメント間の遷移のtransitionはEditorから定義できる。今回のエントリでは詳細に使っていないので内容については割愛。</p>
+
+<p>homeFragmentは開始位置として定義しているので<code>homeアイコン</code>が表示されている。</p>
+
+<p>Editorからも遷移を定義できるがxmlからも修正ができる。xmlは次のように定義されている。xmlファイルは <code>nav_graph.xml</code>として保存している。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="c">&lt;!--?--&gt;</span>xml version=&#34;1.0&#34; encoding=&#34;utf-8&#34;?&gt;
+xmlns:android=&#34;http://schemas.android.com/apk/res/android&#34;
+          xmlns:app=&#34;http://schemas.android.com/apk/res-auto&#34;
+          xmlns:tools=&#34;http://schemas.android.com/tools&#34;
+          android:animateLayoutChanges=&#34;false&#34;
+          app:startDestination=&#34;@id/homeFragment&#34;
+    &gt;
+
+    
+        android:id=&#34;@+id/homeFragment&#34;
+        android:name=&#34;me.soushin.sunshine.ui.home.HomeFragment&#34;
+        android:label=&#34;HomeFragment&#34;
+        /&gt;
+
+    
+        android:id=&#34;@+id/forecastsFragment&#34;
+        android:name=&#34;me.soushin.sunshine.ui.forecast.ForecastsFragment&#34;
+        android:label=&#34;ForecastsFragment&#34;
+        &gt;
+        
+            android:id=&#34;@+id/toForecast&#34;
+            app:destination=&#34;@id/forecastFragment&#34;
+            /&gt;
+    
+
+    
+        android:id=&#34;@+id/forecastFragment&#34;
+        android:name=&#34;me.soushin.sunshine.ui.forecast.ForecastFragment&#34;
+        android:label=&#34;ForecastFragment&#34;
+        &gt;
+        
+            android:name=&#34;forecast&#34;
+            app:type=&#34;string&#34;
+            /&gt;
+    
+
+    
+        android:id=&#34;@+id/settingsActivity&#34;
+        android:name=&#34;me.soushin.sunshine.ui.settings.SettingsActivity&#34;
+        android:label=&#34;activity_settings&#34;
+        tools:layout=&#34;@layout/activity_settings&#34;
+        /&gt;</code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="mainactivityのfragmentエリアを修正する">MainActivityのfragmentエリアを修正する</h3>
+
+<p>Navigation導入前にfragmentの表示・切り替えを定義していたlayoutを次のようにfragmentタグを使い変更する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="c">&lt;!--?--&gt;</span>xml version=&#34;1.0&#34; encoding=&#34;utf-8&#34;?&gt;
+.support.design.widget.CoordinatorLayout
+    xmlns:android=&#34;http://schemas.android.com/apk/res/android&#34;
+    xmlns:app=&#34;http://schemas.android.com/apk/res-auto&#34;
+    xmlns:tools=&#34;http://schemas.android.com/tools&#34;
+    android:layout_width=&#34;match_parent&#34;
+    android:layout_height=&#34;match_parent&#34;
+    &gt;
+
+    
+        android:id=&#34;@+id/navHostFragment&#34;
+        android:name=&#34;androidx.navigation.fragment.NavHostFragment&#34; ★
+        android:layout_width=&#34;match_parent&#34;
+        android:layout_height=&#34;match_parent&#34;
+        android:layout_marginTop=&#34;48dp&#34;
+        android:layout_marginBottom=&#34;56dp&#34;
+        app:defaultNavHost=&#34;true&#34; ★
+        app:navGraph=&#34;@navigation/nav_graph&#34; ★
+        /&gt;
+.support.design.widget.CoordinatorLayout&gt;</code></pre></td></tr></table>
+</div>
+</div>
+<p>android:nameを <code>androidx.navigation.fragment.NavHostFragment</code>とすることでNavigation機能のターゲットとなる。<code>app:defaultNavHost</code>をtrueに設定するとBackボタンやUpボタンが連携される。<code>app:navGraph</code>はNavigation Editorで定義した <code>nav_graph</code>を指定している。</p>
+
+<hr/>
+
+<p>ここまででNavigationをコードから操作できる準備が整った。ここから各ナビゲーションエリアの遷移をコードで実現していく。</p>
+
+<h3 id="toolbarとnavigaitonを連携させる">ToolbarとNavigaitonを連携させる</h3>
+
+<p>ToolbarとNavigaitonを連携させるには <code>onOptionsItemSelected</code>と<code>onSupportNavigateUp</code>を次のようにオーバーライドする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">MainActivity</span> <span class="p">:</span> <span class="n">AbstractActivity</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">navController</span><span class="p">:</span> <span class="n">NavController</span> <span class="k">by</span> <span class="n">lazy</span> <span class="p">{</span> <span class="n">findNavController</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">navHostFragment</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onOptionsItemSelected</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="n">MenuItem</span><span class="p">):</span> <span class="n">Boolean</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">NavigationUI</span><span class="p">.</span><span class="n">onNavDestinationSelected</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">navController</span><span class="p">)</span> <span class="p">||</span> <span class="k">super</span><span class="p">.</span><span class="n">onOptionsItemSelected</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onSupportNavigateUp</span><span class="p">()</span> <span class="p">=</span> <span class="n">navController</span><span class="p">.</span><span class="n">navigateUp</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>NavigationnUIにActionBarとNavcontrollerを渡すために <code>setupActionBarWithNavController</code>をonCreate内でコールする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">MainActivity</span> <span class="p">:</span> <span class="n">AbstractActivity</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">navController</span><span class="p">:</span> <span class="n">NavController</span> <span class="k">by</span> <span class="n">lazy</span> <span class="p">{</span> <span class="n">findNavController</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">navHostFragment</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreate</span><span class="p">(</span><span class="n">savedInstanceState</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">?)</span> <span class="p">{</span>
+
+        <span class="n">findViewById</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Toolbar</span><span class="p">&gt;(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">toolbar</span><span class="p">).</span><span class="n">also</span> <span class="p">{</span>
+            <span class="n">setSupportActionBar</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+            <span class="n">setupActionBarWithNavController</span><span class="p">(</span><span class="n">navController</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="navigationと連携させるための注意点">Navigationと連携させるための注意点</h4>
+
+<p>注意点としてNavigationが参照するメニューのIDとToolbarのmenu.xmlで定義するIDを一致させる必要がある。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"># menu_main.xml
+
+xmlns:android=&#34;http://schemas.android.com/apk/res/android&#34;
+    xmlns:app=&#34;http://schemas.android.com/apk/res-auto&#34;
+    xmlns:tools=&#34;http://schemas.android.com/tools&#34;
+    tools:context=&#34;me.soushin.sunshine.app.MainActivity&#34;&gt;
+    
+        android:id=&#34;@+id/settingsActivity&#34; ★
+        android:orderInCategory=&#34;100&#34;
+        android:title=&#34;@string/action_settings&#34;
+        app:showAsAction=&#34;never&#34; /&gt;
+
+
+---
+
+# nav_graph.xml
+
+<span class="c">&lt;!--?--&gt;</span>xml version=&#34;1.0&#34; encoding=&#34;utf-8&#34;?&gt;
+xmlns:android=&#34;http://schemas.android.com/apk/res/android&#34;
+          xmlns:app=&#34;http://schemas.android.com/apk/res-auto&#34;
+          xmlns:tools=&#34;http://schemas.android.com/tools&#34;
+          android:animateLayoutChanges=&#34;false&#34;
+          app:startDestination=&#34;@id/homeFragment&#34;
+    &gt;
+
+    
+        android:id=&#34;@+id/settingsActivity&#34; ★
+        android:name=&#34;me.soushin.sunshine.ui.settings.SettingsActivity&#34;
+        android:label=&#34;activity_settings&#34;
+        tools:layout=&#34;@layout/activity_settings&#34;
+        /&gt;</code></pre></td></tr></table>
+</div>
+</div>
+<p><code>settingsActivity</code>でidを一致させている。これでtoolbarの遷移がNavigationに切り替わった。</p>
+
+<h3 id="bottomnavigationとnavigaitonを連携させる">BottomNavigationとNavigaitonを連携させる</h3>
+
+<p>BottomNavigationもToolbarと同様にmenu xmlとnav_graph xmlのIDを一致させる必要がある。詳しくは後述するgithubのコードを参照して頂きたい。</p>
+
+<p>Navigationと連携したコードはToolbarと同様に簡略化できる。次のようなコードになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">MainActivity</span> <span class="p">:</span> <span class="n">AbstractActivity</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">navController</span><span class="p">:</span> <span class="n">NavController</span> <span class="k">by</span> <span class="n">lazy</span> <span class="p">{</span> <span class="n">findNavController</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">navHostFragment</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreate</span><span class="p">(</span><span class="n">savedInstanceState</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">?)</span> <span class="p">{</span>
+
+        <span class="n">findViewById</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">BottomNavigationView</span><span class="p">&gt;(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">bottomNavigation</span><span class="p">)</span><span class="o">?.</span><span class="n">apply</span> <span class="p">{</span>
+            <span class="n">setupWithNavController</span><span class="p">(</span><span class="n">navController</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="ボトムナビゲーションの切り替え-タブ切り替え-にアニメーションが入ってしまう">ボトムナビゲーションの切り替え（タブ切り替え）にアニメーションが入ってしまう</h4>
+
+<p>navigation-ui-ktxで用意されている <code>setupWithNavController</code>を使うとボトムナビゲーションで選択したFragmentに切り替わるときにアニメーションが入ってしまう。Fragment間の遷移ではnavigation editorを使いtransitionを定義できるがボトムナビゲーションの切り替えのアニメーションは決め打ちでアニメーションが定義されてしまっている。</p>
+
+<p>アニメーションが定義されているNavigationUIクラスのコードは次のようになっていた。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="nf">class</span> <span class="n">NavigationUI</span> <span class="p">{</span>
+
+    <span class="kd">private</span> <span class="nf">static</span> <span class="kt">boolean</span> <span class="nf">onNavDestinationSelected</span><span class="p">(</span><span class="nd">@NonNull</span> <span class="n">MenuItem</span> <span class="nf">item</span><span class="p">,</span>
+            <span class="nd">@NonNull</span> <span class="n">NavController</span> <span class="nf">navController</span><span class="p">,</span> <span class="kt">boolean</span> <span class="nf">popUp</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">NavOptions</span><span class="p">.</span><span class="na">Builder</span> <span class="nf">builder</span> <span class="o">=</span> <span class="k">new</span> <span class="n">NavOptions</span><span class="p">.</span><span class="na">Builder</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">setLaunchSingleTop</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">setEnterAnim</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">anim</span><span class="p">.</span><span class="na">nav_default_enter_anim</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">setExitAnim</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">anim</span><span class="p">.</span><span class="na">nav_default_exit_anim</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">setPopEnterAnim</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">anim</span><span class="p">.</span><span class="na">nav_default_pop_enter_anim</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">setPopExitAnim</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">anim</span><span class="p">.</span><span class="na">nav_default_pop_exit_anim</span><span class="p">);</span>
+
+        <span class="c1">// 
+</span><span class="c1"></span>    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>NavigationUIを継承したり、このアニメーションを潰すスマートなやり方が見つからなかったので <code>setupWithNavController</code>を独自で実装した。独自というよりはアニメーションを呼び出している部分をカットしただけのBottomNNavigationViewの拡張関数である。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">BottomNavigationView</span><span class="p">.</span><span class="n">setupWithNavController</span><span class="p">(</span><span class="n">navController</span><span class="p">:</span> <span class="n">NavController</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="n">setOnNavigationItemSelectedListener</span> <span class="p">{</span> <span class="n">item</span> <span class="p">-&gt;</span>
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="n">navController</span><span class="p">.</span><span class="n">navigate</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="n">getItemId</span><span class="p">(),</span> <span class="k">null</span><span class="p">,</span> <span class="n">NavOptions</span><span class="p">.</span><span class="n">Builder</span><span class="p">().</span><span class="n">build</span><span class="p">())</span>
+            <span class="k">true</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">IllegalArgumentException</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">false</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="n">navController</span><span class="p">.</span><span class="n">addOnNavigatedListener</span> <span class="p">{</span> <span class="n">controller</span><span class="p">,</span> <span class="n">destination</span> <span class="p">-&gt;</span>
+        <span class="k">val</span> <span class="py">destinationId</span> <span class="p">=</span> <span class="n">destination</span><span class="p">.</span><span class="n">id</span>
+        <span class="k">val</span> <span class="py">menu</span> <span class="p">=</span> <span class="k">this</span><span class="p">.</span><span class="n">getMenu</span><span class="p">()</span>
+        <span class="k">var</span> <span class="py">h</span> <span class="p">=</span> <span class="m">0</span>
+        <span class="k">val</span> <span class="py">size</span> <span class="p">=</span> <span class="n">menu</span><span class="p">.</span><span class="n">size</span><span class="p">()</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">h</span> <span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">val</span> <span class="py">item</span> <span class="p">=</span> <span class="n">menu</span><span class="p">.</span><span class="n">getItem</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="n">getItemId</span><span class="p">()</span> <span class="p">==</span> <span class="n">destinationId</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">item</span><span class="p">.</span><span class="n">setChecked</span><span class="p">(</span><span class="k">true</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">h</span><span class="p">++</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="fragment間の遷移にnavigaitonを連携させる">Fragment間の遷移にNavigaitonを連携させる</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">val onClick: (Forecast) -&gt; Unit = { forecast: Forecast -&gt;
+    Bundle().apply {
+        putParcelable(ForecastFragment.KEY_FORECAST, forecast)
+    }.let {
+        view.findNavController().navigate(R.id.toForecast, it) ★
+    }
+}</pre></td></tr></table>
+</div>
+</div>
+<p><code>NavController#navigate</code>を呼び出せばNavigationと連携できる。第一引数のresIdにはnavigation editorで定義したactionのidを指定する。第二引数にはFragmentへ渡すargumentsを指定する。</p>
+
+<p>このコードではresIdに誤りがある場合、予期しないFragment遷移となってしまう。またFragmentに渡すargumentsが本当に期待するものかは定かではない。ここでsafe-argsを使う出番である。</p>
+
+<h4 id="safe-argsを有効にする">safe-argsを有効にする</h4>
+
+<p>Rootのbuild.gradleのdependencies/class_pathにsafe-argsを追加する</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">classpath &#34;android.arch.navigation:navigation-safe-args-gradle-plugin:$navVersion&#34;</pre></td></tr></table>
+</div>
+</div>
+<p>モジュールのbuild.gradleにpluginを追加する</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">apply plugin: &#39;androidx.navigation.safeargs&#39;</pre></td></tr></table>
+</div>
+</div>
+<p>これでsafe-argsが有効になったのでプロジェクトをリビルドする。<br/>
+ビルドが成功すると{from-Fragment}Directionsクラスと{to-Fragment}Argsクラスが生成される。生成されたクラスをナビゲーション遷移に使っていく。</p>
+
+<h4 id="from-fragment-directionsクラスと-to-fragment-argsクラスを使う">{from-Fragment}Directionsクラスと{to-Fragment}Argsクラスを使う</h4>
+
+<p>遷移元のコードは次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">onClick</span><span class="p">:</span> <span class="p">(</span><span class="n">Forecast</span><span class="p">)</span> <span class="p">-&gt;</span> <span class="n">Unit</span> <span class="p">=</span> <span class="p">{</span> <span class="n">forecast</span><span class="p">:</span> <span class="n">Forecast</span> <span class="p">-&gt;</span>
+    <span class="n">view</span><span class="p">.</span><span class="n">findNavController</span><span class="p">().</span><span class="n">navigate</span><span class="p">(</span><span class="n">ForecastsFragmentDirections</span><span class="p">.</span><span class="n">toForecast</span><span class="p">(</span><span class="n">gson</span><span class="p">.</span><span class="n">toJson</span><span class="p">(</span><span class="n">forecast</span><span class="p">)))</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>ForecastsFragment<code>Directions</code>クラスを使い、safe-argsで生成されたtoForecastメソッドをコールしている。また引数にはnavigation editorで定義したargumentsを渡す。<code>toForecast</code>メソッドはnav_graph.xmlで定義したaction idが参照されている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"># nav_graph.xml
+
+   &gt;
+
+    
+        android:id=&#34;@+id/forecastsFragment&#34;
+        android:name=&#34;me.soushin.sunshine.ui.forecast.ForecastsFragment&#34;
+        android:label=&#34;ForecastsFragment&#34;
+        &gt;
+        
+            android:id=&#34;@+id/toForecast&#34; ★
+            app:destination=&#34;@id/forecastFragment&#34;
+            /&gt;
+    
+
+    
+        android:id=&#34;@+id/forecastFragment&#34;
+        android:name=&#34;me.soushin.sunshine.ui.forecast.ForecastFragment&#34;
+        android:label=&#34;ForecastFragment&#34;
+        &gt;
+        
+            android:name=&#34;forecast&#34;  ★
+            app:type=&#34;string&#34;
+            /&gt;
+    </code></pre></td></tr></table>
+</div>
+</div>
+<p>遷移先は次のようなコードになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">ForecastFragment</span> <span class="p">:</span> <span class="n">AutoDisposeFragmentKotlin</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">forecast</span><span class="p">:</span> <span class="n">Forecast</span> <span class="k">by</span> <span class="n">lazy</span> <span class="p">{</span>
+        <span class="n">ForecastFragmentArgs</span><span class="p">.</span><span class="n">fromBundle</span><span class="p">(</span><span class="n">arguments</span><span class="p">).</span><span class="n">let</span> <span class="p">{</span>
+            <span class="n">gson</span><span class="p">.</span><span class="n">fromJson</span><span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="n">forecast</span><span class="p">,</span> <span class="n">Forecast</span><span class="o">::</span><span class="k">class</span><span class="p">.</span><span class="n">java</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>ForecastFragment<code>Args</code>クラスを使い遷移元から渡されたargumentsを参照できる。</p>
+
+<p>safe-argsはNavigation定義から遷移元、遷移先に必要なクラスとメソッドを用意してくれる。これによりNavigation定義どおりの実装が可能になるしコード品質も格段に向上できる。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>TL;DRにまとめたが、必要なところだけ徐々にNavigationに移行するのが良さそう。</li>
+<li>Fragment間を遷移するだけでNavigationがよしなにback stackを操作しているのでBackボタン、Upボタンの挙動に気を使う必要が無くなりそう。</li>
+<li>既存プロジェクトでback stackを操作してFragment遷移履歴を残している場合は導入は慎重にいきたい。</li>
+<li>新規プロジェクトであれば迷わずNavigationを導入すれば良いと思う。</li>
+<li>transitionやdeeplinkなどは試せていないので更にインプットしていきたい。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>これまでの紹介では断片的なコードとなっているためNavigationを有効にしたプルリクエストを残しています。参照いただき参考になれば幸いです。</p>
+
+<p><a href="https://github.com/soushin/sunshine-app/pull/11">Feature/add navigation by soushin · Pull Request #11 · soushin/sunshine-app · GitHub</a></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/android/">android</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/jetpack/">jetpack</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/navigation/">navigation</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

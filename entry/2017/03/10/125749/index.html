@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>CourseraのMachine Learningから線形回帰を学んだのでまとめてみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="CourseraのMachine Learningを受講しています。時間を見つけてはコツコツ進めて今のところWeek4に差し掛かったところです">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">CourseraのMachine Learningから線形回帰を学んだのでまとめてみた</h1>
+    <div class="post-meta">2017.3.10</div>
+  </header>
+  <div class="post-content">
+
+<p>CourseraのMachine Learningを受講しています。時間を見つけてはコツコツ進めて今のところWeek4に差し掛かったところです。Week4ではNeural Networksの話に入り一段とレベルが高くなった印象を受けています。Week1からWeek3までに学んだことを復習する必要があるなと焦りが生まれました。</p>
+
+<p>受講中は配布される資料や動画を見たり他の日本人の方のブログを拝見したりと課題に取り組んできました。このタイミングで復習して整理することでWeek4以降の学習が快適になるのではないかと淡い期待を込めてWeek1からまとめてみます。</p>
+
+<h3 id="machine-learning-stanford-university-coursera">Machine Learning - Stanford University | Coursera</h3>
+
+<p>こちらが受講しているMachine Learningのコースです。MOOCは好きな時間に進められるし前編英語（動画は日本語字幕あり）なので英語の学習になってオススメです。</p>
+
+<p><a href="https://www.coursera.org/learn/machine-learning">Machine Learning - Stanford University | Coursera</a></p>
+
+<h3 id="どこまでの内容をまとめるか">どこまでの内容をまとめるか</h3>
+
+<p>このエントリではWeek1の内容に触れています。</p>
+
+<h2 id="線形回帰とは">線形回帰とは？</h2>
+
+<p>ある土地の家の価格とその家の部屋数の相関をグラフで表すと以下のようになったとします。</p>
+
+<figure>
+    <img src="/images/20170310101210.png"/> 
+</figure>
+
+
+<p>Xが部屋数（RM）でYが価格（MEDV）です。</p>
+
+<p>（出典：<a href="https://archive.ics.uci.edu/ml/datasets/Housing">Housing Data Set</a>）</p>
+
+<p>※ このデータは部屋数以外に、その土地の犯罪率だったり児童と教師の比率など複数の要素から構成されています。</p>
+
+<p>部屋数が4つの場合や部屋数が7つの場合はグラフから予想できそうです。
+このとき頭の中ではグラフに右肩上がりな直線をイメージして予想できますが、この直線を数式から導き出すことを学びました。
+この導き方は統計学では回帰分析の一種として<a href="https://ja.wikipedia.org/wiki/%E7%B7%9A%E5%BD%A2%E5%9B%9E%E5%B8%B0">線形回帰</a>と呼ばれています。</p>
+
+<h3 id="仮定関数と目的関数">仮定関数と目的関数</h3>
+
+<p>部屋数をX、部屋の価格をYとすると相関を表すグラフを引くための1次関数の式は次のようになります。（懐かしい数式）</p>
+
+<p><img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Cdisplaystyle%0AY%20%3D%20aX%20%2B%20b%0A" alt=" \displaystyle
+Y = aX + b
+"/></p>
+
+<p>Machine Learningのコースではθをつかって次のような式で定義しています。</p>
+
+<p><img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Cdisplaystyle%0Ah_%5Ctheta%20%28X%29%20%3D%20%5Ctheta_0%20%2B%20%5Ctheta_1%28X%29%0A" alt=" \displaystyle
+h_\theta (X) = \theta_0 + \theta_1(X)
+"/></p>
+
+<p><img src="http://chart.apis.google.com/chart?cht=tx&chl=%20h_%5Ctheta%20%28X%29" alt=" h_\theta (X)"/> は<strong>仮定関数</strong>と呼ばれます。家の価格予想に最適な直線を引くために<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_0" alt=" \theta_0"/> と<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_1" alt=" \theta_1"/>の数値を変えながらグラフにフィットした仮定関数を導き出します。
+つまり右肩上がりの直線のグラフを引くために最適な<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%20aX%20%2B%20b" alt="  aX + b"/> の <code>a</code>と<code>b</code>を決めるということですね。</p>
+
+<p>仮定関数がフィットしているか計算するための関数である<strong>目的関数</strong>があります。</p>
+
+<p><img src="http://chart.apis.google.com/chart?cht=tx&chl=%7B%20%5Cdisplaystyle%0AJ%28%5Ctheta_0%2C%20%5Ctheta_1%29%20%3D%20%5Cfrac%7B1%7D%7B2m%7D%5Csum_%7Bi%3D1%7D%5E%7Bm%7D%20%28h_%5Ctheta%20%28X_i%29%20-%20Y_i%29%5E2%0A%7D" alt="{ \displaystyle
+J(\theta_0, \theta_1) = \frac{1}{2m}\sum_{i=1}^{m} (h_\theta (X_i) - Y_i)^2
+}"/></p>
+
+<p>この目的関数をつかって<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20J%28%5Ctheta_0%2C%20%5Ctheta_1%29" alt=" J(\theta_0, \theta_1)"/>を最小にする<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_0" alt=" \theta_0"/> と<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_1" alt=" \theta_1"/>を導き出します。</p>
+
+<h3 id="最急降下法">最急降下法</h3>
+
+<p>目的関数を最小にする方法に<strong>最急降下法</strong>があります。</p>
+
+<p><img src="http://chart.apis.google.com/chart?cht=tx&chl=%7B%20%5Cdisplaystyle%0A%5Ctheta_j%20%3D%20%5Ctheta_j%20-%20%5Calpha%20%5Csum_%7Bi%3D1%7D%5E%7Bm%7D%20%28h_%5Ctheta%20%28x%5E%7B%28i%29%7D%29%20-%20y%5E%7B%28i%29%7D%29%20x_j%5C%20%5E%7B%28i%29%7D%0A%7D" alt="{ \displaystyle
+\theta_j = \theta_j - \alpha \sum_{i=1}^{m} (h_\theta (x^{(i)}) - y^{(i)}) x_j\ ^{(i)}
+}"/></p>
+
+<p>ここで微分が出てきます。微分は傾きを求めますがこのアルゴリズムを使い傾きが最小になるまで学習を繰り返していきます。傾きの値が最小になるほどグラフにフィットした<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%5Ctheta_j" alt=" \theta_j"/>が求められます。
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=%20%20%5Calpha" alt="  \alpha"/>は学習率と呼ばれ数値が大きいほど傾きの変動幅が大きくなりフィットしたデータが得られず、小さいほど学習はゆっくりと進み確実にデータにフィットした値が求められます。</p>
+
+<h3 id="octaveでプログラム化する">Octaveでプログラム化する</h3>
+
+<p>コースの課題では<a href="https://ja.wikipedia.org/wiki/GNU_Octave">Octave</a>を使いプログラミング課題を提出します。
+最初に示した家の価格と部屋数のグラフのデータを使い、更にこれまでのアルゴリズムからデータにフィットした直線をグラフにプロットしてみます。</p>
+
+<p><strong>目的関数</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">function J = computeCost(X, y, theta)
+    m = length(y);
+    J = sum((X*theta -y).^2) / (2* m);
+end</pre></td></tr></table>
+</div>
+</div>
+<p><strong>最急降下法</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">function [theta, J_history] = gradientDescent(X, y, theta, alpha, num_iters)
+    m = length(y);
+    J_history = zeros(num_iters, 1);
+
+    for iter = 1:num_iters
+        theta = theta - alpha / m * X&#39; * (X * theta -y);
+        J_history(iter) = computeCost(X, y, theta);
+    end
+end</pre></td></tr></table>
+</div>
+</div>
+<p><strong>目的関数を求めグラフにプロットする。そして部屋数が5つのときの価格を予想する。</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">%% Initialization
+clear ; close all; clc
+data = load(&#34;housing.txt&#34;);
+x = data(:, 6);
+y = data(:, 14);
+m = length(y);
+
+theta = zeros(2, 1);
+X = [ones(m, 1), x]
+
+%% Compute Cost
+J = computeCost(X, y, theta)
+
+%% Gradient Descent
+iterations = 1500;
+alpha = 0.01;
+[theta J_history] = gradientDescent(X, y, theta, alpha, iterations);
+
+%% Output
+fprintf(&#39;Initial cost = %f\n&#39;, J);
+fprintf(&#39;Final cost = %f\n&#39;, J_history(iterations));
+fprintf(&#39;Theta found by gradient descent: &#39;);
+fprintf(&#39;%f %f \n&#39;, theta(1), theta(2));
+
+%% Plot data
+figure; hold on;
+plot(x, y, &#39;r+&#39;, &#39;LineWidth&#39;, 2);
+plot(X(:,2), X*theta, &#39;-&#39;)
+xlabel(&#39;RM&#39;);
+ylabel(&#39;MEDV&#39;);
+
+%% Predict
+fprintf(&#39;for RM = 5, MEDV = %f\n&#39;, [1, 5] *theta);</pre></td></tr></table>
+</div>
+</div>
+<p><strong>出力したグラフ</strong></p>
+
+<figure>
+    <img src="/images/20170310115327.png"/> 
+</figure>
+
+
+<p>データにフィットした直線がプロットできたようです。</p>
+
+<p><strong>出力した数値</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">J =  296.07
+initial cost 296.073458
+final cost 27.131052
+Theta found by gradient descent: -5.254087 4.477681
+for RM = 5, MEDV = 17.134317</pre></td></tr></table>
+</div>
+</div>
+<p>部屋数が５つのときに <code>17.134317</code>と予想できました。グラフにプロットされたデータとフィットされているようです。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>最後に出したグラフですが、もう少し角度が急な直線のほうがグラフにフィットしているようです。プロットして上手く行かなければ調整して再度プロットして、の繰り返しが機械学習の大事な工程なのでしょう。</li>
+<li>線形回帰はこの先で学ぶ機械学習の知識のベースになっています。データを分類する場合などに流用できます。</li>
+<li>今回の学習データは<code>部屋数</code>の１つでしたが部屋数に加え<code>犯罪率</code>、<code>児童と教師の比率</code>などの複数の要素からも線形回帰をベースに家の価格を予想できる。（重回帰分析）この内容はWeek2で学びました。</li>
+<li>MOOCで学び、コースを修了した先輩たちのブログで学び、自分のブログでアウトプットする、など多角的に学ぶことが大事。（ここに<code>書籍を読んで学ぶ</code>も入れたい💸 ）</li>
+<li>数式書くの大変。</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92/">機械学習</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/%E7%B7%9A%E5%BD%A2%E5%9B%9E%E5%B8%B0/">線形回帰</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/coursera/">Coursera</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

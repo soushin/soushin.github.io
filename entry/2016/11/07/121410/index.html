@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Spring Boot &#43; KotlinでGoogle Analytics APIを使ってみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Googleアナリテクスの設定は本家情報を参照 https://developers.google.com/analytics/devguides/reporting/core/v3/quickstart/service-java?hl=ja 手順まとめ Google API Consoleでサービスアカウントを作成して認証する鍵を作成（今回はp12ファ">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Spring Boot &#43; KotlinでGoogle Analytics APIを使ってみた</h1>
+    <div class="post-meta">2016.11.7</div>
+  </header>
+  <div class="post-content">
+
+<h4 id="googleアナリテクスの設定は本家情報を参照">Googleアナリテクスの設定は本家情報を参照</h4>
+
+<p><a href="https://developers.google.com/analytics/devguides/reporting/core/v3/quickstart/service-java?hl=ja">https://developers.google.com/analytics/devguides/reporting/core/v3/quickstart/service-java?hl=ja</a><br/></p>
+
+<h5 id="手順まとめ">手順まとめ</h5>
+
+<p><ol>
+<li>Google API Consoleでサービスアカウントを作成して認証する鍵を作成（今回はp12ファイルを使う）</li>
+<li>Googleアナリティクスのユーザ追加でAPI Consoleで作成したアクアンとを追加する</li>
+</ol>※ 2のConsoleで作ったアカウントをGoogleアナリティクスにユーザ追加が抜けていたため、ハマってしまった。</p>
+
+<h4 id="ビルドツールはgraldeを使う">ビルドツールはgraldeを使う</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">compile <span class="s2">&#34;com.google.apis:google-api-services-analytics:</span><span class="nv">$google_api_version</span><span class="s2">&#34;</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>versionは4.7を使う。</p>
+
+<h4 id="configurationのインスタンス">Configurationのインスタンス</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="nd">@Configuration</span>
+<span class="n">open</span> <span class="nf">class</span> <span class="n">GoogleAnalyticsConfig</span> <span class="p">{</span>
+
+    <span class="n">val</span> <span class="nf">applicationName</span> <span class="o">=</span> <span class="s">&#34;googleAnalytics&#34;</span>
+    <span class="n">val</span> <span class="nf">jsonFactory</span> <span class="o">=</span> <span class="n">JacksonFactory</span><span class="p">.</span><span class="na">getDefaultInstance</span><span class="p">()</span><span class="o">!!</span>
+    <span class="n">val</span> <span class="nf">serviceAccountEmail</span> <span class="o">=</span> <span class="s">&#34;xxxxx@xxxxx.iam.gserviceaccount.com&#34;</span>
+    <span class="n">val</span> <span class="nf">keyFileLocation</span> <span class="o">=</span> <span class="s">&#34;/credential.p12&#34;</span>
+
+    <span class="nd">@Bean</span>
+    <span class="n">open</span> <span class="nf">fun</span> <span class="n">analytics</span><span class="p">()</span><span class="o">:</span> <span class="n">Analytics</span> <span class="p">{</span>
+        <span class="n">val</span> <span class="nf">httpTransport</span> <span class="o">=</span> <span class="n">GoogleNetHttpTransport</span><span class="p">.</span><span class="na">newTrustedTransport</span><span class="p">()</span>
+        <span class="n">val</span> <span class="nf">credential</span> <span class="o">=</span> <span class="n">GoogleCredential</span><span class="p">.</span><span class="na">Builder</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">setTransport</span><span class="p">(</span><span class="n">httpTransport</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">setJsonFactory</span><span class="p">(</span><span class="n">jsonFactory</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">setServiceAccountId</span><span class="p">(</span><span class="n">serviceAccountEmail</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">setServiceAccountPrivateKeyFromP12File</span><span class="p">(</span>
+                        <span class="n">File</span><span class="p">(</span><span class="n">javaClass</span><span class="p">.</span><span class="na">getResource</span><span class="p">(</span><span class="n">keyFileLocation</span><span class="p">).</span><span class="na">path</span><span class="p">))</span>
+                <span class="p">.</span><span class="na">setServiceAccountScopes</span><span class="p">(</span><span class="n">AnalyticsScopes</span><span class="p">.</span><span class="na">all</span><span class="p">())</span>
+                <span class="p">.</span><span class="na">build</span><span class="p">();</span>
+        <span class="k">return</span> <span class="n">Analytics</span><span class="p">.</span><span class="na">Builder</span><span class="p">(</span><span class="n">httpTransport</span><span class="p">,</span> <span class="n">jsonFactory</span><span class="p">,</span> <span class="n">credential</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">setApplicationName</span><span class="p">(</span><span class="n">applicationName</span><span class="p">).</span><span class="na">build</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>serviceAccountEmailはAPI Consoleで作成したアカウントのメールアドレス</li>
+<li>keyFileLocationはAPI Consoleで作成したアカウントの認証鍵</li>
+</ul>
+
+<h4 id="データの取得">データの取得</h4>
+
+<ul>
+<li>昨日から今日までのセッション数を性別と年齢別に取得する</li>
+<li>"ga:" + "xxxxx"のxxxxxはアナリティクスのprofileIDを指定する</li>
+<li>簡易的なコントローラーを用意してlog出力</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="nd">@RestController</span>
+<span class="n">open</span> <span class="nf">class</span> <span class="n">AnalyticsController</span> <span class="nd">@Autowired</span> <span class="n">constructor</span><span class="p">(</span><span class="n">val</span> <span class="nf">googleAnalytics</span><span class="o">:</span> <span class="n">Analytics</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">val</span> <span class="nf">log</span><span class="o">:</span> <span class="n">Logger</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="p">.</span><span class="na">getLogger</span><span class="p">(</span><span class="s">&#34;ANALYTICS&#34;</span><span class="p">);</span>
+
+    <span class="nd">@RequestMapping</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&#34;/analytics&#34;</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">arrayOf</span><span class="p">(</span><span class="n">RequestMethod</span><span class="p">.</span><span class="na">GET</span><span class="p">))</span>
+    <span class="n">fun</span> <span class="nf">index</span><span class="p">()</span><span class="o">:</span> <span class="n">String</span> <span class="p">{</span>
+        <span class="n">val</span> <span class="nf">gaData</span> <span class="o">=</span> <span class="n">googleAnalytics</span><span class="p">.</span><span class="na">data</span><span class="p">().</span><span class="na">ga</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">&#34;ga:&#34;</span> <span class="o">+</span> <span class="s">&#34;xxxxx&#34;</span><span class="p">,</span> <span class="s">&#34;yesterday&#34;</span><span class="p">,</span> <span class="s">&#34;today&#34;</span><span class="p">,</span> <span class="s">&#34;ga:sessions&#34;</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">setDimensions</span><span class="p">(</span><span class="s">&#34;ga:visitorGender,ga:visitorAgeBracket&#34;</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">execute</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">row</span> <span class="nf">in</span> <span class="n">gaData</span><span class="p">.</span><span class="na">rows</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="n">Moshi</span><span class="p">.</span><span class="na">Builder</span><span class="p">().</span><span class="na">build</span><span class="p">()</span>
+                    <span class="p">.</span><span class="na">adapter</span><span class="p">(</span><span class="n">List</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">)</span>
+                    <span class="p">.</span><span class="na">toJson</span><span class="p">(</span><span class="n">row</span><span class="p">))</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="s">&#34;ok&#34;</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h5 id="出力例">出力例</h5>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell"><span class="o">{</span><span class="s2">&#34;@timestamp&#34;</span>:<span class="s2">&#34;2016-11-07T12:10:56.021+09:00&#34;</span>,<span class="s2">&#34;@version&#34;</span>:1,<span class="s2">&#34;message&#34;</span>:<span class="s2">&#34;[\&#34;female\&#34;,\&#34;18-24\&#34;,\&#34;xxx\&#34;]&#34;</span>,<span class="s2">&#34;logger_name&#34;</span>:<span class="s2">&#34;ANALYTICS&#34;</span>,<span class="s2">&#34;thread_name&#34;</span>:<span class="s2">&#34;http-nio-8080-exec-7&#34;</span>,<span class="s2">&#34;level&#34;</span>:<span class="s2">&#34;INFO&#34;</span>,<span class="s2">&#34;level_value&#34;</span>:20000,<span class="s2">&#34;HOSTNAME&#34;</span>:<span class="s2">&#34;xxxxx&#34;</span><span class="o">}</span>
+<span class="o">{</span><span class="s2">&#34;@timestamp&#34;</span>:<span class="s2">&#34;2016-11-07T12:10:56.022+09:00&#34;</span>,<span class="s2">&#34;@version&#34;</span>:1,<span class="s2">&#34;message&#34;</span>:<span class="s2">&#34;[\&#34;female\&#34;,\&#34;25-34\&#34;,\&#34;xxx\&#34;]&#34;</span>,<span class="s2">&#34;logger_name&#34;</span>:<span class="s2">&#34;ANALYTICS&#34;</span>,<span class="s2">&#34;thread_name&#34;</span>:<span class="s2">&#34;http-nio-8080-exec-7&#34;</span>,<span class="s2">&#34;level&#34;</span>:<span class="s2">&#34;INFO&#34;</span>,<span class="s2">&#34;level_value&#34;</span>:20000,<span class="s2">&#34;HOSTNAME&#34;</span>:<span class="s2">&#34;xxxxx&#34;</span><span class="o">}</span>
+<span class="o">{</span><span class="s2">&#34;@timestamp&#34;</span>:<span class="s2">&#34;2016-11-07T12:10:56.023+09:00&#34;</span>,<span class="s2">&#34;@version&#34;</span>:1,<span class="s2">&#34;message&#34;</span>:<span class="s2">&#34;[\&#34;female\&#34;,\&#34;35-44\&#34;,\&#34;xxx\&#34;]&#34;</span>,<span class="s2">&#34;logger_name&#34;</span>:<span class="s2">&#34;ANALYTICS&#34;</span>,<span class="s2">&#34;thread_name&#34;</span>:<span class="s2">&#34;http-nio-8080-exec-7&#34;</span>,<span class="s2">&#34;level&#34;</span>:<span class="s2">&#34;INFO&#34;</span>,<span class="s2">&#34;level_value&#34;</span>:20000,<span class="s2">&#34;HOSTNAME&#34;</span>:<span class="s2">&#34;xxxxx&#34;</span><span class="o">}</span>
+<span class="o">{</span><span class="s2">&#34;@timestamp&#34;</span>:<span class="s2">&#34;2016-11-07T12:10:56.024+09:00&#34;</span>,<span class="s2">&#34;@version&#34;</span>:1,<span class="s2">&#34;message&#34;</span>:<span class="s2">&#34;[\&#34;female\&#34;,\&#34;45-54\&#34;,\&#34;xxx\&#34;]&#34;</span>,<span class="s2">&#34;logger_name&#34;</span>:<span class="s2">&#34;ANALYTICS&#34;</span>,<span class="s2">&#34;thread_name&#34;</span>:<span class="s2">&#34;http-nio-8080-exec-7&#34;</span>,<span class="s2">&#34;level&#34;</span>:<span class="s2">&#34;INFO&#34;</span>,<span class="s2">&#34;level_value&#34;</span>:20000,<span class="s2">&#34;HOSTNAME&#34;</span>:<span class="s2">&#34;xxxxx&#34;</span><span class="o">}</span>
+<span class="o">{</span><span class="s2">&#34;@timestamp&#34;</span>:<span class="s2">&#34;2016-11-07T12:10:56.025+09:00&#34;</span>,<span class="s2">&#34;@version&#34;</span>:1,<span class="s2">&#34;message&#34;</span>:<span class="s2">&#34;[\&#34;female\&#34;,\&#34;55-64\&#34;,\&#34;xxx\&#34;]&#34;</span>,<span class="s2">&#34;logger_name&#34;</span>:<span class="s2">&#34;ANALYTICS&#34;</span>,<span class="s2">&#34;thread_name&#34;</span>:<span class="s2">&#34;http-nio-8080-exec-7&#34;</span>,<span class="s2">&#34;level&#34;</span>:<span class="s2">&#34;INFO&#34;</span>,<span class="s2">&#34;level_value&#34;</span>:20000,<span class="s2">&#34;HOSTNAME&#34;</span>:<span class="s2">&#34;xxxxx&#34;</span><span class="o">}</span>
+<span class="o">{</span><span class="s2">&#34;@timestamp&#34;</span>:<span class="s2">&#34;2016-11-07T12:10:56.025+09:00&#34;</span>,<span class="s2">&#34;@version&#34;</span>:1,<span class="s2">&#34;message&#34;</span>:<span class="s2">&#34;[\&#34;male\&#34;,\&#34;18-24\&#34;,\&#34;xxx\&#34;]&#34;</span>,<span class="s2">&#34;logger_name&#34;</span>:<span class="s2">&#34;ANALYTICS&#34;</span>,<span class="s2">&#34;thread_name&#34;</span>:<span class="s2">&#34;http-nio-8080-exec-7&#34;</span>,<span class="s2">&#34;level&#34;</span>:<span class="s2">&#34;INFO&#34;</span>,<span class="s2">&#34;level_value&#34;</span>:20000,<span class="s2">&#34;HOSTNAME&#34;</span>:<span class="s2">&#34;xxxxx&#34;</span><span class="o">}</span>
+<span class="o">{</span><span class="s2">&#34;@timestamp&#34;</span>:<span class="s2">&#34;2016-11-07T12:10:56.026+09:00&#34;</span>,<span class="s2">&#34;@version&#34;</span>:1,<span class="s2">&#34;message&#34;</span>:<span class="s2">&#34;[\&#34;male\&#34;,\&#34;25-34\&#34;,\&#34;xxx\&#34;]&#34;</span>,<span class="s2">&#34;logger_name&#34;</span>:<span class="s2">&#34;ANALYTICS&#34;</span>,<span class="s2">&#34;thread_name&#34;</span>:<span class="s2">&#34;http-nio-8080-exec-7&#34;</span>,<span class="s2">&#34;level&#34;</span>:<span class="s2">&#34;INFO&#34;</span>,<span class="s2">&#34;level_value&#34;</span>:20000,<span class="s2">&#34;HOSTNAME&#34;</span>:<span class="s2">&#34;xxxxx&#34;</span><span class="o">}</span>
+<span class="o">{</span><span class="s2">&#34;@timestamp&#34;</span>:<span class="s2">&#34;2016-11-07T12:10:56.027+09:00&#34;</span>,<span class="s2">&#34;@version&#34;</span>:1,<span class="s2">&#34;message&#34;</span>:<span class="s2">&#34;[\&#34;male\&#34;,\&#34;35-44\&#34;,\&#34;xxx\&#34;]&#34;</span>,<span class="s2">&#34;logger_name&#34;</span>:<span class="s2">&#34;ANALYTICS&#34;</span>,<span class="s2">&#34;thread_name&#34;</span>:<span class="s2">&#34;http-nio-8080-exec-7&#34;</span>,<span class="s2">&#34;level&#34;</span>:<span class="s2">&#34;INFO&#34;</span>,<span class="s2">&#34;level_value&#34;</span>:20000,<span class="s2">&#34;HOSTNAME&#34;</span>:<span class="s2">&#34;xxxxx&#34;</span><span class="o">}</span>
+<span class="o">{</span><span class="s2">&#34;@timestamp&#34;</span>:<span class="s2">&#34;2016-11-07T12:10:56.028+09:00&#34;</span>,<span class="s2">&#34;@version&#34;</span>:1,<span class="s2">&#34;message&#34;</span>:<span class="s2">&#34;[\&#34;male\&#34;,\&#34;45-54\&#34;,\&#34;xxx\&#34;]&#34;</span>,<span class="s2">&#34;logger_name&#34;</span>:<span class="s2">&#34;ANALYTICS&#34;</span>,<span class="s2">&#34;thread_name&#34;</span>:<span class="s2">&#34;http-nio-8080-exec-7&#34;</span>,<span class="s2">&#34;level&#34;</span>:<span class="s2">&#34;INFO&#34;</span>,<span class="s2">&#34;level_value&#34;</span>:20000,<span class="s2">&#34;HOSTNAME&#34;</span>:<span class="s2">&#34;xxxxx&#34;</span><span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div></div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/springboot/">springboot</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/ga/">ga</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

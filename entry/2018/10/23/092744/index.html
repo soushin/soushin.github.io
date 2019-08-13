@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Spring FuをGraalVMで動かす。起動速度に驚いた。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Serverlessプラットフォームが注目される中、その潮流にJava勢も乗っかりたいので起動速度が速いと注目のGraalVMを試してみた。">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Spring FuをGraalVMで動かす。起動速度に驚いた。</h1>
+    <div class="post-meta">2018.10.23</div>
+  </header>
+  <div class="post-content">
+
+<p>Serverlessプラットフォームが注目される中、その潮流にJava勢も乗っかりたいので起動速度が速いと注目のGraalVMを試してみた。</p>
+
+<h3 id="モチベーション">モチベーション</h3>
+
+<ul>
+<li>GraalVMのアプリケーション起動までを理解したい。</li>
+<li>GraalVMでSpring Fuを動したい。</li>
+<li>GraalVMでHTTP/1.1とgRPCのエンドポイントが開いたサーバを動かしたい。</li>
+</ul>
+
+<h3 id="graalvmコトハジメ">GraalVMコトハジメ</h3>
+
+<p>GraalVM周辺を理解する。</p>
+
+<p><a href="https://www.graalvm.org/">https://www.graalvm.org/</a></p>
+
+<h4 id="graalvmとは">GraalVMとは</h4>
+
+<ul>
+<li>Polyglot VM。多言語用の仮想マシンである。</li>
+<li>JavaのJVMもScala/Java/Kotlinの複数言語を実行できたがGraalVMはJavaScript、Python、Rubyなどの言語も実行できる。</li>
+<li>KotlinでRubyの関数を呼び出すことが可能。</li>
+<li>Twitterは本番環境に導入しているらしい。</li>
+</ul>
+
+<h4 id="graalvmとgraal">GraalVMとGraal</h4>
+
+<ul>
+<li>GraalとGraalVMを混同してしまうが別物である。</li>
+<li>GraalはJavaのJITエンジンの1つでGraalVMはJITコンパイラにGraalを使っている。</li>
+<li>Java9のAOTコンパイラはGraalをつかっている。</li>
+</ul>
+
+<h4 id="aotコンパイラ">AOTコンパイラ</h4>
+
+<ul>
+<li>GraalVMではAOTコンパイラをつかってnative imageを作れる。</li>
+<li>これにより起動が爆速になる。
+
+<ul>
+<li>JVMのJITコンパイラ（Just-in-time：実行時コンパイル）は実行時にコンパイルされるがAOTコンパイラ（Ahead-of-time：事前コンパイル）は事前コンパイルのため予めVM上で動く機械語にコンパイルされるため起動が速い。</li>
+</ul>
+</li>
+</ul>
+
+<h4 id="graalvmのメリット">GraalVMのメリット</h4>
+
+<ul>
+<li>多言語を１つのランタイムで動かせること。</li>
+<li>デプロイ構成や監視体制など言語ごとに整える必要がなくなる。</li>
+<li>起動が爆速。<a href="https://cloud.google.com/knative/?hl=ja">Knative</a>などのServerlessプラットフォームと相性が良い。</li>
+</ul>
+
+<h4 id="graalvmのデメリット">GraalVMのデメリット</h4>
+
+<ul>
+<li>動的なクラスなクラスロードができない。
+
+<ul>
+<li><a href="https://github.com/oracle/graal/blob/master/substratevm/LIMITATIONS.md">https://github.com/oracle/graal/blob/master/substratevm/LIMITATIONS.md</a></li>
+<li>起動が速いメリットにより生まれたデメリットである。</li>
+<li>事前にコンパイルするため実行時に動的なクラス参照ができない。</li>
+<li>Springframeworkなどは痛手であるが回避方法はある。</li>
+</ul>
+</li>
+</ul>
+
+<h3 id="graalvmでspring-fuを動かす">GraalVMでSpring Fuを動かす</h3>
+
+<ul>
+<li>Spring Fuで実装したアプリケーションをGraalVMで動かす</li>
+<li>サンプルで試したアプリケーションではHandlerをbean化しているがnativeイメージ化するためには一工夫必要である</li>
+</ul>
+
+<h5 id="native-imageのコマンド">native-imageのコマンド</h5>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"> native-image -H:Name=app \
+  --delay-class-initialization-to-runtime=io.netty.handler.codec.http.HttpObjectEncoder,org.springframework.core.io.VfsUtils \
+  -H:ReflectionConfigurationFiles=graal-app.json \
+  -Dio.netty.noUnsafe=true \
+  -H:+ReportUnsupportedElementsAtRuntime \
+  -Dfile.encoding=UTF-8 -cp &#34;.:$(echo spring-fu-on-graalvm/BOOT-INF/lib/*.jar | tr &#39; &#39; &#39;:&#39;)&#34;:spring-fu-on-graalvm/BOOT-INF/classes me.soushin.app.ApplicationKt</pre></td></tr></table>
+</div>
+</div>
+<p><code>-H:ReflectionConfigurationFiles=graal-app.json</code>がポイントである。
+このjsonに次のようにbean化するクラスを定義する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">  {
+    &#34;name&#34;: &#34;me.soushin.app.EchoHandler&#34;,
+    &#34;allDeclaredConstructors&#34;: true
+  }</pre></td></tr></table>
+</div>
+</div>
+<p>こうすることでSpringの世界で <code>bean&lt;EchoHandler&gt;()</code>を読んでも動的クラス読み込みが成功する。</p>
+
+<h4 id="起動にかかった時間を確認する">起動にかかった時間を確認する</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">04:15:42.131 [main] INFO org.springframework.boot.SpringApplication 
+  - Started application in 0.012 seconds (JVM running for 0.012)</pre></td></tr></table>
+</div>
+</div>
+<p><code>0.012</code>!! 爆速。</p>
+
+<p>Spring Fuを動かしているレポジトリを公開しているのでソースとともに確認してほしい。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="spring-fu-on-graalvm" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h3 id="grpcサーバは動くのか">gRPCサーバは動くのか</h3>
+
+<p>こちらのレポジトリで試したがnative imageの生成時にエラーを確認した。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="grpc-server-on-graalvm" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p><code>oracle/graal</code>にissueを送ったので継続してgRPCサーバを動かすことにチャレンジしていきたい。</p>
+
+<p><div class="github-card" data-user="oracle/graal/issues" data-repo="754" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>GraalVMのコトハジメをまとめた。</li>
+<li>JVMは起動速度がネックであったがServerlessプラットフォームに相性が良いGraalVMは利用が広がっていくのではないだろうか。</li>
+<li>ビルドの工程にnativeイメージを固めることが加えられるので時間は増すが起動時間短縮のメリットがある。</li>
+<li>実践導入に向けた試験など課題はあるがスモールなサービスから投入して慣らしていきたい。</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/graalvm/">GraalVM</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/spring-fu/">Spring-Fu</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

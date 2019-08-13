@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>grpc-ecosystem/grpc-gatewayのセットアップ方法をまとめてみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Server Side Kotlinのアウトプットにつかっているレポジトリにgrpc-gatewayを入れてみたので、セットアップ方法をまとめておく。 grpc-">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">grpc-ecosystem/grpc-gatewayのセットアップ方法をまとめてみた</h1>
+    <div class="post-meta">2017.10.29</div>
+  </header>
+  <div class="post-content">
+
+<p>Server Side Kotlinのアウトプットにつかっている<a href="https://github.com/soushin/spring5-kotlin-application/tree/master/grpc-gateway">レポジトリ</a>にgrpc-gatewayを入れてみたので、セットアップ方法をまとめておく。</p>
+
+<p><div class="github-card" data-user="grpc-ecosystem" data-repo="grpc-gateway" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>grpc-gatewayはHTTP/1.1のAPIの提供する。定義したprotoにoptionを加えることでHTTP/1.1 APIのコードとgrpc-clientのリクエストを仲介するgoコードが生成される。</p>
+
+<p>定義したprotoに次のようなoptionを加える。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="kd">service</span> <span class="n">TaskService</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>    <span class="k">rpc</span> <span class="n">GetTaskService</span> <span class="p">(</span><span class="n">GetTaskInbound</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">TaskOutbound</span><span class="p">)</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>        <span class="k">option</span> <span class="p">(</span><span class="n">google.api.http</span><span class="p">)</span> <span class="o">=</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>            <span class="n">post</span><span class="o">:</span> <span class="s">&#34;/grpcgateway/task&#34;</span><span class="err">
+</span><span class="err"></span>            <span class="n">body</span><span class="o">:</span> <span class="s">&#34;*&#34;</span><span class="err">
+</span><span class="err"></span>            <span class="p">};</span><span class="err">
+</span><span class="err"></span>    <span class="p">}</span><span class="err">
+</span><span class="err"></span><span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="kd">message</span> <span class="nc">GetTaskInbound</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>    <span class="kt">uint32</span> <span class="n">task_id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>このoption定義によるとPOSTメソッドで パスが<code>/grpcgateway/task</code>のエンドポイントができあがる。リクエストボディには次のようにprotoに定義したGetTaskInboundのmessage定義をJSON形式でセットしてリクエストする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ curl -XPOST <span class="se">\
+</span><span class="se"></span>           http://localhost:8081/grpcgateway/task <span class="se">\
+</span><span class="se"></span>           -H <span class="s1">&#39;Content-type: application/json&#39;</span> <span class="se">\
+</span><span class="se"></span>           -d <span class="s1">&#39;{&#34;task_id&#34;: 1}&#39;</span></code></pre></td></tr></table>
+</div>
+</div>
+<hr/>
+
+<p>次にprotocでHTTP/1.1 APIのコードとgrpc-clientのリクエストを仲介するgoコードを生成する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">protoc -I/usr/local/include <span class="se">\
+</span><span class="se"></span>    -I./proto <span class="se">\
+</span><span class="se"></span>    -I<span class="nv">$$</span>GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis <span class="se">\
+</span><span class="se"></span>    --grpc-gateway_out<span class="o">=</span><span class="nv">logtostderr</span><span class="o">=</span>true:grpc/gen/ <span class="se">\
+</span><span class="se"></span>    ./proto/soushin/spring5-kotlin-application/task/task.proto</code></pre></td></tr></table>
+</div>
+</div>
+<p>このprotocを実行すると <code>task.pb.gw.go</code>が生成される。生成されたproxyコードを使ってエンドポイントに定義すれば良い。
+定義の仕方はgrpc-gatewayのexmapleが分かりやすい。</p>
+
+<p><a href="https://github.com/grpc-ecosystem/grpc-gateway/blob/master/examples/main.go">grpc-gateway/main.go at master · grpc-ecosystem/grpc-gateway · GitHub</a></p>
+
+<h3 id="コード">コード</h3>
+
+<p>動くコードをgithubに置いたので合わせて確認してほしい。</p>
+
+<p><div class="github-card" data-user="soushin/spring5-kotlin-application/tree/master" data-repo="grpc-gateway" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc-gateway/">grpc-gateway</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/proto/">proto</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

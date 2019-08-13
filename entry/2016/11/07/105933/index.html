@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Spring Boot &#43; KotlinでLogstashを使ってログ出力 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Logstatshのお試しとして、Spring Boot &#43; kotlinのアプリに導入したときのメモ。 ビルドツールはgradleを使う 1 2 3 4 5 6 7 8">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Spring Boot &#43; KotlinでLogstashを使ってログ出力</h1>
+    <div class="post-meta">2016.11.7</div>
+  </header>
+  <div class="post-content">
+
+<p>Logstatshのお試しとして、Spring Boot + kotlinのアプリに導入したときのメモ。</p>
+
+<h3 id="ビルドツールはgradleを使う">ビルドツールはgradleを使う</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">buildscript {
+    ext {
+        springBootVersion = &#39;1.4.1.RELEASE&#39;
+        kotlin_version = &#39;1.0.4&#39;
+        logstash_logback_encoder_version = &#34;4.7&#34;
+    }
+...
+}</pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">dependencies {
+    compile &#34;org.springframework.boot:spring-boot-starter&#34;
+    compile &#34;org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version&#34;
+    compile &#34;org.springframework.boot:spring-boot-starter-web&#34;
+
+    compile &#34;net.logstash.logback:logstash-logback-encoder:$logstash_logback_encoder_version&#34;
+}</pre></td></tr></table>
+</div>
+</div>
+<h3 id="logback-xmlにappender追加">logback.xmlにappender追加</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml">    name=&#34;EVENT&#34; class=&#34;ch.qos.logback.core.rolling.RollingFileAppender&#34;&gt;
+        <span class="nt">&lt;file&gt;&lt;/file&gt;</span>logs/event.log
+        class=&#34;ch.qos.logback.core.rolling.TimeBasedRollingPolicy&#34;&gt;
+            <span class="nt">&lt;filenamepattern&gt;&lt;/filenamepattern&gt;</span>logs/event.%d{yyyy-MM-dd}.log.tar.gz
+            <span class="nt">&lt;maxhistory&gt;&lt;/maxhistory&gt;</span>7
+        
+        class=&#34;net.logstash.logback.encoder.LogstashEncoder&#34; /&gt;
+    </code></pre></td></tr></table>
+</div>
+</div>
+<p>encoder classにLogstashEncoderを記述する。</p>
+
+<h3 id="簡易的なコントローラーで出力してみる">簡易的なコントローラーで出力してみる</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="nd">@RestController</span>
+<span class="n">open</span> <span class="nf">class</span> <span class="n">EventController</span> <span class="p">{</span>
+
+    <span class="n">val</span> <span class="nf">log</span><span class="o">:</span> <span class="n">Logger</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="p">.</span><span class="na">getLogger</span><span class="p">(</span><span class="s">&#34;EVENT&#34;</span><span class="p">);</span>
+
+    <span class="n">data</span> <span class="nf">class</span> <span class="n">EventLog</span><span class="p">(</span><span class="n">val</span> <span class="nf">name</span><span class="o">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">val</span> <span class="nf">type</span><span class="o">:</span> <span class="n">String</span><span class="p">)</span>
+
+    <span class="nd">@RequestMapping</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&#34;/event&#34;</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">arrayOf</span><span class="p">(</span><span class="n">RequestMethod</span><span class="p">.</span><span class="na">GET</span><span class="p">))</span>
+    <span class="n">fun</span> <span class="nf">index</span><span class="p">()</span><span class="o">:</span> <span class="n">String</span> <span class="p">{</span>
+        <span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="n">getLog</span><span class="p">(</span><span class="s">&#34;event&#34;</span><span class="p">,</span> <span class="s">&#34;click&#34;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s">&#34;ok&#34;</span>
+    <span class="p">}</span>
+
+    <span class="n">fun</span> <span class="nf">getLog</span><span class="p">(</span><span class="n">name</span><span class="o">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">type</span><span class="o">:</span> <span class="n">String</span><span class="p">)</span><span class="o">:</span> <span class="n">String</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">Moshi</span><span class="p">.</span><span class="na">Builder</span><span class="p">().</span><span class="na">build</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">adapter</span><span class="p">(</span><span class="n">EventLog</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">toJson</span><span class="p">(</span><span class="n">EventLog</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">type</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="出力例">出力例</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span><span class="nt">&#34;@timestamp&#34;</span><span class="p">:</span><span class="s2">&#34;2016-11-07T10:29:29.333+09:00&#34;</span><span class="p">,</span><span class="nt">&#34;@version&#34;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&#34;message&#34;</span><span class="p">:</span><span class="s2">&#34;{\&#34;name\&#34;:\&#34;event\&#34;,\&#34;type\&#34;:\&#34;click\&#34;}&#34;</span><span class="p">,</span><span class="nt">&#34;logger_name&#34;</span><span class="p">:</span><span class="s2">&#34;EVENT&#34;</span><span class="p">,</span><span class="nt">&#34;thread_name&#34;</span><span class="p">:</span><span class="s2">&#34;http-nio-8080-exec-1&#34;</span><span class="p">,</span><span class="nt">&#34;level&#34;</span><span class="p">:</span><span class="s2">&#34;INFO&#34;</span><span class="p">,</span><span class="nt">&#34;level_value&#34;</span><span class="p">:</span><span class="mi">20000</span><span class="p">,</span><span class="nt">&#34;HOSTNAME&#34;</span><span class="p">:</span><span class="s2">&#34;xxxx&#34;</span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="jsonパーサーにmoshiを使う">JSONパーサーにmoshiを使う</h3>
+
+<p>イベントのオブジェクトをjsonにしてみたかったのでmoshiを利用してみた。
+<div class="github-card" data-user="square" data-repo="moshi" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h4 id="tojsonする">toJsonする</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java">    <span class="n">fun</span> <span class="nf">getLog</span><span class="p">(</span><span class="n">name</span><span class="o">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">type</span><span class="o">:</span> <span class="n">String</span><span class="p">)</span><span class="o">:</span> <span class="n">String</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">Moshi</span><span class="p">.</span><span class="na">Builder</span><span class="p">().</span><span class="na">build</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">adapter</span><span class="p">(</span><span class="n">EventLog</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">toJson</span><span class="p">(</span><span class="n">EventLog</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">type</span><span class="p">))</span>
+    <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div></div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/springboot/">springboot</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/logstash/">logstash</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

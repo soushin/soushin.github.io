@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>サーバサイドKotlinをはじめよう。Ktor Tips集をまとめた。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="この記事はCyberAgent Developers Advent Calendar 2018の22日目の記事です。 Ktor KtorはKotlin純正のWebフレームワークです。APIはラムダ式を">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">サーバサイドKotlinをはじめよう。Ktor Tips集をまとめた。</h1>
+    <div class="post-meta">2018.12.22</div>
+  </header>
+  <div class="post-content">
+
+<p>この記事は<a href="https://adventar.org/calendars/2951">CyberAgent Developers Advent Calendar 2018</a>の22日目の記事です。</p>
+
+<h3 id="ktor">Ktor</h3>
+
+<p>KtorはKotlin純正のWebフレームワークです。APIはラムダ式を使った関数呼び出しでKotlin DSLによりルーティングを宣言的なコードで保守できます。KtorアプリケーションはTomcatなどのServlet 3.0またはスタンドアローンなJetty、Nettyなどのサーブレットコンテナでホスティングできます。KotlinConf 2018（2018/10）で1.0.0のベータが紹介され11月には<a href="https://github.com/ktorio/ktor/releases/tag/1.0.0">Ktor 1.0.0の正式リリース</a>を発表しました。2018/12時点では1.0.1が利用できます。</p>
+
+<p><a href="https://ktor.io/">Ktor - asynchronous Web framework for Kotlin</a></p>
+
+<h3 id="モチベーション">モチベーション</h3>
+
+<p>これまで私はサーバサイド Kotlinを開発するフレームワークにはSpring Bootを選択してきましたがマイクロサービスを俯瞰してみると軽量なマイクロフレームワークを採用したいという気持ちがありました。例えばDBアクセスが必要ないマイクロサービスであればAPIルーティングをストレスなく開発できるフレームワークのほうが向いているかもしれません。</p>
+
+<p>Spring BootもRouter Functional DSLや<a href="https://github.com/spring-projects/spring-fu">Spring Fu</a>が登場するなどニーズにあった選択ができるようになってきています。しかしKotlin Nativeの登場によってiOS/Android/Serverのリソースが共有できる環境になると純正Kotlinを採用しているKtorを採用したほうが今後の潮流に順応できそうです。また<a href="https://ktor.io/clients/http-client/multiplatform.html">マルチプラットフォームにKtorのライブラリが採用されている</a>ドキュメントなどが今後更に増えていくことを考慮するとKtorを採用することは理にかなっていると言えるでしょう。</p>
+
+<p>このエントリではWebサーバのAPI開発のユースケースがKtorではどのように解決されているのかをまとめていきます。サーバサイド Kotlinをはじめようとする皆さんにとって、これから更に注目されるKtorを利用する手助けになれば幸いです。</p>
+
+<h3 id="ユースケースをまとめる">ユースケースをまとめる</h3>
+
+<p>新しいフレームワークでWebサーバのAPI開発を行うときには次のようなユースケースがどのようにサポートされているか気になります。</p>
+
+<ul>
+<li>APIルーティング</li>
+<li>環境変数マッピング</li>
+<li>インターセプター</li>
+<li>エラーハンドリング</li>
+<li>認証処理（今回はJWT）</li>
+<li>DI</li>
+<li>APIテスト</li>
+</ul>
+
+<p>Ktorではどのように実装するのでしょうか。順を追って見ていきましょう。</p>
+
+<h3 id="apiルーティング">APIルーティング</h3>
+
+<p>簡単なEchoサーバを作っていきましょう。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">Array</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;)</span> <span class="p">{</span>
+    <span class="n">embeddedServer</span><span class="p">(</span><span class="n">Netty</span><span class="p">,</span> <span class="m">8008</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">routing</span> <span class="p">{</span>
+            <span class="k">get</span><span class="p">(</span><span class="s">&#34;echo&#34;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">call</span><span class="p">.</span><span class="n">apply</span> <span class="p">{</span>
+                    <span class="n">respond</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">queryParameters</span><span class="p">[</span><span class="s">&#34;q&#34;</span><span class="p">]</span> <span class="o">?:</span> <span class="s">&#34;none&#34;</span><span class="p">)</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}.</span><span class="n">start</span><span class="p">(</span><span class="n">wait</span> <span class="p">=</span> <span class="k">true</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>/echo?q=hello</code>にGETリクエストを送るとレスポンスに<code>hello</code>と返すAPIが出来上がりました。</p>
+
+<h4 id="apiをモジュール化する">APIをモジュール化する</h4>
+
+<p>上記のコードではmain関数にroutingを宣言していて今後APIが増えていくことを考慮すると見通し良いコードに改善すべきです。<br/>
+Ktorでは<code>Appication</code>クラスに拡張関数を生やすことでAPIをモジュール化できます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">echoModule</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">routing</span> <span class="p">{</span>
+        <span class="k">get</span><span class="p">(</span><span class="s">&#34;/echo&#34;</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">call</span><span class="p">.</span><span class="n">apply</span> <span class="p">{</span>
+                <span class="n">respond</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">queryParameters</span><span class="p">[</span><span class="s">&#34;q&#34;</span><span class="p">]</span> <span class="o">?:</span> <span class="s">&#34;none&#34;</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>routing</code>もApplicationクラスの拡張関数のため<code>echoModule</code>の拡張関数の中でroutingが宣言できます。
+このechoModuleをresources/application.confに追加しましょう。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-conf" data-lang="conf"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-conf" data-lang="conf">ktor {
+  deployment {
+    port = 8080
+  }
+  application {
+    modules = [ com.github.soushin.ktorsample.ApplicationKt.echoModule ]
+  }
+}</code></pre></td></tr></table>
+</div>
+</div>
+<p>application.confドリブンでKtorを動くように定義したのでmain関数は次のように変化します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">Array</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;)</span> <span class="p">{</span>
+    <span class="n">embeddedServer</span><span class="p">(</span><span class="n">Netty</span><span class="p">,</span> <span class="n">commandLineEnvironment</span><span class="p">(</span><span class="n">args</span><span class="p">)).</span><span class="n">start</span><span class="p">(</span><span class="n">wait</span> <span class="p">=</span> <span class="k">true</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>このようにAPIをモジュール化することでマイクロサービス内のAPIルーティングをエンドクライアントごとに分けることができます。InternalModuleやExternalModuleなど内部向け、外部向けのAPIをモジュールで切り出すことでコードの保守性が高まります。</p>
+
+<h4 id="routingを見通しよくする">Routingを見通しよくする</h4>
+
+<p>echoModule()ではroutingのDSLを直接記述していましたがRouteクラスに拡張関数を生やすことでroutingをパスごとに切り出せます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Location</span><span class="p">(</span><span class="s">&#34;/echo&#34;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Echo</span><span class="p">(</span><span class="k">val</span> <span class="py">q</span><span class="p">:</span> <span class="n">String</span><span class="p">?</span> <span class="p">=</span> <span class="k">null</span><span class="p">)</span>
+
+<span class="k">fun</span> <span class="nf">Route</span><span class="p">.</span><span class="n">echo</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">get</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Echo</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="n">call</span><span class="p">.</span><span class="n">apply</span> <span class="p">{</span>
+            <span class="n">respond</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">queryParameters</span><span class="p">[</span><span class="s">&#34;q&#34;</span><span class="p">]</span> <span class="o">?:</span> <span class="s">&#34;none&#34;</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>パスを<code>get(&ldquo;/echo&rdquo;)</code>のようにStringで定義していましたが<code>＠Location</code>を使うことでタイプセーブにパスを定義できます。
+<code>echo()</code>拡張関数を次のようにechoModule()に定義します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">echoModule</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">install</span><span class="p">(</span><span class="n">Locations</span><span class="p">)</span>
+    <span class="n">routing</span> <span class="p">{</span>
+        <span class="n">echo</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>タイプセーフにLocationsクラスを利用したことでKtorの機能をモジュールにインストールする必要があります。<code>install(Locations)</code>でLocations機能をインストールしています。</p>
+
+<h4 id="application-features">Application Features</h4>
+
+<p>Ktorは多くの機能（ApplicationFeature）をラインナップしています。後述するユースケースではApplicationFeatureとともに紹介していきます。</p>
+
+<p><a href="https://ktor.io/servers/features/index.html">https://ktor.io/servers/features/index.html</a></p>
+
+<h3 id="環境変数マッピング">環境変数マッピング</h3>
+
+<p>コンテナでアプリケーションを動かす場合には開発環境や本番環境などのDB設定値を環境変数に入れてアプリケーション側から環境変数を参照することで環境を切り分けます。Ktorでは環境変数をアプリケーションでどのように参照するのかまとめていきます。</p>
+
+<h4 id="application-confに変数を定義する">application.confに変数を定義する</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-conf" data-lang="conf"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-conf" data-lang="conf">app {
+    github {
+      baseUrl = &#34;https://api.github.com&#34;
+      token = &#34;token&#34;
+      token = ${?KTOR_APP_GITHUB_TOKEN}
+    }
+}</code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のようにアプリケーションで参照する変数をapplication.confに定義しました。<code>app.github.token</code>はデフォルト値として<code>token</code>が定義され環境変数の<code>KTOR_APP_GITHUB_TOKEN</code>が参照できればその値で上書きされます。</p>
+
+<h4 id="applicationクラスで環境変数を参照する">Applicationクラスで環境変数を参照する</h4>
+
+<p>APIルーティングで作成したechoModuleはApplicationクラスの拡張関数なので<code>enviroment</code>プロパティのApplicationConfigを参照することができます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">echoModule</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">token</span> <span class="p">=</span> <span class="n">environment</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">property</span><span class="p">(</span><span class="s">&#34;app.github.token&#34;</span><span class="p">).</span><span class="n">getString</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のようにenvironmentを参照できますがenvironmentはApplicationクラスのプロパティなので次のような拡張プロパティを定義できます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">Application</span><span class="p">.</span><span class="n">gitHubToken</span>
+        <span class="k">get</span><span class="p">()</span> <span class="p">=</span> <span class="n">environment</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">property</span><span class="p">(</span><span class="s">&#34;app.github.token&#34;</span><span class="p">).</span><span class="n">getString</span><span class="p">()</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>拡張プロパティを定義することで冗長なコードを防ぎコードの短縮化の恩恵も受けれました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">import</span> <span class="nn">com.github.soushin.ktorsample.config.Config.gitHubToken</span>
+
+<span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">echoModule</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">token</span> <span class="p">=</span> <span class="n">gitHubToken</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="インターセプター">インターセプター</h3>
+
+<p>APIにリクエストが来て本処理をする前や本処理をした後などに処理を挟むインターセプターの実装方法を見ていきましょう。このエントリではリクエストログを出力することを目的にリクエスト内容に含まれる情報をインターセプターで取得してみます。</p>
+
+<p>ApplicationのEchoモジュールに<code>intercept</code>を追加しましょう。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">echoModule</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">logger</span> <span class="p">=</span> <span class="n">KotlinLogging</span><span class="p">.</span><span class="n">logger</span><span class="p">(</span><span class="s">&#34;RequestLogger&#34;</span><span class="p">)</span>
+    <span class="n">install</span><span class="p">(</span><span class="n">Locations</span><span class="p">)</span>
+    <span class="n">intercept</span><span class="p">(</span><span class="n">ApplicationCallPipeline</span><span class="p">.</span><span class="n">Monitoring</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">call</span><span class="p">.</span><span class="n">attributes</span><span class="p">.</span><span class="n">put</span><span class="p">(</span>
+            <span class="n">loggerAttributeKey</span><span class="p">,</span>
+            <span class="n">RequestLogBuilder</span><span class="p">()</span>
+                <span class="p">.</span><span class="n">name</span><span class="p">(</span><span class="n">call</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">uri</span><span class="p">)</span>
+                <span class="p">.</span><span class="n">userAgent</span><span class="p">(</span><span class="n">call</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">userAgent</span><span class="p">())</span>
+                <span class="p">.</span><span class="n">remoteAddr</span><span class="p">(</span><span class="n">call</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">header</span><span class="p">(</span><span class="s">&#34;X-Forwarded-For&#34;</span><span class="p">)</span> <span class="o">?:</span> <span class="s">&#34;-&#34;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="n">proceed</span><span class="p">()</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">Exception</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">logger</span><span class="p">.</span><span class="n">error</span> <span class="p">{</span> <span class="n">call</span><span class="p">.</span><span class="n">logBuilder</span><span class="p">.</span><span class="n">userId</span><span class="p">(</span><span class="n">call</span><span class="p">.</span><span class="n">user</span><span class="o">?.</span><span class="n">id</span><span class="p">).</span><span class="n">build</span><span class="p">()</span> <span class="p">}</span>
+            <span class="k">throw</span> <span class="n">e</span>
+        <span class="p">}</span>
+        <span class="n">logger</span><span class="p">.</span><span class="n">info</span> <span class="p">{</span> <span class="n">call</span><span class="p">.</span><span class="n">logBuilder</span><span class="p">.</span><span class="n">success</span><span class="p">(</span><span class="k">true</span><span class="p">).</span><span class="n">userId</span><span class="p">(</span><span class="n">call</span><span class="p">.</span><span class="n">user</span><span class="o">?.</span><span class="n">id</span><span class="p">).</span><span class="n">build</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">routing</span> <span class="p">{</span>
+        <span class="n">echo</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>interceptの引数にはPipelinePhaseオブジェクトを渡します。<code>ApplicationCallPipeline.Monitoring</code>はロギングやメトリクス向きのフェーズ定義です。<br/>
+KtorのPipelineは適切な場所で機能を追加することができる拡張メカニズムです。KtorアプリケーションにはSetup, Monitoring, Feature, Call, Fallbackの５つの主要なフェーズが定義されています。</p>
+
+<h4 id="リクエスト本処理前のインターセプト処理">リクエスト本処理前のインターセプト処理</h4>
+
+<p><code>call.attributes.put</code>ではApplicationCallのattributeプロパティに自作のRequestLogBuilderをセットしています。ここまででリクエスト本処理の直前のインターセプト処理を挟んでいます。インターセプト処理はRequestLogBuilderにリクエストURIやユーザエージェントなどをセットアップしています。
+<code>loggerAttributeKey</code>は次のようにどこからでも参照できる形で変数として定義しています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">val loggerAttributeKey = AttributeKey&amp;lt;RequestLogBuilder&gt;(&#34;loggerAttributeKey&#34;)</pre></td></tr></table>
+</div>
+</div>
+<p>このloggerAttributeKeyをルーティングのほうで参照することでインターセプト処理でセットしたRequestLogBuilderを取得できるようにしています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Route</span><span class="p">.</span><span class="n">echo</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">get</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Echo</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="n">call</span><span class="p">.</span><span class="n">apply</span> <span class="p">{</span>
+            <span class="n">attributes</span><span class="p">.</span><span class="n">getOrNull</span><span class="p">(</span><span class="n">loggerAttributeKey</span><span class="p">)</span><span class="o">?.</span><span class="n">elem</span><span class="p">(</span><span class="s">&#34;q&#34;</span> <span class="n">to</span> <span class="n">request</span><span class="p">.</span><span class="n">queryParameters</span><span class="p">[</span><span class="s">&#34;q&#34;</span><span class="p">])</span>
+            <span class="n">respond</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">queryParameters</span><span class="p">[</span><span class="s">&#34;q&#34;</span><span class="p">]</span> <span class="o">?:</span> <span class="s">&#34;none&#34;</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>echoルーティングでApplicationCallのattributeプロパティからRequestLogBuilderを取得してクエリストリングをセットしています。</p>
+
+<p><code>call.attributes.getOrNull〜</code>は冗長なコードになりそうなのでApplicationCallに拡張プロパティを生やしましょう。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">ApplicationCall</span><span class="p">.</span><span class="n">logBuilder</span>
+    <span class="k">get</span><span class="p">()</span> <span class="p">=</span> <span class="k">this</span><span class="p">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">loggerAttributeKey</span><span class="p">]</span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Route</span><span class="p">.</span><span class="n">echo</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">get</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Echo</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="n">call</span><span class="p">.</span><span class="n">apply</span> <span class="p">{</span>
+            <span class="n">logBuilder</span><span class="p">.</span><span class="n">elem</span><span class="p">(</span><span class="s">&#34;q&#34;</span> <span class="n">to</span> <span class="n">request</span><span class="p">.</span><span class="n">queryParameters</span><span class="p">[</span><span class="s">&#34;q&#34;</span><span class="p">])</span> <span class="c1">// 拡張プロパティ logBuilderを参照する
+</span><span class="c1"></span>            <span class="n">respond</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">queryParameters</span><span class="p">[</span><span class="s">&#34;q&#34;</span><span class="p">]</span> <span class="o">?:</span> <span class="s">&#34;none&#34;</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="リクエスト本処理後のインターセプト処理">リクエスト本処理後のインターセプト処理</h4>
+
+<p>次にリクエスト本処理後のインターセプト処理を見ていきましょう。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">echoModule</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// -- 省略 --
+</span><span class="c1"></span>    <span class="n">intercept</span><span class="p">(</span><span class="n">ApplicationCallPipeline</span><span class="p">.</span><span class="n">Monitoring</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// -- 省略 --
+</span><span class="c1"></span>        <span class="k">try</span> <span class="p">{</span>
+            <span class="n">proceed</span><span class="p">()</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">Exception</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">logger</span><span class="p">.</span><span class="n">error</span> <span class="p">{</span> <span class="n">call</span><span class="p">.</span><span class="n">logBuilder</span><span class="p">.</span><span class="n">userId</span><span class="p">(</span><span class="n">call</span><span class="p">.</span><span class="n">user</span><span class="o">?.</span><span class="n">id</span><span class="p">).</span><span class="n">build</span><span class="p">()</span> <span class="p">}</span>
+            <span class="k">throw</span> <span class="n">e</span>
+        <span class="p">}</span>
+        <span class="n">logger</span><span class="p">.</span><span class="n">info</span> <span class="p">{</span> <span class="n">call</span><span class="p">.</span><span class="n">logBuilder</span><span class="p">.</span><span class="n">success</span><span class="p">(</span><span class="k">true</span><span class="p">).</span><span class="n">userId</span><span class="p">(</span><span class="n">call</span><span class="p">.</span><span class="n">user</span><span class="o">?.</span><span class="n">id</span><span class="p">).</span><span class="n">build</span><span class="p">()</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">// -- 省略 --
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>proceed()</code>がリクエストの本処理になります。proceedをtry-catchで囲みエラーが発生したらErrorレベルでログを出力してExceptionをスローしています。エラーにならなければInfoレベルでログを出力しています。</p>
+
+<h3 id="エラーハンドリング">エラーハンドリング</h3>
+
+<p>アプリケーション開発ではアーキテクチャに沿ってレイヤーを用意することが一般的です。各レイヤーでエラーが発生した時にはその場で例外クラスをスローしてアプリケーションがよしなにクライアントにエラーレスポンスを返すことができればコードの見通しがよくなります。<br/>
+次のコードは極端な例外クラスをスローしているルーティングコードです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Location</span><span class="p">(</span><span class="s">&#34;/errors&#34;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Errors</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">@Location</span><span class="p">(</span><span class="s">&#34;/404&#34;</span><span class="p">)</span>
+    <span class="k">class</span> <span class="nc">NotFound</span>
+
+    <span class="n">@Location</span><span class="p">(</span><span class="s">&#34;/400&#34;</span><span class="p">)</span>
+    <span class="k">class</span> <span class="nc">BadRequest</span>
+
+    <span class="n">@Location</span><span class="p">(</span><span class="s">&#34;/500&#34;</span><span class="p">)</span>
+    <span class="k">class</span> <span class="nc">InternalServerError</span>
+<span class="p">}</span>
+
+<span class="k">fun</span> <span class="nf">Route</span><span class="p">.</span><span class="n">error</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">get</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Errors</span><span class="p">.</span><span class="n">NotFound</span><span class="p">&gt;</span> <span class="p">{</span> <span class="k">throw</span> <span class="n">NotFoundException</span><span class="p">(</span><span class="s">&#34;not found&#34;</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">get</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Errors</span><span class="p">.</span><span class="n">BadRequest</span><span class="p">&gt;</span> <span class="p">{</span> <span class="k">throw</span> <span class="n">BadRequestException</span><span class="p">(</span><span class="s">&#34;bad request&#34;</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">get</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Errors</span><span class="p">.</span><span class="n">InternalServerError</span><span class="p">&gt;</span> <span class="p">{</span> <span class="k">throw</span> <span class="n">InternalServerErrorException</span><span class="p">(</span><span class="s">&#34;internal server error&#34;</span><span class="p">)</span> <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>/errors/404</code>へGETリクエストを送るとアプリケーションはNotFoundExceptionの例外クラスをスローします。このような例外クラスをアプリケーションの各レイヤーでスローして例外クラスに応じたエラーレスポンスを返す処理を集約させることができます。</p>
+
+<h4 id="statuspagesをつかう">StatusPagesをつかう</h4>
+
+<p>errorModuleに<code>StatusPages</code>の機能をインストールします。exceptionの型パラメーターに例外クラスを渡してラムダで例外クラスを処理しています。ラムダ内ではApplicationCallクラスを参照できるのでレスポンスを組み立てることができます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">errorModule</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">install</span><span class="p">(</span><span class="n">Locations</span><span class="p">)</span>
+    <span class="n">install</span><span class="p">(</span><span class="n">ContentNegotiation</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">jackson</span> <span class="p">{</span>
+            <span class="n">configure</span><span class="p">(</span><span class="n">SerializationFeature</span><span class="p">.</span><span class="n">INDENT_OUTPUT</span><span class="p">,</span> <span class="k">true</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">install</span><span class="p">(</span><span class="n">StatusPages</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">exception</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">SystemException</span><span class="p">&gt;</span> <span class="p">{</span> <span class="n">cause</span> <span class="p">-&gt;</span>
+            <span class="n">call</span><span class="p">.</span><span class="n">response</span><span class="p">.</span><span class="n">status</span><span class="p">(</span><span class="n">cause</span><span class="p">.</span><span class="n">status</span><span class="p">)</span>
+            <span class="n">call</span><span class="p">.</span><span class="n">respond</span><span class="p">(</span><span class="n">cause</span><span class="p">.</span><span class="n">response</span><span class="p">())</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">routing</span> <span class="p">{</span>
+        <span class="n">error</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>SystemExceptionクラスは次のようにNotFoundExceptionクラスの基底クラスとしています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">abstract</span> <span class="k">class</span> <span class="nc">SystemException</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">ex</span><span class="p">:</span> <span class="n">Exception</span><span class="p">?)</span> <span class="p">:</span> <span class="n">RuntimeException</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">abstract</span> <span class="k">val</span> <span class="py">status</span><span class="p">:</span> <span class="n">HttpStatusCode</span>
+    <span class="k">fun</span> <span class="nf">response</span><span class="p">()</span> <span class="p">=</span> <span class="n">HttpError</span><span class="p">(</span><span class="n">code</span> <span class="p">=</span> <span class="n">status</span><span class="p">.</span><span class="n">value</span><span class="p">,</span> <span class="n">message</span> <span class="p">=</span> <span class="n">message</span> <span class="o">?:</span> <span class="s">&#34;error&#34;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">NotFoundException</span> <span class="p">:</span> <span class="n">SystemException</span> <span class="p">{</span>
+    <span class="k">constructor</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">:</span> <span class="k">super</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="k">null</span><span class="p">)</span>
+    <span class="k">override</span> <span class="k">val</span> <span class="py">status</span><span class="p">:</span> <span class="n">HttpStatusCode</span> <span class="p">=</span> <span class="n">HttpStatusCode</span><span class="p">.</span><span class="n">NotFound</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>SystemExceptionクラスを基底クラスにすることで例外クラスの分岐が１つだけになりエラーハンドリングがシンプルになりました。</p>
+
+<h3 id="認証処理">認証処理</h3>
+
+<p>KtorではAPIリクエストの認証処理を簡単に行えるApplicationFeatureが用意されています。今回は認証にJWTを使ったコードをまとめます。<br/>
+JWTのトークンにはユーザIDが含まれている想定です。</p>
+
+<h4 id="authenticationを使う">Authenticationを使う</h4>
+
+<p>authModuleに<code>Authentication</code>します。Authentication.Configurationの拡張関数である<code>jwt</code>を引数に認証処理を定義しています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">authModule</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">install</span><span class="p">(</span><span class="n">Authentication</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">jwt</span> <span class="p">{</span>
+            <span class="n">verifier</span><span class="p">(</span><span class="n">JWT</span><span class="p">.</span><span class="n">require</span><span class="p">(</span><span class="n">Algorithm</span><span class="p">.</span><span class="n">HMAC256</span><span class="p">(</span><span class="n">jwtSecret</span><span class="p">)).</span><span class="n">build</span><span class="p">())</span>
+            <span class="n">validate</span> <span class="p">{</span> <span class="n">credential</span> <span class="p">-&gt;</span>
+                <span class="n">User</span><span class="p">.</span><span class="n">toUser</span><span class="p">(</span><span class="n">JWTPrincipal</span><span class="p">(</span><span class="n">credential</span><span class="p">.</span><span class="n">payload</span><span class="p">))</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">routing</span> <span class="p">{</span>
+        <span class="n">auth</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>verifier</code>でJWTのVerificationをビルドします。<code>jwtSecret</code>はApplicationクラスの拡張プロパティで環境変数で定義したJWTのsecretを参照しています。<br/>
+<code>validate</code>は認証処理が成功した後で複合された認証情報から独自のUserクラスを生成しています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">data</span> <span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="k">val</span> <span class="py">id</span><span class="p">:</span> <span class="n">String</span><span class="p">):</span> <span class="n">Principal</span> <span class="p">{</span>
+    <span class="k">companion</span> <span class="k">object</span> <span class="p">{</span>
+        <span class="k">fun</span> <span class="nf">toUser</span><span class="p">(</span><span class="n">principal</span><span class="p">:</span> <span class="n">JWTPrincipal</span><span class="p">)</span> <span class="p">=</span> <span class="n">User</span><span class="p">(</span>
+            <span class="n">principal</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">getClaim</span><span class="p">(</span><span class="s">&#34;id&#34;</span><span class="p">)</span><span class="o">?.</span><span class="n">asString</span><span class="p">()</span> <span class="o">?:</span> <span class="k">throw</span> <span class="n">IllegalStateException</span><span class="p">(</span><span class="s">&#34;unauthorized&#34;</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>独自のUserクラスにPrincipalのインターフェースをマークすることでJWTのvalidateを通して<code>ApplicationCall#principal()</code>にUserクラスがセットされます。</p>
+
+<h4 id="リクエストに認証処理を追加する">リクエストに認証処理を追加する</h4>
+
+<p>authModuleのroutingに定義したauthルーティングのコードです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">Auth</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">@Location</span><span class="p">(</span><span class="s">&#34;/who&#34;</span><span class="p">)</span>
+    <span class="k">class</span> <span class="nc">Who</span>
+<span class="p">}</span>
+
+<span class="k">fun</span> <span class="nf">Route</span><span class="p">.</span><span class="n">auth</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">authenticate</span> <span class="p">{</span>
+        <span class="k">get</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Auth</span><span class="p">.</span><span class="n">Who</span><span class="p">&gt;</span> <span class="p">{</span> <span class="n">call</span><span class="p">.</span><span class="n">respond</span><span class="p">(</span><span class="s">&#34;Success, userId=${call.user?.id}&#34;</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>authenticate</code>はRouteクラスの拡張関数です。<code>authenticate { }</code>で括ることで認証処理が追加できます。<br/>
+<code>call.user</code>はApplicationCallの拡張プロパティで先述したprincipalにセットされたUserクラスを参照しています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">ApplicationCall</span><span class="p">.</span><span class="n">user</span>
+    <span class="k">get</span><span class="p">()</span> <span class="p">=</span> <span class="k">this</span><span class="p">.</span><span class="n">authentication</span><span class="p">.</span><span class="n">principal</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">User</span><span class="p">&gt;()</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="di">DI</h3>
+
+<p>DIにはKoinを使います。KoinではなくてもDIできますがKtorにはApplicationクラスに<code>installKoin</code>の拡張関数が用意されているので導入が簡単にできます。</p>
+
+<p><div class="github-card" data-user="InsertKoinIO" data-repo="koin" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>次のようなUseCaseクラスにDIする手順を確認していきましょう。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">interface</span> <span class="nc">PullRequestRepository</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">getPullRequests</span><span class="p">(</span><span class="n">owner</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">perPage</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span>
+            <span class="n">List</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">PullRequest</span><span class="p">&gt;</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>PullRequestRepositoryインターフェースクラスを用意します。このPullRequestRepositoryを実装したクラスが次のPullRequestRepositoryImplクラスです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">PullRequestRepositoryImpl</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">client</span><span class="p">:</span> <span class="n">GitHubClient</span><span class="p">)</span> <span class="p">:</span> <span class="n">PullRequestRepository</span> <span class="p">{</span>
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">getPullRequests</span><span class="p">(</span><span class="n">owner</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">perPage</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="p">=</span>
+        <span class="n">client</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="n">GetPullRequests</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">perPage</span><span class="p">))</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>PullRequestRepositoryImplのコンストラクタにはGitHubClientのインスタンスが必要になります。GitHubClientは次のようなに定義しています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">GitHubClient</span><span class="p">(</span>
+    <span class="k">override</span> <span class="k">val</span> <span class="py">baseUrl</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+    <span class="k">override</span> <span class="k">val</span> <span class="py">token</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+    <span class="k">override</span> <span class="k">val</span> <span class="py">client</span><span class="p">:</span> <span class="n">FuelManager</span> <span class="p">=</span> <span class="n">FuelManager</span><span class="p">.</span><span class="n">instance</span>
+<span class="p">)</span> <span class="p">:</span> <span class="n">Client</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">error</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="n">Response</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">when</span> <span class="p">{</span>
+            <span class="n">response</span><span class="p">.</span><span class="n">isClientError</span> <span class="p">-&gt;</span> <span class="k">throw</span> <span class="n">BadRequestException</span><span class="p">(</span><span class="s">&#34;GitHubClient error, ${response.responseMessage}&#34;</span><span class="p">)</span>
+            <span class="k">else</span> <span class="p">-&gt;</span> <span class="k">throw</span> <span class="n">InternalServerErrorException</span><span class="p">(</span><span class="s">&#34;GitHubClient error, ${response.responseMessage}&#34;</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>PullRequestRepositoryがGitHubClientに依存しています。この依存関係をKoinで定義しましょう。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">usecaseModule</span> <span class="p">=</span> <span class="n">module</span> <span class="p">{</span>
+    <span class="c1">// client
+</span><span class="c1"></span>    <span class="n">single</span> <span class="p">{</span> <span class="n">GitHubClient</span><span class="p">(</span><span class="n">getProperty</span><span class="p">(</span><span class="s">&#34;github_base_url&#34;</span><span class="p">),</span> <span class="n">getProperty</span><span class="p">(</span><span class="s">&#34;github_auth_token&#34;</span><span class="p">))</span> <span class="p">}</span>
+    <span class="c1">// repository
+</span><span class="c1"></span>    <span class="n">single</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">PullRequestRepository</span><span class="p">&gt;</span> <span class="p">{</span> <span class="n">PullRequestRepositoryImpl</span><span class="p">(</span><span class="k">get</span><span class="p">())</span> <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>KoinはDI定義をmodule毎に分割できます。moduleに名前をつけて依存解決をする時に名前を参照できます。今回のエントリでは１つのmoduleを定義しています。<br/>
+<code>single</code>で単一インスタンスを保証するsingletonを定義できます。<code>getProperty</code>はKoinの機能でmodule内のプロパティを一意に保ちます。依存注入時にプロパティに変数を定義します。そして最後に<code>get()</code>です。get()はmodule内の依存関係を判断して型推論してくれます。</p>
+
+<h4 id="dimoduleをつくる">DiModuleをつくる</h4>
+
+<p>ここまではKoinの利用方法を見てきました。ここからはKtorに定義したDI Moduleを使うコードを見ていきましょう。</p>
+
+<p>次のようにApplicationクラスの拡張関数として<code>diModule</code>を作ります。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">diModule</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">usecaseModule</span> <span class="p">=</span> <span class="n">module</span> <span class="p">{</span>
+        <span class="c1">// client
+</span><span class="c1"></span>        <span class="n">single</span> <span class="p">{</span> <span class="n">GitHubClient</span><span class="p">(</span><span class="n">getProperty</span><span class="p">(</span><span class="s">&#34;github_base_url&#34;</span><span class="p">),</span> <span class="n">getProperty</span><span class="p">(</span><span class="s">&#34;github_auth_token&#34;</span><span class="p">))</span> <span class="p">}</span>
+        <span class="c1">// repository
+</span><span class="c1"></span>        <span class="n">single</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">RepoRepository</span><span class="p">&gt;</span> <span class="p">{</span> <span class="n">RepoRepositoryImpl</span><span class="p">(</span><span class="k">get</span><span class="p">())</span> <span class="p">}</span>
+        <span class="n">single</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">PullRequestRepository</span><span class="p">&gt;</span> <span class="p">{</span> <span class="n">PullRequestRepositoryImpl</span><span class="p">(</span><span class="k">get</span><span class="p">())</span> <span class="p">}</span>
+        <span class="c1">// useCase
+</span><span class="c1"></span>        <span class="n">single</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">RepositoryUseCase</span><span class="p">&gt;</span> <span class="p">{</span> <span class="n">RepositoryUseCaseImpl</span><span class="p">(</span><span class="k">get</span><span class="p">(),</span> <span class="k">get</span><span class="p">())</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">installKoin</span><span class="p">(</span>
+        <span class="n">listOf</span><span class="p">(</span><span class="n">usecaseModule</span><span class="p">),</span>
+        <span class="n">extraProperties</span> <span class="p">=</span> <span class="n">mapOf</span><span class="p">(</span>
+            <span class="s">&#34;github_base_url&#34;</span> <span class="n">to</span> <span class="n">gitHubBaseUrl</span><span class="p">,</span>
+            <span class="s">&#34;github_auth_token&#34;</span> <span class="n">to</span> <span class="n">gitHubToken</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>先程のコードから少し依存関係が増えましたが新しく利用している機能はありません。<br/>
+<code>installKoin</code>がKtorで利用できる拡張関数でKoinの利用に必要な<code>startKoin()</code>を抽象化しています。installKoinの第一引数には定義したモジュールを渡します。名前付き引数の<code>extraProperties</code>でgetPropertyで参照する変数を定義しています。</p>
+
+<h4 id="なぜモジュールで切り出すのか">なぜモジュールで切り出すのか？</h4>
+
+<p>DI定義をdiModuleに切り出している理由は次の章で紹介するKtorのテストに関連します。モックを用いてテストするためにDI定義をモジュールで切り出してテスト時にはモック化したインスタンスで依存性の注入を行います。</p>
+
+<p>モジュールで切り出したのでapplication.confに追加します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-conf" data-lang="conf"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-conf" data-lang="conf">ktor {
+  deployment {
+    port = 8080
+  }
+  application {
+    modules = [ com.github.soushin.ktorsample.ApplicationKt.diModule, com.github.soushin.ktorsample.ApplicationKt.mainModule ]
+  }
+}</code></pre></td></tr></table>
+</div>
+</div>
+<p><code>mainModule</code>は次のセクションで説明します。</p>
+
+<h4 id="injectする">Injectする</h4>
+
+<p>最後に定義した依存関係を利用するコードを紹介します。application.confのmodulesに追加したmainModuleは次のようになります。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">mainModule</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">usecase</span> <span class="k">by</span> <span class="n">inject</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">RepositoryUseCase</span><span class="p">&gt;()</span>
+
+    <span class="n">routing</span> <span class="p">{</span>
+        <span class="n">repository</span><span class="p">(</span><span class="n">usecase</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>diModuleで定義した<code>single&lt;RepositoryUseCase&gt; { RepositoryUseCaseImpl(get(), get()) }</code>のsingletonが<code>inject&lt;RepositoryUseCase&gt;()</code>によって参照できます。</p>
+
+<h3 id="apiテスト">APIテスト</h3>
+
+<p>APIテストには<code>TestApplicationEngine</code>を利用します。テストコード内でTestApplicationEngineのインスタンスを生成して拡張関数のhandleRequestを呼び出しレスポンスを検証します。実際のコードをまとめていきます。</p>
+
+<h4 id="echoサーバをテストする">Echoサーバをテストする</h4>
+
+<p>「APIルーティング」のところで実装したEchoサーバをテストします。</p>
+
+<p>JUnitを利用したテストコードです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">EchoTest</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">lateinit</span> <span class="k">var</span> <span class="py">engine</span><span class="p">:</span> <span class="n">TestApplicationEngine</span>
+
+    <span class="n">@Before</span>
+    <span class="k">fun</span> <span class="nf">before</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">engine</span> <span class="p">=</span> <span class="n">TestApplicationEngine</span><span class="p">().</span><span class="n">apply</span> <span class="p">{</span>
+            <span class="n">start</span><span class="p">(</span><span class="n">wait</span> <span class="p">=</span> <span class="k">false</span><span class="p">)</span>
+            <span class="n">application</span><span class="p">.</span><span class="n">echoModule</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="n">@Test</span>
+    <span class="k">fun</span> <span class="nf">testEcho</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">with</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">handleRequest</span><span class="p">(</span><span class="n">HttpMethod</span><span class="p">.</span><span class="n">Get</span><span class="p">,</span> <span class="s">&#34;/echo?q=hello&#34;</span><span class="p">).</span><span class="n">response</span><span class="p">.</span><span class="n">apply</span> <span class="p">{</span>
+                <span class="n">assertEquals</span><span class="p">(</span><span class="s">&#34;hello&#34;</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+                <span class="n">assertEquals</span><span class="p">(</span><span class="n">HttpStatusCode</span><span class="p">.</span><span class="n">OK</span><span class="p">,</span> <span class="n">status</span><span class="p">())</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>beforeでTestApplicationEngineのインスタンスを生成しengine変数に格納しています。apply内で定義済みのEchoモジュールである<code>application.echoModule()</code>を呼び出しています。これによりテストコード内のTestApplicationEngineにEchoモジュールが有効となります。</p>
+
+<p>testEcho() は<code>/echo/q=hello</code>のエンドポイントをテストしているコードです。<code>with(engine)</code>を用いることでTestApplicationEngineをレシーバとしてメソッドを呼び出すことができます。拡張関数のhandleRequestを呼び出しレスポンスを検証しています。</p>
+
+<p>KtorのAPIテストの大枠はテストコード内でTestApplicationEngineの変数を定義してTestApplicationEngineのインスタンス生成時にAPIモジュールを呼び出すことでテストを行いたいAPIを有効にしたengineを用いてエンドポイントの検証を行います。</p>
+
+<h4 id="diが必要なapiのテスト">DIが必要なAPIのテスト</h4>
+
+<p>先述のようなEchoサーバはシンプルなAPIですが一般的なAPIはDIを用いてビジネスロジックは別のクラスで行いルーティング層のコードはビジネスロジックのクラスを呼び出すような形になります。このようなDIが必要なAPIのテストはどのように行うのかまとめていきます。</p>
+
+<p>「DI」のところで実装したコードをテスト対象にします。また外部APIをコールすることになりますモックが必要です。モックには<a href="https://github.com/mockk/mockk">mockk</a>を利用します。</p>
+
+<p>「DI」のところではdiModuleを切り出した理由がここにあります。次のコードのようにDIが絡むAPIモジュールにはテスト用のDIモジュールをテストコード内で定義します。そして先述したとおりTestApplicationEngineのインスタンス生成時にテスト用のdiModuleを呼び出します。コードは次のようになります。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">RepositoryTest</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">lateinit</span> <span class="k">var</span> <span class="py">engine</span><span class="p">:</span> <span class="n">TestApplicationEngine</span>
+
+    <span class="c1">// ①
+</span><span class="c1"></span>    <span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">diModuleForTest</span><span class="p">()</span> <span class="p">{</span>
+
+        <span class="k">val</span> <span class="py">gitHubClientForRepository</span> <span class="p">=</span> <span class="n">mockk</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Client</span><span class="p">&gt;().</span><span class="n">apply</span> <span class="p">{</span>
+            <span class="n">every</span> <span class="p">{</span> <span class="n">executeRequest</span><span class="p">(</span><span class="n">any</span><span class="p">()).</span><span class="n">statusCode</span> <span class="p">}</span> <span class="n">returns</span> <span class="m">200</span>
+            <span class="n">every</span> <span class="p">{</span> <span class="n">executeRequest</span><span class="p">(</span><span class="n">any</span><span class="p">()).</span><span class="k">data</span> <span class="p">}</span> <span class="n">returns</span> <span class="n">REPOSITORIES_RESPONSE</span><span class="p">.</span><span class="n">toByteArray</span><span class="p">()</span>
+        <span class="p">}.</span><span class="n">let</span> <span class="p">{</span>
+            <span class="n">FuelManager</span><span class="p">().</span><span class="n">apply</span> <span class="p">{</span> <span class="n">client</span> <span class="p">=</span> <span class="n">it</span> <span class="p">}</span> <span class="c1">// ②
+</span><span class="c1"></span>        <span class="p">}.</span><span class="n">let</span> <span class="p">{</span>
+            <span class="n">GitHubClient</span><span class="p">(</span><span class="n">GITHUB_BASE_URL</span><span class="p">,</span> <span class="n">GITHUB_TOKEN</span><span class="p">,</span> <span class="n">it</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="k">val</span> <span class="py">gitHubClientForPullRequest</span> <span class="p">=</span> <span class="n">mockk</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Client</span><span class="p">&gt;().</span><span class="n">apply</span> <span class="p">{</span>
+            <span class="n">every</span> <span class="p">{</span> <span class="n">executeRequest</span><span class="p">(</span><span class="n">any</span><span class="p">()).</span><span class="n">statusCode</span> <span class="p">}</span> <span class="n">returns</span> <span class="m">200</span>
+            <span class="n">every</span> <span class="p">{</span> <span class="n">executeRequest</span><span class="p">(</span><span class="n">any</span><span class="p">()).</span><span class="k">data</span> <span class="p">}</span> <span class="n">returns</span> <span class="n">PULL_REQUESTS_RESPONSE</span><span class="p">.</span><span class="n">toByteArray</span><span class="p">()</span>
+        <span class="p">}.</span><span class="n">let</span> <span class="p">{</span>
+            <span class="n">FuelManager</span><span class="p">().</span><span class="n">apply</span> <span class="p">{</span> <span class="n">client</span> <span class="p">=</span> <span class="n">it</span> <span class="p">}</span> <span class="c1">// ②
+</span><span class="c1"></span>        <span class="p">}.</span><span class="n">let</span> <span class="p">{</span>
+            <span class="n">GitHubClient</span><span class="p">(</span><span class="n">GITHUB_BASE_URL</span><span class="p">,</span> <span class="n">GITHUB_TOKEN</span><span class="p">,</span> <span class="n">it</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="c1">// ③
+</span><span class="c1"></span>        <span class="k">val</span> <span class="py">usecaseModule</span> <span class="p">=</span> <span class="n">module</span> <span class="p">{</span>
+            <span class="c1">// useCase
+</span><span class="c1"></span>            <span class="n">single</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">RepositoryUseCase</span><span class="p">&gt;</span> <span class="p">{</span>
+                <span class="n">RepositoryUseCaseImpl</span><span class="p">(</span>
+                    <span class="n">RepoRepositoryImpl</span><span class="p">(</span><span class="n">gitHubClientForRepository</span><span class="p">),</span>
+                    <span class="n">PullRequestRepositoryImpl</span><span class="p">(</span><span class="n">gitHubClientForPullRequest</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">// ④
+</span><span class="c1"></span>        <span class="n">installKoin</span><span class="p">(</span>
+            <span class="n">listOf</span><span class="p">(</span><span class="n">usecaseModule</span><span class="p">),</span>
+            <span class="n">extraProperties</span> <span class="p">=</span> <span class="n">mapOf</span><span class="p">(</span>
+                <span class="s">&#34;github_base_url&#34;</span> <span class="n">to</span> <span class="n">gitHubBaseUrl</span><span class="p">,</span>
+                <span class="s">&#34;github_auth_token&#34;</span> <span class="n">to</span> <span class="n">gitHubToken</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="n">@Before</span>
+    <span class="k">fun</span> <span class="nf">before</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">engine</span> <span class="p">=</span> <span class="n">TestApplicationEngine</span><span class="p">().</span><span class="n">apply</span> <span class="p">{</span>
+            <span class="c1">// ⑤
+</span><span class="c1"></span>            <span class="p">(</span><span class="n">environment</span><span class="p">.</span><span class="n">config</span> <span class="k">as</span> <span class="n">MapApplicationConfig</span><span class="p">).</span><span class="n">apply</span> <span class="p">{</span>
+                <span class="c1">// Set here the properties
+</span><span class="c1"></span>                <span class="n">put</span><span class="p">(</span><span class="s">&#34;app.github.baseUrl&#34;</span><span class="p">,</span> <span class="n">GITHUB_BASE_URL</span><span class="p">)</span>
+                <span class="n">put</span><span class="p">(</span><span class="s">&#34;app.github.token&#34;</span><span class="p">,</span> <span class="n">GITHUB_TOKEN</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">start</span><span class="p">(</span><span class="n">wait</span> <span class="p">=</span> <span class="k">false</span><span class="p">)</span>
+            <span class="n">application</span><span class="p">.</span><span class="n">diModuleForTest</span><span class="p">()</span> <span class="c1">// ⑥
+</span><span class="c1"></span>            <span class="n">application</span><span class="p">.</span><span class="n">mainModule</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// -- 省略 --
+</span><span class="c1"></span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>①でテストコード専用のDIモジュールの拡張関数の<code>diModuleForTest()</code>を定義しています。</li>
+<li>②でHTTPクライアントのリクエストをモック化したインスタンスを生成しています。</li>
+<li>③でKoin moduleの定義を行い①で生成したHTTPクライアントを引数に渡しています。</li>
+<li>④でstartKoin()`を抽象化したinstallKoinを呼び出しています。</li>
+<li>⑤で必要なapplication変数を設定しています。</li>
+<li>⑥でdiModuleForTest()を呼び出しテストコードのengine変数（TestApplicationEngine）にテスト用のDIモジュールを有効にします。</li>
+</ul>
+
+<p>上記のコードによりHTTPクライアントのリクエストがモック化されたRepositoryクラスをDIしたmainModule()がテストコード内で有効になりました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">RepositoryTest</span> <span class="p">{</span>
+
+    <span class="c1">// -- 省略 --
+</span><span class="c1"></span>
+    <span class="n">@Test</span>
+    <span class="k">fun</span> <span class="nf">testRepository</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">with</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">handleRequest</span><span class="p">(</span><span class="n">HttpMethod</span><span class="p">.</span><span class="n">Get</span><span class="p">,</span> <span class="s">&#34;/repository&#34;</span><span class="p">).</span><span class="n">response</span><span class="p">.</span><span class="n">apply</span> <span class="p">{</span>
+                <span class="n">assertEquals</span><span class="p">(</span><span class="n">HttpStatusCode</span><span class="p">.</span><span class="n">OK</span><span class="p">,</span> <span class="n">status</span><span class="p">())</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// -- 省略 --
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>with(engine)</code>を用いてmainModule()のエンドポイントを検証しています。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>WebサーバのAPIにおけるユースケースごとにKtorではどのように実装するのかをまとめました。</li>
+<li>Ktorはマイクロフレームワークであり似たようなフレームワークは引き続き多く登場するでしょう。しかしKotlin/Nativeの観点からKtorが優位性を出すことを期待しています。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>このエントリで紹介したコードはこちらのレポジトリから参照できます。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="ktor-samples" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/serversidekotlin/">ServerSideKotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">Kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/ktor/">Ktor</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlinnative/">KotlinNative</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

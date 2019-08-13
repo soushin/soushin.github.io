@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>WebDriver不要のTestCafeを使ったE2EテストをChatOpsに導入してみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="今回はE2EテストをつくれるTestCafeをつかってみたエントリです。Automated browser testing for the modern web development stack | TestCafe以前のエントリで">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">WebDriver不要のTestCafeを使ったE2EテストをChatOpsに導入してみた</h1>
+    <div class="post-meta">2017.2.24</div>
+  </header>
+  <div class="post-content">
+
+<p>今回はE2EテストをつくれるTestCafeをつかってみたエントリです。<a href="http://devexpress.github.io/testcafe/">Automated browser testing for the modern web development stack | TestCafe</a>以前のエントリでは<a href="https://blog.soushi.me/entry/2017/01/15/205751">SelenideをつかったE2Eテストの紹介</a>をしました。Selenideも特徴がありますがTestCafeも抜群の特徴があります。<br/>
+TestCafeではテストコードはNodeで書いていきます。そのため広くエンジニアメンバーがE2Eテストを書けるメリットがあります。ES2016 using をつかってテストコードが書かれているため_async/await_などの特徴的な構文も使えます。</p>
+
+<h2 id="最大の特徴はテストをリモートで実行できること">最大の特徴はテストをリモートで実行できること</h2>
+
+<p>TestCafeのプリインストールでテストするブラウザとしてchromeとsafariが用意されています。ブラウザを指定したテストの実行は次のようになります。<figure>
+    <img src="/images/20170224192652.png"/> 
+</figure>
+実行するとchromeとsafariが立ち上がり<code>tests/test.js</code>のテストが実行されます。<br/>
+この方法は予めブラウザを指定する方法ですが テストを実行するURLを生成する<strong>remote</strong>というオプションがあります。<br/>
+実行は次のようになります。<figure>
+    <img src="/images/20170224192938.png"/> 
+</figure>
+<strong>remote:1</strong>としている箇所がリモートで確認するURLの生成数を指定しています。TestCafeは指定されたURL数を生成して返します。テスターはURLをコピーして<strong>好きなブラウザ</strong>にアクセスしてテストを実行できます。ブラウザにアクセスした後の実行結果は次のようになります。<figure>
+    <img src="/images/20170224192759.png"/> 
+</figure>
+TestCafeは自身でテスト用のブラウザを持たずユニークなURLを生成して<strong>テスターにブラウザを選ばせることで多種多様なブラウザのテストを可能</strong>にします。このリモート機能を活用してE2EテストをChatOpsに組み込むアイデアを考え実装してみました。</p>
+
+<h2 id="testcafeのremoteconnetionをchatopsに導入する">TestCafeのRemoteConnetionをChatOpsに導入する</h2>
+
+<p>E2Eテストの運用にChatOpsを導入します。テスターはslackからBot経由でテスト開始を通知してBotとTestCafeが連携します。<br/>
+それぞれ図にすると次のようになります。</p>
+
+<h3 id="リモートurlをslackで受け取るまで">リモートURLをslackで受け取るまで</h3>
+
+<p><img src="/images/20170224170519.png" /></p>
+
+<ol>
+<li>テスターはslackに**@bot test web**を送信する。</li>
+<li>Botはイベントを受け取りTestCafeにリモートURLの生成依頼を通知する。</li>
+<li>TestCafe（hapi）は生成依頼を受け取りリモートURLを生成してBotへ返す。</li>
+<li>BotはリモートURLをルームに送信する。</li>
+</ol>
+
+<p>こんな感じの流れで補足として次のような内容があります。</p>
+
+<ul>
+<li>docker-composeでHubotとTestCafeのサビースをつくりコンテナ化した。</li>
+<li>HubotとTestCafeはHTTP通信でリモートURLのやり取りを行う。</li>
+<li>TestCafeにはHubotのようなwebhookはないので<a href="https://hapijs.com/">hapi.js</a>で簡易的なAPIを作成した。</li>
+<li>リモートURLの生成はドキュメントにもあるように簡単に行える。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="nx">createTestCafe</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="mi">1337</span><span class="p">,</span> <span class="mi">1338</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">testcafe</span> <span class="p">=&gt;</span> <span class="p">{</span>
+        <span class="nx">runner</span> <span class="o">=</span> <span class="nx">testcafe</span><span class="p">.</span><span class="nx">createRunner</span><span class="p">();</span>
+        <span class="k">return</span> <span class="nx">testcafe</span><span class="p">.</span><span class="nx">createBrowserConnection</span><span class="p">();</span>
+    <span class="p">})</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">remoteConnection</span> <span class="p">=&gt;</span> <span class="p">{</span>
+
+        <span class="k">const</span> <span class="nx">url</span> <span class="o">=</span> <span class="nx">remoteConnection</span><span class="p">.</span><span class="nx">url</span>
+        <span class="c1">// ここでslackにリモートURLを送信する
+</span><span class="c1"></span>        
+        <span class="nx">remoteConnection</span><span class="p">.</span><span class="nx">once</span><span class="p">(</span><span class="s1">&#39;ready&#39;</span><span class="p">,</span> <span class="p">()</span> <span class="p">=&gt;</span> <span class="p">{</span>
+            <span class="nx">runner</span>
+                <span class="p">.</span><span class="nx">src</span><span class="p">(</span><span class="s1">&#39;tests/test.js&#39;</span><span class="p">)</span>
+                <span class="p">.</span><span class="nx">browsers</span><span class="p">(</span><span class="nx">remoteConnection</span><span class="p">)</span>
+                <span class="p">.</span><span class="nx">reporter</span><span class="p">(</span><span class="s1">&#39;custom-reporter&#39;</span><span class="p">)</span>
+                <span class="p">.</span><span class="nx">run</span><span class="p">()</span>
+                <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">})</span>
+                <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">failedCount</span> <span class="p">=&gt;</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">})</span>
+                <span class="p">.</span><span class="k">catch</span><span class="p">(</span><span class="nx">error</span> <span class="p">=&gt;</span> <span class="p">{</span> <span class="cm">/* ... */</span><span class="p">})</span>
+        <span class="p">});</span>
+    <span class="p">});</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<p>※ 抜粋したコードなので詳細は<a href="https://github.com/nsoushi/testcafe-chatops/blob/master/containers/testcafe/test/tests/remote.js">github</a>で確認できます</p>
+
+<h3 id="リモートurlを好きなブラウザで開きテスト結果を受け取るまで">リモートURLを好きなブラウザで開きテスト結果を受け取るまで</h3>
+
+<p><img src="/images/20170224180736.png" /></p>
+
+<ol>
+<li>テスターは好きなブラウザでリモートURLを開く。</li>
+<li>TestCafeはリモートURLのアクセスを検知してテストを実行する／テスト結果をHubotに送信する。</li>
+<li>Hubotは受け取ったテスト結果をルームに送信する。</li>
+</ol>
+
+<p>こんな感じの流れで補足として次のような内容があります。</p>
+
+<ul>
+<li>TestCafeにはReporterクラスを<a href="http://devexpress.github.io/testcafe/documentation/extending-testcafe/reporter-plugin/">カスタマイズ</a>することでテスト結果のフォーマットを拡張することができる</li>
+<li>コンソールにテスト結果を表示するのではなくHubotのwebhookに送信したいのでRerporterクラスを<a href="https://github.com/nsoushi/testcafe-chatops/blob/master/containers/testcafe/test/custom_reporter/src/index.js">拡張した</a></li>
+</ul>
+
+<h3 id="実際のslackでbotとやり取りしている画面キャプチャ">実際のslackでBotとやり取りしている画面キャプチャ</h3>
+
+<p><img src="/images/20170224183659.png" /></p>
+
+<p>テスターはslackをコントローラーにしてE2Eテストを開始から完了（レポート受信）までワンストップで行えます。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>当初のTestCafeのリモート機能を利用したE2EテストをChatOpsに組み込むアイデアを実現できた。</li>
+<li>slackと連動してattachmentをつかってレポート通知をリッチな表示にできた。</li>
+<li>レポート内容は他にもあるので実運用に必要な情報の精査が必要。</li>
+<li>TestCafeでテストを書いてみた、というテーマには触れていないので次回は<a href="http://devexpress.github.io/testcafe/documentation/recipes/using-page-model.html">PageModel</a>をベースにTestCafeでE2Eテストを書いてみる。</li>
+</ul>
+
+<h2 id="ソースを公開しています">ソースを公開しています</h2>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="testcafe-chatops" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/chatops/">ChatOps</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/e2e/">E2E</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/testcafe/">TestCafe</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/node/">Node</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

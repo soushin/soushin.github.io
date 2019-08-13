@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Web PushをFCMとVAPIDで認証してブラウザにプッシュ通知を送る - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Web Pushを試している。調べていく過程で２つの認証方式を用いてプッシュ通知を送信できることが分かった。１つはFirebase Cloud Messagi">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Web PushをFCMとVAPIDで認証してブラウザにプッシュ通知を送る</h1>
+    <div class="post-meta">2017.5.18</div>
+  </header>
+  <div class="post-content">
+
+<p>Web Pushを試している。調べていく過程で２つの認証方式を用いてプッシュ通知を送信できることが分かった。１つはFirebase Cloud Messaging（FCM）を使い取得したサーバーキーを認証に使い送信する方法とVoluntary Application Server Identification for Web Push (VAPID)で認証をする方法である。</p>
+
+<p>2つの方法としたがWeb Pushが標準化する過程で整理された認証方法であり、VAPIDのほうが後発となりFirebaseのサーバーキーを必要としない認証方式である。
+VAPIDはFirebaseのプロジェクト登録が不要となるだけでプッシュサーバはFirebase Cloud Messagingが担っている。</p>
+
+<p>今回のエントリではFCMとVAPIDそれぞれのWeb Pushのプッシュ通知方法をまとめていく。
+また試したブラウザはChromeのみである。</p>
+
+<h3 id="firebase-cloud-messaging-fcm-のweb-push">Firebase Cloud Messaging（FCM）のWeb Push</h3>
+
+<p>事前にFirebaseでプロジェクトを作成し<code>サーバキー</code>と<code>送信者ID</code>が必要となる。<br/>
+※プロジェクトを作成済みであればFirebaseのコンソールから「Overview」→「プロジェクトの設定」→「クラウドメッセージング」からそれぞれ参照できる。</p>
+
+<p>ここからはServiceWorkerなどフロントエンド（クライアント）とサーバに分けてプッシュ通知方法をまとめていく。</p>
+
+<h4 id="クライアント">クライアント</h4>
+
+<p>クライアントはServiceWorkerの登録とWeb Push購読時に取得できる各種変数をサーバ側へ送信する。実際にプッシュサーバへプッシュ通知をリクエストするのはサーバである。</p>
+
+<p><strong>manifest.json</strong></p>
+
+<p>Firebaseプロジェクトから取得した<code>送信者ID</code>は<code>manifest.json</code>で利用するので登録しておく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">{
+  &#34;name&#34;: &#34;FCM Web-Push&#34;,
+・・・省略
+  &#34;gcm_sender_id&#34;: &#34;Firebaseプロジェクトから取得した送信者ID&#34;
+}</pre></td></tr></table>
+</div>
+</div>
+<p><strong>ServiceWorker登録イベントとWeb Push購読イベント</strong></p>
+
+<p>クライアント側ではServiceWorkerを登録して、ブラウザでWeb Pushの購読が完了すると<code>エンドポイント</code>とPayload を暗号化するための<code>ブラウザの公開鍵</code>と鍵生成の複雑生成を増すための<code>乱数</code>が取得できる。これらの変数をサーバへ送信する。サーバはその鍵を利用することで通知メッセージを暗号化してPayloadに乗せることができる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">let</span> <span class="nx">subscription</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+
+<span class="c1">// ServiceWorkerが登録されると`serviceWorkerReady(registration)`がコールされるようにしている
+</span><span class="c1"></span><span class="kd">function</span> <span class="nx">serviceWorkerReady</span><span class="p">(</span><span class="nx">registration</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span><span class="p">(</span><span class="s1">&#39;pushManager&#39;</span> <span class="k">in</span> <span class="nx">registration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">registration</span><span class="p">.</span><span class="nx">pushManager</span><span class="p">.</span><span class="nx">getSubscription</span><span class="p">().</span><span class="nx">then</span><span class="p">(</span><span class="nx">getSubscription</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Web Pushの購読イベント時に`requestPushSubscription(registration)`がコールされるようにしている
+</span><span class="c1"></span><span class="kd">function</span> <span class="nx">requestPushSubscription</span><span class="p">(</span><span class="nx">registration</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">let</span> <span class="nx">opt</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="nx">userVisibleOnly</span><span class="o">:</span> <span class="kc">true</span>
+    <span class="p">};</span>
+    <span class="k">return</span> <span class="nx">registration</span><span class="p">.</span><span class="nx">pushManager</span><span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span><span class="nx">opt</span><span class="p">).</span><span class="nx">then</span><span class="p">(</span><span class="nx">getSubscription</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">getSubscription</span><span class="p">(</span><span class="nx">sub</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">subscription</span> <span class="o">=</span> <span class="nx">sub</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<p><code>subscription</code>に<code>エンドポイント</code>と<code>ブラウザの公開鍵（p256dh）</code>、<code>乱数（auth）</code>が格納されている。</p>
+
+<p><strong>プッシュ通知送信時にサーバに<code>エンドポイント</code>と<code>ブラウザの公開鍵（p256dh）</code>、<code>乱数（auth）</code>を送信する</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">requestPushNotification</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">subscription</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">fetch</span><span class="p">(</span><span class="nx">appServerURL</span><span class="p">,</span> <span class="p">{</span>
+            <span class="nx">credentials</span><span class="o">:</span> <span class="s1">&#39;include&#39;</span><span class="p">,</span>
+            <span class="nx">method</span><span class="o">:</span> <span class="s1">&#39;POST&#39;</span><span class="p">,</span>
+            <span class="nx">headers</span><span class="o">:</span> <span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="o">:</span> <span class="s1">&#39;application/json; charset=UTF-8&#39;</span><span class="p">},</span>
+            <span class="nx">body</span><span class="o">:</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span>
+                <span class="nx">endpoint</span><span class="o">:</span> <span class="nx">subscription</span><span class="p">.</span><span class="nx">endpoint</span><span class="p">,</span>
+                <span class="nx">key</span><span class="o">:</span> <span class="nx">btoa</span><span class="p">(</span><span class="nb">String</span><span class="p">.</span><span class="nx">fromCharCode</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="k">new</span> <span class="nx">Uint8Array</span><span class="p">(</span><span class="nx">subscription</span><span class="p">.</span><span class="nx">getKey</span><span class="p">(</span><span class="s1">&#39;p256dh&#39;</span><span class="p">))))</span>
+                    <span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/\+/g</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">).</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/\//g</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">),</span>
+                <span class="nx">auth</span><span class="o">:</span> <span class="nx">btoa</span><span class="p">(</span><span class="nb">String</span><span class="p">.</span><span class="nx">fromCharCode</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="k">new</span> <span class="nx">Uint8Array</span><span class="p">(</span><span class="nx">subscription</span><span class="p">.</span><span class="nx">getKey</span><span class="p">(</span><span class="s1">&#39;auth&#39;</span><span class="p">))))</span>
+                    <span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/\+/g</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">).</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/\//g</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">),</span>
+                <span class="nx">message</span><span class="o">:</span> <span class="nx">_</span><span class="p">(</span><span class="s1">&#39;message&#39;</span><span class="p">).</span><span class="nx">value</span> <span class="o">||</span> <span class="s1">&#39;(empty)&#39;</span>
+            <span class="p">})</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>プッシュ通知受信イベント時の処理</strong></p>
+
+<p>プッシュ通知を受け取ったイベントはServiceWorkerで処理する</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">showNotification</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">registration</span><span class="p">.</span><span class="nx">showNotification</span><span class="p">(</span><span class="s1">&#39;FCM/GCM WebPush Test&#39;</span><span class="p">,</span> <span class="p">{</span>
+        <span class="nx">icon</span><span class="o">:</span> <span class="nx">data</span><span class="p">.</span><span class="nx">icon</span><span class="p">,</span>
+        <span class="nx">body</span><span class="o">:</span> <span class="nx">data</span><span class="p">.</span><span class="nx">body</span> <span class="o">||</span> <span class="s1">&#39;(with empty payload)&#39;</span><span class="p">,</span>
+        <span class="nx">data</span><span class="o">:</span> <span class="nx">data</span><span class="p">.</span><span class="nx">url</span><span class="p">,</span>
+        <span class="nx">vibrate</span><span class="o">:</span> <span class="p">[</span><span class="mi">400</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mi">400</span><span class="p">]</span>
+    <span class="p">});</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">receivePush</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">data</span> <span class="o">=</span> <span class="nx">event</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">json</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span><span class="p">(</span><span class="s1">&#39;showNotification&#39;</span> <span class="k">in</span> <span class="nx">self</span><span class="p">.</span><span class="nx">registration</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">event</span><span class="p">.</span><span class="nx">waitUntil</span><span class="p">(</span><span class="nx">showNotification</span><span class="p">(</span><span class="nx">data</span><span class="p">));</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">notificationClick</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">event</span><span class="p">.</span><span class="nx">notification</span><span class="p">.</span><span class="nx">close</span><span class="p">();</span>
+
+    <span class="nx">event</span><span class="p">.</span><span class="nx">waitUntil</span><span class="p">(</span>
+        <span class="nx">clients</span><span class="p">.</span><span class="nx">openWindow</span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">notification</span><span class="p">.</span><span class="nx">data</span><span class="p">)</span>
+    <span class="p">);</span>
+<span class="p">}</span>
+
+<span class="nx">self</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;push&#39;</span><span class="p">,</span> <span class="nx">receivePush</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
+<span class="nx">self</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;notificationclick&#39;</span><span class="p">,</span> <span class="nx">notificationClick</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li><code>event.data</code>にサーバ側から暗号化されたPayloadが格納されている。<code>json()</code>をコールすることでJSONフォーマットで整形される。</li>
+<li><code>notificationClick(event)</code>では通知がクリックされた時のイベントをまとめてある。<code>showNotification(data)</code>で<code>data</code>にURLなどを指定しておけば<code>notificationClick(event)</code>で参照できる。</li>
+</ul>
+
+<h4 id="サーバ">サーバ</h4>
+
+<p>サーバ側ではクライアントから送信された<code>エンドポイント</code>と<code>ブラウザの公開鍵（p256dh）</code>、<code>乱数（auth）</code>をもとに通知メッセージを暗号化する。
+暗号化のライブラリは<code>MartijnDwars/web-push</code>をつかった。</p>
+
+<p><div class="github-card" data-user="MartijnDwars" data-repo="web-push" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>暗号化はライブラリがほとんど処理してくれるためサーバ側のコードはシンプルである。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@PostMapping</span>
+<span class="k">fun</span> <span class="nf">post</span><span class="p">(</span><span class="n">@RequestBody</span> <span class="n">req</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span> <span class="n">ResponseEntity</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Boolean</span><span class="p">&gt;</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">payload</span>  <span class="p">=</span> <span class="n">objectMapper</span><span class="p">().</span><span class="n">writeValueAsString</span><span class="p">(</span><span class="n">Payload</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">message</span><span class="p">,</span> <span class="n">req</span><span class="p">.</span><span class="n">tag</span><span class="p">,</span> <span class="n">req</span><span class="p">.</span><span class="n">icon</span><span class="p">,</span> <span class="n">req</span><span class="p">.</span><span class="n">url</span><span class="p">))</span>
+
+    <span class="n">Security</span><span class="p">.</span><span class="n">addProvider</span><span class="p">(</span><span class="n">BouncyCastleProvider</span><span class="p">())</span>
+    <span class="k">val</span> <span class="py">push</span> <span class="p">=</span> <span class="n">app</span><span class="p">.</span><span class="n">push</span><span class="p">.</span><span class="n">PushService</span><span class="p">()</span>
+    <span class="n">push</span><span class="p">.</span><span class="n">setGcmApiKey</span><span class="p">(</span><span class="n">appProperties</span><span class="p">.</span><span class="n">serverKey</span><span class="p">)</span>
+
+    <span class="n">push</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">Notification</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">req</span><span class="p">.</span><span class="n">key</span><span class="p">,</span> <span class="n">req</span><span class="p">.</span><span class="n">auth</span><span class="p">,</span> <span class="n">payload</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">ok</span><span class="p">().</span><span class="n">json</span><span class="p">().</span><span class="n">body</span><span class="p">(</span><span class="k">true</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>push.setGcmApiKey(appProperties.serverKey)</code> でFirebaseで取得した<code>サーバキー</code>を指定している。</p>
+
+<p>暗号化の詳細については次のエントリが参考になるのでオススメする。</p>
+
+<p><a href="http://qiita.com/tomoyukilabs/items/217915676603fda73b0a">Web Pushでブラウザにプッシュ通知を送ってみる - Qiita</a></p>
+
+<p><strong>プッシュサーバへ送信時のヘッダーとエンドポイントURL</strong></p>
+
+<p>次のVAPIDのWeb Pushと比較したいためプッシュサーバ送信時の<code>ヘッダー</code>と<code>エンドポイントURL</code> をまとめていきたい。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">-H &#34;Authorization: key={Firebaseのサーバキー}&#34; \
+-H &#34;Encryption: keyid=p256dh;salt={乱数、salt}&#34; \
+-H &#34;Crypto-Key: keyid=p256dh;dh={共有鍵}&#34; \
+-H &#34;Ttl: 2419200&#34;</pre></td></tr></table>
+</div>
+</div>
+<p>AuthorizationにはFirebaseのサーバキーを指定している。クライアントから送信された公開鍵とauthからEncryptionとCrypto-Keyを生成している。
+ブラウザでは暗号化されたPayloadを復号する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">エンドポイントURL： https://android.googleapis.com/gcm/send/{registration_id}</pre></td></tr></table>
+</div>
+</div>
+<p>エンドポイントURLのOriginはGoogle Cloud Messaging(GCM）である。</p>
+
+<h4 id="サンプルコード">サンプルコード</h4>
+
+<p>これまでFCMのWeb Pushをまとめてきたがコードの断片のみで参考にならない。
+動作確認ができるコード一式をgithubに公開しているので参照してほしい。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="fcm-webpush-test" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h3 id="vapidのweb-push">VAPIDのWeb Push</h3>
+
+<p>つぎにVAPIDのWeb Pushをまとめていこう。VAPIDの全体の流れは次のエントリが参考になるのでオススメする。（同じ作者である。一貫してまとめていただいているので大変助かりました。）</p>
+
+<p><a href="http://qiita.com/tomoyukilabs/items/9346eb44b5a48b294762">GCMの登録が不要になったChromeのWeb Pushを試してみる - Qiita</a></p>
+
+<p>FCMのほうではFirebaseのプロジェクト登録が必要であったがVAPIDでは必要としない。
+クライアント側ではsubscription取得時にサーバ側から取得した公開鍵を用いる。</p>
+
+<p>ここからはクライアントとサーバに分けてFCMとの違いについてまとめていく。</p>
+
+<h4 id="クライアント-1">クライアント</h4>
+
+<p>クライアントはWeb Push購読時の処理に変更が入っている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">function requestPushSubscription(registration) {
+    return fetch(appServerPublicKeyURL).then(function(response) {
+        return response.text();
+    }).then(function(key) {
+        let opt = {
+            userVisibleOnly: true,
+            applicationServerKey: decodeBase64URL(key)
+        };
+
+        return registration.pushManager.subscribe(opt).then(getSubscription, errorSubscription);
+    });
+}</pre></td></tr></table>
+</div>
+</div>
+<p>サーバ側から公開鍵を取得し購読リクエストに含めている。
+そのほかの変更点は<code>manifest.json</code>から<code>gcm_sender_id</code>が取り除かれたのみである。</p>
+
+<h4 id="サーバ-1">サーバ</h4>
+
+<p>サーバ側では公開鍵をクライアントに提供するためのAPIを追加している。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">@GetMapping(&#34;public-key&#34;)
+fun get(): String {
+    return publicKey
+}</pre></td></tr></table>
+</div>
+</div>
+<p>暗号化のライブラリはFCMと同じく<code>MartijnDwars/web-push</code>をつかっている。VAPIDもサポートしてくれている。
+通知処理のAPIには公開鍵と秘密鍵を含めて<code>PushService</code>オブジェクトを生成している。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">@PostMapping
+fun post(@RequestBody req: Request): ResponseEntity&amp;lt;Boolean&gt; {
+
+    val payload  = objectMapper().writeValueAsString(Payload(req.message, req.tag, req.icon, req.url))
+
+    Security.addProvider(BouncyCastleProvider())
+    val push = app.push.PushService(publicKey, privateKey, &#34;http://localhost&#34;)
+    push.send(Notification(req.endpoint, req.key, req.auth, payload))
+
+    return ok().json().body(true)
+}</pre></td></tr></table>
+</div>
+</div>
+<p><strong>プッシュサーバへ送信時のヘッダーとエンドポイントURL</strong></p>
+
+<p>VAPIDに変わると次のようにヘッダーとエンドポイントが変わっている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">-H &#34;Authorization: WebPush {JWT形式の署名トークン}&#34; \
+-H &#34;Encryption: keyid=p256dh;salt={乱数、salt ※ここは変わらない}&#34; \
+-H &#34;Crypto-Key: keyid=p256dh;dh={共有鍵};p256ecdsa={サーバの公開鍵}&#34; \
+-H &#34;Content-Type: application/octet-stream&#34; \
+-H &#34;Ttl: 2419200&#34; \</pre></td></tr></table>
+</div>
+</div>
+<p><code>Authorization</code>と<code>Crypto-Key</code>にそれぞれ変更と追加がある。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">エンドポイントURL： https://fcm.googleapis.com/fcm/send/{registration_id}</pre></td></tr></table>
+</div>
+</div>
+<p>エンドポイントURLのOriginはFirebase Cloud Messagingに変更されている。</p>
+
+<h4 id="サンプルコード-1">サンプルコード</h4>
+
+<p>同様にVAPIDのほうもgithubにコード一式を公開したので参照してほしい。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="vapid-webpush-test" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>FCMとVAPIDのWeb Pushのプッシュ通知方法が理解できた。エンドポイントなどをサービス側で保持するタイミングなど実運用に向けて考えなくてはいけないことがある。</li>
+<li>Chromeのみ動作確認を行っていたが各種ブラウザの挙動が異なりそうなので導入時にクリアしていきたい。</li>
+</ul>
+
+<h3 id="関連エントリ">関連エントリ</h3>
+
+<p><a href="https://blog.soushi.me/entry/2017/05/23/100711">FCMでWeb Push。Firebase Javascript SDKを使ったプッシュ通知とトピック送信を試した。 - 平日インプット週末アウトプットぶろぐ</a></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/web-push/">Web Push</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/fcm/">FCM</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/vapid/">VAPID</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

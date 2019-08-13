@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>CA.ktに登壇してServer Side Kotlinについて話してきた。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="CA.kt #3で登壇しました。テーマは「FRESH!プロジェクト／Server Side Kotlin 活用事例」。スライドはこちら。 speakerdeck.com 約１年前にFRESH!チームにジョ">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">CA.ktに登壇してServer Side Kotlinについて話してきた。</h1>
+    <div class="post-meta">2017.10.21</div>
+  </header>
+  <div class="post-content">
+
+<p>CA.kt #3で登壇しました。テーマは「FRESH!プロジェクト／Server Side Kotlin 活用事例」。スライドはこちら。</p>
+
+<p><a href="https://speakerdeck.com/soushi/ca-dot-kt-number-3">speakerdeck.com</a></p>
+
+<p>約１年前に<a href="https://freshlive.tv/">FRESH!</a>チームにジョインしてKotlinに出会いServer Side Kotlinと向き合ってきた経験を話してきた。</p>
+
+<p>Server Side Kotlinの導入事例やIdeomatic Kotlin Codeをテーマにしたコード事例を紹介したり、Spring Boot 2.0とgRPCのチャレンジ、DBアクセスには何を使ってるの？、テストは？、Apiドキュメンテーションは？など、Server Side Kotlinを俯瞰して横断的な内容をまとめられと思う。</p>
+
+<p>興味ある方は是非スライドを参照ください👀</p>
+
+<p>そして今回のエントリは、これまでアウトプットしてきたServer Side Kotlin、Spring Boot 2.0、gRPC方面のエントリを総集編的にまとめていきたい。会場で出会えた方にもブログの存在をアピールできたし、「で、そのブログにはどんなエントリあるの？」って少なからず感じてもらえたと思うので応えたい。</p>
+
+<h3 id="sever-side-kotlin">Sever Side Kotlin</h3>
+
+<p>Kotlinを始めてまず取り掛かったのがテストコード。Javaでは<a href="http://jmockit.org/">JMockito</a>にお世話になっていたがKotlinで動かないことに絶望を感じたのが記憶にある。JMockitoが使えないならKotlinでどのようにコードの品質を担保するのか！！と差し迫った時期のエントリ。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/01/09/012530">KotlinでMockテストのまとめ - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<hr/>
+
+<p>DelegateとKotlinコルーチンについてまとめたエントリ。ここらへんの話も発表に入れたかった。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/07/27/002018">Kotlin コルーチンでasync/awaitをつかってgRPC Serverをリクエストしてみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p><a href="http://blog.soushi.me/entry/2017/09/08/234753">KotlinでConstructor Injectionが増えてきたからDelegateをつかってリファクタリングしてみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<hr/>
+
+<p>純正KotlinのJSONパーサーのKlaxonについてのエントリ。この記事はアクセス数が結構ある。JSONパースって必須と感じる。</p>
+
+<p><a href="http://blog.soushi.me/entry/2016/12/17/225446">Kotlinで快適なJSONパース。Klaxon: JSON for Kotlinを使ってみた。 - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<h3 id="spring-boot-2-0-0">Spring Boot 2.0.0</h3>
+
+<p>Spring Boot 2.0.0+ Kotlin動きそう？ HTTPサーバのInterceptorってどうなってるの？ を疑問に思ってまとめたエントリ。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/06/15/122405">Spring5.0 + KotlinではDoma、Request Interceptorあたりはどうなっているのか調べてみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<hr/>
+
+<p>Spring Framework 5から提供が始まったRouter Function DSLのテスト方法についてまとめたエントリ。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/06/22/123942">Spring5.0 + KotlinのRouterFunctionのテストはどうすればよいか？ 試してみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<hr/>
+
+<p>Spring Boot 2.0.0 Milestone versionではSpringFox(Swagger)やSpring Rest DocsなどのAPIドキュメンテーションツールのサポートが不完全なので、その時期にどうやって解決したかアウトプットしたエントリ。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/09/29/220526">SpringBoot 2.0とapiDocを連携させてみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<h3 id="grpc">gRPC</h3>
+
+<p>protobuf typeについてまとめたエントリ。まだ試していない型がたくさんあるしgRPC楽しい。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/08/25/225809">protobuf typeに日付型のcom.google.protobuf.Timestampをつかってみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p><a href="http://blog.soushi.me/entry/2017/09/03/170655">protobuf typeに値が入っているか確認するにはgoogle/protobuf/wrappers.protoをつかうとよい - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p>protoの運用について考えたエントリ。protodep便利。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/07/06/122307">Kotlin + gradleでgRPCプロトコル定義ファイル（.proto）のvendoringにprotodepをつかってみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<hr/>
+
+<p>gRPC Contextについてまとめたエントリ。gRPCはInterceptorを使ってContextに値を入れたり取り出したりすることがある。AOPには必須な知識。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/07/20/101051">Kotlin + gRPCでio.grpc.Contextをつかってログ出力を横断処理してみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<hr/>
+
+<p>gRPC Client/Serverのテスト方法をまとめたエントリ。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/09/24/203224">gRPC serverのmetadataをテストする方法をまとめる - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p><a href="http://blog.soushi.me/entry/2017/08/11/001047">grpc-javaのClient/ServerのテストをKotlinで書く - Client編 - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p><a href="http://blog.soushi.me/entry/2017/08/04/000534">grpc-javaのClient/ServerのテストをKotlinで書く - Server編 - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<hr/>
+
+<p>エンドクライアント（iOSやAndroid）のgRPC ClientとgRPC Serverの通信にTLSを有効にするためにはどうすればよいのか？を調べてアウトプットしたエントリ。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/04/21/101624">KotlinでgRPC。SSL/TLSを有効にする方法をまとめた。 - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p><a href="http://blog.soushi.me/entry/2017/05/11/122139">KotlinでgRPC。grpc-javaのTLS with JDKとTLS with OpenSSLの使い方をまとめた。 - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<hr/>
+
+<p>TLSについてまとめたけどALPN対応できなくて焦って問題解決できた経緯をまとめたエントリ。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/10/09/152515">grpc-javaのServerでTLSを有効にした場合はALPN対応しているか確認すべし - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>スライドのテーマに似ているような過去エントリをまとめてみた。</li>
+<li>まとめた順番とエントリの時期が前後したり、過去の情報で最新ではない可能性もあるので内容は保証できないことをご了承いただきたい🙏</li>
+<li>こういう機会にエントリをまとめてみるのは頭の整理が進むので良いと感じた。</li>
+</ul>
+
+<p>次回はgrpc-gatewayのアウトプットをしようと計画中。</p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/ca.kt/">CA.kt</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

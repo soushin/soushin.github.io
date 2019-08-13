@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>ElasticsearchのScroll  APIをためしてみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="気になっていたElasticsearchのScroll APIの使用感を記録します。最近の開発でScroll APIを採用したい欲求がありました">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">ElasticsearchのScroll  APIをためしてみた</h1>
+    <div class="post-meta">2016.12.23</div>
+  </header>
+  <div class="post-content">
+
+<p>気になっていたElasticsearchのScroll APIの使用感を記録します。最近の開発でScroll APIを採用したい欲求がありましたが、使用感を調べる前で採用は見送りました。このままだと気になったまま使わないことになりそうなので、この機会にまとめます。<a href="https://www.elastic.co/guide/en/elasticsearch/reference/2.4/search-request-scroll.html">Scroll | Elasticsearch Reference [2.4] | Elastic</a>※ version 2.4をつかいました。Scroll APIは通常のSearch requestのoffset/limitでページング取得をしないため処理中のデータ抜けが防げるメリットがあります。またScroll APIは初回リクエスト時の結果をスナップショットすることで安定した応答速度を担保します。<br/>
+スナップショットをとるためリアルタイムのデータ処理の利用には向いていません。（スナップショットの挙動について試してみたので後述しています）</p>
+
+<h3 id="どんなふうに使うか">どんなふうに使うか？</h3>
+
+<p>通常のクエリと<strong>scroll=1m</strong>を加えたリクエストを送ります。（size=1にしています）</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">curl -XGET http://localhost:9200/_search?scroll<span class="o">=</span>1m<span class="p">&amp;</span><span class="nv">size</span><span class="o">=</span><span class="m">1</span><span class="p">&amp;</span>pretty
+<span class="o">{</span>
+<span class="s2">&#34;query&#34;</span> : <span class="o">{</span> <span class="s2">&#34;match&#34;</span> : <span class="o">{</span> <span class="s2">&#34;category_id&#34;</span> : <span class="m">100</span> <span class="o">}</span> <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>次のような検索結果（1件）と合わせて<strong>_scroll_id</strong>が返ってきます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="o">{</span>
+  <span class="s2">&#34;_scroll_id&#34;</span> : <span class="s2">&#34;cXVlcnlUaGVuRmV0Y2g7NTs4OkZRQjk1VGJIUmxhRm5RVlBnVWotYXc7OTpGUUI5NVRiSFJsYUZuUVZQZ1VqLWF3OzEwOkZRQjk1VGJIUmxhRm5RVlBnVWotYXc7MTE6RlFCOTVUYkhSbGFGblFWUGdVai1hdzsxMjpGUUI5NVRiSFJsYUZuUVZQZ1VqLWF3OzA7&#34;</span>,
+・・・
+  <span class="s2">&#34;hits&#34;</span> : <span class="o">{</span>
+    <span class="s2">&#34;total&#34;</span> : <span class="m">52</span>,
+・・・
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>２件目の取得を行うために<strong>/_search/scroll</strong>のエンドポイントへ<strong>scroll_id</strong>をRequest Bodyに加えてリクエストします。クエリは必要ありません。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">curl -XGET http://localhost:9200/_search/scroll?pretty
+<span class="o">{</span>
+<span class="s2">&#34;scroll_id&#34;</span>: <span class="s2">&#34;cXVlcnlUaGVuRmV0Y2g7NTs4OkZRQjk1VGJIUmxhRm5RVlBnVWotYXc7OTpGUUI5NVRiSFJsYUZuUVZQZ1VqLWF3OzEwOkZRQjk1VGJIUmxhRm5RVlBnVWotYXc7MTE6RlFCOTVUYkhSbGFGblFWUGdVai1hdzsxMjpGUUI5NVRiSFJsYUZuUVZQZ1VqLWF3OzA7&#34;</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>２回目以降はscroll_idを送ることで初回のリクエスト時に送った検索条件の結果が返ってきます。</li>
+<li>３回目以降も同様にscroll_idを送ることで３件目、４件目、５件目・・・と結果を取得できます。</li>
+<li>初回に**size=1**としたため、２回目以降の結果も１件になります。</li>
+<li>また**scroll=1m**としたことで初回にリクエストした検索条件の結果を1分間の有効期限でスナップショットが取られます。</li>
+</ul>
+
+<h3 id="使い終わったscroll-idは破棄をする">使い終わったscroll_idは破棄をする</h3>
+
+<p>スナップショットを残して置くのはコストがかかるためscrollが終われば次のようにscroll_idをクリアします。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">curl -XDELETE localhost:9200/_search/scroll
+<span class="o">{</span>
+    <span class="s2">&#34;scroll_id&#34;</span> : <span class="o">[</span><span class="s2">&#34;cXVlcnlUaGVuRmV0Y2g7NTs4OkZRQjk1VGJIUmxhRm5RVlBnVWotYXc7OTpGUUI5NVRiSFJsYUZuUVZQZ1VqLWF3OzEwOkZRQjk1VGJIUmxhRm5RVlBnVWotYXc7MTE6RlFCOTVUYkhSbGFGblFWUGdVai1hdzsxMjpGUUI5NVRiSFJsYUZuUVZQZ1VqLWF3OzA7&#34;</span><span class="o">]</span>
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>複数のscroll_idをまとめてクリアもできます。</p>
+
+<h3 id="scroll-apiを使うときのメモ">Scroll APIを使うときのメモ</h3>
+
+<ul>
+<li>Scroll APIの初回のリクエストはscroll_idを取得するためのものではなく、検索結果に加えてscroll_idが返ってくる。</li>
+<li>Aggregationを含んだリクエストの場合、Aggregationの結果は初回のみ返ってくる。</li>
+<li>ソート条件に制約がなければsort orderは**_doc**にすることで安定した応答速度が得られる。</li>
+</ul>
+
+<h3 id="kotlin-公式elasticsearch-clientでscroll-apiをためしてみる">kotlin + 公式Elasticsearch ClientでScroll APIをためしてみる</h3>
+
+<p>せっかくなのでkotlinでコードからScroll APIをためしてみました。使ったクライアントは公式のElasticsearch Clientです。<a href="https://www.elastic.co/guide/en/elasticsearch/client/java-api/2.4/client.html">Client | Java API [2.4] | Elastic</a>※ version 2.4.3をつかいました</p>
+
+<h4 id="スナップショットは本当に有効なのか">スナップショットは本当に有効なのか？</h4>
+
+<p><strong>scroll=1m</strong>と設定してインデックスされたデータをscroll取得している間に、新しいソースをインデックスしても取得結果のtotal件数に変化がないか試してみました。以下のような流れで検証します。
+scrollIdが取得できれば再帰的にログ出力を繰り返し、その間に新しいソースを１件追加していきます。実行した結果は次のようになりました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="o">[</span>INFO <span class="o">]</span> <span class="nv">totalCount</span><span class="o">={</span><span class="m">104</span><span class="o">}</span>, <span class="nv">id</span><span class="o">={</span>AVkna34Rhpv5RJ12skTc<span class="o">}</span>　　　// 初回取得時のtotal件数は104件
+<span class="o">[</span>INFO <span class="o">]</span> <span class="nb">complete</span> add <span class="nb">source</span> <span class="nv">id</span><span class="o">={</span>AVkqcnqbMJXjH5tvLcGB<span class="o">}</span>　　//新しいソースの追加が成功
+<span class="o">[</span>INFO <span class="o">]</span> <span class="nv">totalCount</span><span class="o">={</span><span class="m">104</span><span class="o">}</span>, <span class="nv">id</span><span class="o">={</span>AVkna_83hpv5RJ12skTd<span class="o">}</span>　　　// total件数は初回取得時の104件から変わらずスナップショットが有効であることが確認できた
+<span class="o">[</span>INFO <span class="o">]</span> <span class="nb">complete</span> add <span class="nb">source</span> <span class="nv">id</span><span class="o">={</span>AVkqcntGMJXjH5tvLcGC<span class="o">}</span>
+<span class="o">[</span>INFO <span class="o">]</span> <span class="nv">totalCount</span><span class="o">={</span><span class="m">104</span><span class="o">}</span>, <span class="nv">id</span><span class="o">={</span>AVknbG17hpv5RJ12skTf<span class="o">}</span>
+・・・</code></pre></td></tr></table>
+</div>
+</div>
+<p>Scroll APIの仕様のとおりスナップショットが有効の状態であれば新しいソースを追加したとしてもスナップショットを指すscroll_idでリクエストをすると全体の件数は変わらないことが確認できました。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>ページング処理ではないため取りこぼしがない。（そもそも初回時点のスナップショットのデータを対象にスクロールするので取りこぼしはないと思われる）</li>
+<li>offset/limitのページング処理のコードがなくなり、コードがシンプルになった。</li>
+<li>スナップショットの有効期限が切れた場合、 **SearchContextMissingException** がスローされる。</li>
+<li>SearchContextMissingExceptionを捕捉して新規スクロールを始める必要があるが、例外が起きた時点のソースIDを始点にスクロールを開始する・・・なかなか例外処理は複雑。</li>
+<li>取得したscroll_idを用いた次のスクロールに有効期限を添えることで常にスナップショットの有効期限を更新すれば例外処理を避けることができそう。</li>
+<li>いまのプロジェクトに導入したくなってきたが、本番での処理時間を測定した上で最適な有効期限の設定をする必要があるため様子見する。</li>
+</ul>
+
+<h3 id="ソースを公開しています">ソースを公開しています</h3>
+
+<p>今回検証したソースコードを公開しています。</p>
+
+<p><a href="https://github.com/soushin/elasticsearch_test">https://github.com/soushin/elasticsearch_test</a></p>
+
+<h3 id="関連エントリ">関連エントリ</h3>
+
+<ul>
+<li><a href="https://blog.soushi.me/entry/2016/11/08/160204">Logstash + Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, dateなど） - 平日インプット週末アウトプットぶろぐ</a><br/></li>
+<li><a href="https://blog.soushi.me/entry/2016/12/10/170633">fluentd + logstash_formatの難点をrecord_reformerで解決した話 - 平日インプット週末アウトプットぶろぐ</a></li>
+</ul>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/elasticsearch/">elasticsearch</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/scroll/">Scroll</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

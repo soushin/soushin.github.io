@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>protobuf typeに日付型のcom.google.protobuf.Timestampをつかってみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="protobufのtypeに日付型をつかいたいケースがあったので com.google.protobuf.Timestampをつかってみた。 g">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">protobuf typeに日付型のcom.google.protobuf.Timestampをつかってみた</h1>
+    <div class="post-meta">2017.8.25</div>
+  </header>
+  <div class="post-content">
+
+<p>protobufのtypeに日付型をつかいたいケースがあったので <code>com.google.protobuf.Timestamp</code>をつかってみた。</p>
+
+<p><code>google/protobuf</code>を覗いてみると公式に載っているtypeの他にも使えそうなものがあるので定義に迷ったときは一読をおすすめする。</p>
+
+<p><div class="github-card" data-user="google/protobuf/tree/master/src/google" data-repo="protobuf" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>ここからは順にprotoの定義からgrpc-server, grpc-clientにおける<code>com.google.protobuf.Timestamp</code>の使い方をまとめていく。※コードはすべてkotlinで、grpc-javaをつかっている</p>
+
+<h3 id="protoの定義方法">protoの定義方法</h3>
+
+<p>protoファイルの抜粋になるが <code>import</code>を追加してtypeを定義するだけで使える。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="k">import</span> <span class="s">&#34;google/protobuf/timestamp.proto&#34;</span><span class="p">;</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="kd">message</span> <span class="nc">TaskOutbound</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>  <span class="kt">uint32</span> <span class="n">task_id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="kt">string</span> <span class="n">title</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="n">google.protobuf.Timestamp</span> <span class="n">finishedAt</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="n">google.protobuf.Timestamp</span> <span class="n">createdAt</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="n">google.protobuf.Timestamp</span> <span class="n">updatedAt</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>finishedAt, createdAt, updatedAtに <code>google.protobuf.Timestamp</code>を定義していることが分かる。</p>
+
+<p>protoの全体は<a href="https://github.com/google/protobuf/tree/master/src/google/protobuf">こちら</a>から確認できるので参考にしてほしい。</p>
+
+<h3 id="grpc-serverではどうするか">grpc-serverではどうするか</h3>
+
+<p>LocalDateTimeから<code>google.protobuf.Timestamp</code>の型へ変換しているコードは次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">private</span> <span class="k">fun</span> <span class="nf">getOutbound</span><span class="p">(</span><span class="n">entity</span><span class="p">:</span> <span class="n">Task</span><span class="p">):</span> <span class="n">TaskOutbound</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">builder</span> <span class="p">=</span> <span class="n">TaskOutbound</span><span class="p">.</span><span class="n">newBuilder</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">setTaskId</span><span class="p">(</span><span class="n">entity</span><span class="p">.</span><span class="n">id</span><span class="o">!!</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">setTitle</span><span class="p">(</span><span class="n">entity</span><span class="p">.</span><span class="n">title</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">setCreatedAt</span><span class="p">(</span><span class="n">getTimestamp</span><span class="p">(</span><span class="n">entity</span><span class="p">.</span><span class="n">createdAt</span><span class="p">))</span>
+            <span class="p">.</span><span class="n">setUpdatedAt</span><span class="p">(</span><span class="n">getTimestamp</span><span class="p">(</span><span class="n">entity</span><span class="p">.</span><span class="n">updatedAt</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">entity</span><span class="p">.</span><span class="n">finishedAt</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+        <span class="n">builder</span><span class="p">.</span><span class="n">setFinishedAt</span><span class="p">(</span><span class="n">getTimestamp</span><span class="p">(</span><span class="n">entity</span><span class="p">.</span><span class="n">finishedAt</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">builder</span><span class="p">.</span><span class="n">build</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">private</span> <span class="k">fun</span> <span class="nf">getTimestamp</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">LocalDateTime</span><span class="p">):</span> <span class="n">Timestamp</span><span class="p">.</span><span class="n">Builder</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">Timestamp</span><span class="p">.</span><span class="n">newBuilder</span><span class="p">().</span><span class="n">setSeconds</span><span class="p">(</span><span class="n">date</span><span class="p">.</span><span class="n">atZone</span><span class="p">(</span><span class="n">ZoneId</span><span class="p">.</span><span class="n">systemDefault</span><span class="p">()).</span><span class="n">toInstant</span><span class="p">().</span><span class="n">toEpochMilli</span><span class="p">())</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>grpc-serverはレスポンスを返すことになるが、<code>google.protobuf.Timestamp</code>を適応したfinishedAt, createdAt, updatedAtはgoogle.protobuf.Timestampの<code>Builder</code>クラスのインスタンスオブジェクトをセットする必要がある。</p>
+
+<h3 id="grpc-clinetではどうするか">grpc-clinetではどうするか</h3>
+
+<p>clientはserverから受け取った<code>google.protobuf.Timestamp</code>の値を<code>yyyy-MM-dd&rsquo;T&rsquo;HH:mm:ss&rsquo;Z&rsquo;</code>な文字列のString型でエンドポイントへ返却したい。コードは次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">data</span> <span class="k">class</span> <span class="nc">TaskModel</span><span class="p">(</span><span class="k">val</span> <span class="py">id</span><span class="p">:</span> <span class="n">Long</span><span class="p">,</span> <span class="k">val</span> <span class="py">title</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="k">val</span> <span class="py">finishedAt</span><span class="p">:</span> <span class="n">String</span><span class="p">?,</span> <span class="k">val</span> <span class="py">createdAt</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="k">val</span> <span class="py">updatedAt</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">constructor</span><span class="p">(</span><span class="n">entity</span><span class="p">:</span> <span class="n">TaskOutbound</span><span class="p">)</span> <span class="p">:</span> <span class="k">this</span><span class="p">(</span>
+            <span class="n">id</span> <span class="p">=</span> <span class="n">entity</span><span class="p">.</span><span class="n">taskId</span><span class="p">.</span><span class="n">toLong</span><span class="p">(),</span>
+            <span class="n">title</span> <span class="p">=</span> <span class="n">entity</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">finishedAt</span> <span class="p">=</span> <span class="n">entity</span><span class="p">.</span><span class="n">finishedAt</span><span class="p">.</span><span class="n">let</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">it</span> <span class="p">!=</span> <span class="k">null</span><span class="p">)</span>
+                    <span class="n">Instant</span><span class="p">.</span><span class="n">ofEpochMilli</span><span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="n">seconds</span><span class="p">).</span><span class="n">atZone</span><span class="p">(</span><span class="n">ZoneId</span><span class="p">.</span><span class="n">systemDefault</span><span class="p">()).</span><span class="n">toLocalDateTime</span><span class="p">().</span><span class="n">convert</span><span class="p">(</span><span class="n">DateUtil</span><span class="p">.</span><span class="n">Format</span><span class="p">.</span><span class="n">FULL_UTC</span><span class="p">)</span>
+                <span class="k">else</span> <span class="k">null</span>
+            <span class="p">},</span>
+            <span class="n">createdAt</span> <span class="p">=</span> <span class="n">Instant</span><span class="p">.</span><span class="n">ofEpochMilli</span><span class="p">(</span><span class="n">entity</span><span class="p">.</span><span class="n">createdAt</span><span class="p">.</span><span class="n">seconds</span><span class="p">).</span><span class="n">atZone</span><span class="p">(</span><span class="n">ZoneId</span><span class="p">.</span><span class="n">systemDefault</span><span class="p">()).</span><span class="n">toLocalDateTime</span><span class="p">().</span><span class="n">convert</span><span class="p">(</span><span class="n">DateUtil</span><span class="p">.</span><span class="n">Format</span><span class="p">.</span><span class="n">FULL_UTC</span><span class="p">),</span>
+            <span class="n">updatedAt</span> <span class="p">=</span> <span class="n">Instant</span><span class="p">.</span><span class="n">ofEpochMilli</span><span class="p">(</span><span class="n">entity</span><span class="p">.</span><span class="n">updatedAt</span><span class="p">.</span><span class="n">seconds</span><span class="p">).</span><span class="n">atZone</span><span class="p">(</span><span class="n">ZoneId</span><span class="p">.</span><span class="n">systemDefault</span><span class="p">()).</span><span class="n">toLocalDateTime</span><span class="p">().</span><span class="n">convert</span><span class="p">(</span><span class="n">DateUtil</span><span class="p">.</span><span class="n">Format</span><span class="p">.</span><span class="n">FULL_UTC</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>google.protobuf.Timestamp</code>には<code>getSeconds()</code>のメソッドが用意されていてUNIXタイムが取得できる。この値からエンドポイントに必要な型へ変換することができる。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li><code>google.protobuf.Timestamp</code>のつかいかたをまとめた</li>
+<li>Timestamp以外にも実案件につかえるtypeは他にもあるので機会があればまとめていきたい</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>コードは次のレポジトリにコミットしてあるので良かったら確認してみてください。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/protobuf/">protobuf</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/timestamp/">timestamp</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Kotlin &#43; gRPCでio.grpc.Contextをつかってログ出力を横断処理してみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="アスペクト指向プログラミング（AOP）をgRPC Serverではどう扱うか考えていきたい。 横断的な関心事といえば認証やログ出力である。 gRP">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Kotlin &#43; gRPCでio.grpc.Contextをつかってログ出力を横断処理してみた</h1>
+    <div class="post-meta">2017.7.20</div>
+  </header>
+  <div class="post-content">
+
+<p>アスペクト指向プログラミング（AOP）をgRPC Serverではどう扱うか考えていきたい。  横断的な関心事といえば認証やログ出力である。</p>
+
+<ul>
+<li>gRPCクライアントのメタデータに認証トークンを添えてリクエストを行いgRPC Serverのinterceptorで横断的に認証を完了させる。そしてメインのServer処理で認証したユーザ情報をコンテキストから取り出す。</li>
+<li>gRPC Serverで起きたことをログに詰め込みコンテキストに乗せてinterceptorで横断的にログ出力を行う。</li>
+</ul>
+
+<p>これらを実現するのが<code>io.grpc.Context</code>である。</p>
+
+<p><a href="https://grpc.io/grpc-java/javadoc/io/grpc/Context.html">Context (grpc-all 1.5.0 API)</a></p>
+
+<p>今回のエントリでは<code>io.grpc.Context</code>をつかいgRPC Serverのログ出力を横断的にする方法をまとめていく。</p>
+
+<h3 id="contexthandlerをつくる">ContextHandlerをつくる</h3>
+
+<p>Contextからログをセットしたり取り出したりするHandlerを用意する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">object</span> <span class="nc">GRpcLogContextHandler</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">GRPC_LOG</span><span class="p">:</span> <span class="n">Context</span><span class="p">.</span><span class="n">Key</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">GRpcLogBuilder</span><span class="p">&gt;</span> <span class="p">=</span> <span class="n">Context</span><span class="p">.</span><span class="n">key</span><span class="p">(</span><span class="s">&#34;GRPC_LOG&#34;</span><span class="p">)</span>
+
+    <span class="n">@JvmStatic</span>
+    <span class="k">fun</span> <span class="nf">setLog</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">log</span><span class="p">:</span> <span class="n">GRpcLogBuilder</span><span class="p">)</span> <span class="p">=</span> <span class="n">ctx</span><span class="p">.</span><span class="n">withValue</span><span class="p">(</span><span class="n">GRPC_LOG</span><span class="p">,</span> <span class="n">log</span><span class="p">)</span>
+
+    <span class="n">@JvmStatic</span>
+    <span class="k">fun</span> <span class="nf">getLog</span><span class="p">()</span> <span class="p">=</span>
+            <span class="k">try</span> <span class="p">{</span>
+                <span class="n">GRPC_LOG</span><span class="p">.</span><span class="k">get</span><span class="p">()</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">Exception</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">GRpcLogBuilder</span><span class="p">({</span>
+                    <span class="n">name</span> <span class="p">{</span> <span class="s">&#34;UnknownName&#34;</span> <span class="p">}</span>
+                <span class="p">})</span>
+            <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>GRpcLogContextHandlerが提供する<code>setLog</code>と<code>getLog</code>をgRPC Serverから操作してログオブジェクトを取り出しデータを詰め込む。</p>
+
+<h3 id="serverinterceptorをつくる">ServerInterceptorをつくる</h3>
+
+<p>GRpcLogContextHandlerをContextに含めたServerInterceptorを用意する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Component</span>
+<span class="k">class</span> <span class="nc">GRpcLogInterceptor</span> <span class="p">:</span> <span class="n">ServerInterceptor</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">logger</span> <span class="p">=</span> <span class="n">KotlinLogging</span><span class="p">.</span><span class="n">logger</span> <span class="p">{}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="err">&amp;</span><span class="nf">lt</span><span class="p">;</span><span class="n">ReqT</span> <span class="p">:</span> <span class="n">Any</span><span class="p">?,</span> <span class="n">RespT</span> <span class="p">:</span> <span class="n">Any</span><span class="p">?&gt;</span> <span class="n">interceptCall</span><span class="p">(</span><span class="n">call</span><span class="p">:</span> <span class="n">ServerCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Metadata</span><span class="p">?,</span> <span class="n">next</span><span class="p">:</span> <span class="n">ServerCallHandler</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?):</span> <span class="n">ServerCall</span><span class="p">.</span><span class="n">Listener</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">&gt;</span> <span class="p">{</span>
+
+        <span class="k">val</span> <span class="py">serverName</span> <span class="p">=</span> <span class="n">call</span><span class="o">?.</span><span class="n">methodDescriptor</span><span class="o">?.</span><span class="n">fullMethodName</span><span class="o">!!</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="s">&#34;.&#34;</span><span class="p">)</span>
+
+        <span class="k">val</span> <span class="py">serverCall</span> <span class="p">=</span> <span class="k">object</span> <span class="err">: </span><span class="nc">ForwardingServerCall</span><span class="p">.</span><span class="n">SimpleForwardingServerCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;(</span><span class="n">call</span><span class="p">)</span> <span class="p">{</span>
+
+            <span class="k">override</span> <span class="k">fun</span> <span class="nf">close</span><span class="p">(</span><span class="n">status</span><span class="p">:</span> <span class="n">Status</span><span class="p">?,</span> <span class="n">trailers</span><span class="p">:</span> <span class="n">Metadata</span><span class="p">?)</span> <span class="p">{</span>
+
+                <span class="k">val</span> <span class="py">log</span> <span class="p">=</span> <span class="n">GRpcLogContextHandler</span><span class="p">.</span><span class="n">getLog</span><span class="p">()</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="o">!!</span><span class="p">.</span><span class="n">isOk</span><span class="p">())</span>
+                    <span class="n">log</span><span class="p">.</span><span class="n">success</span> <span class="p">{</span> <span class="k">true</span> <span class="p">}</span>
+
+                <span class="k">try</span> <span class="p">{</span>
+                    <span class="n">logger</span><span class="p">.</span><span class="n">info</span> <span class="p">{</span> <span class="n">log</span><span class="p">.</span><span class="n">build</span><span class="p">().</span><span class="n">toString</span><span class="p">()</span> <span class="p">}</span>
+                <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">Exception</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">logger</span><span class="p">.</span><span class="n">warn</span> <span class="p">{</span> <span class="s">&#34;GRpcLogger is not set with %s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">serverName</span><span class="p">)</span> <span class="p">}</span>
+                <span class="p">}</span>
+
+                <span class="k">super</span><span class="p">.</span><span class="n">close</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">trailers</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="k">val</span> <span class="py">log</span> <span class="p">=</span> <span class="n">GRpcLogBuilder</span><span class="p">({</span>
+            <span class="n">name</span> <span class="p">{</span> <span class="n">serverName</span> <span class="p">}</span>
+            <span class="n">remoteAddr</span> <span class="p">{</span> <span class="n">call</span><span class="p">.</span><span class="n">attributes</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="n">Grpc</span><span class="p">.</span><span class="n">TRANSPORT_ATTR_REMOTE_ADDR</span><span class="p">).</span><span class="n">toString</span><span class="p">()</span> <span class="p">}</span>
+        <span class="p">})</span>
+        <span class="k">val</span> <span class="py">ctx</span> <span class="p">=</span> <span class="n">GRpcLogContextHandler</span><span class="p">.</span><span class="n">setLog</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="n">current</span><span class="p">(),</span> <span class="n">log</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Contexts</span><span class="p">.</span><span class="n">interceptCall</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">serverCall</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">next</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>gRPC Serverの<code>close</code>メソッドをオーバライドした<code>val serverCall</code>を用意する。このServerCallはclose処理でContextHandlerからログオブジェクトを取り出しログを出力をしてくれる。</li>
+<li>ContextHandlerにログオブジェクトをセットした<code>val ctx</code>を用意する。</li>
+<li>最後に<code>Contexts.interceptCall(ctx, serverCall, headers, next)</code>とすることで初期化されたログオブジェクトをコンテキストに乗せることができる。</li>
+<li>このGRpcLogInterceptorはログオブジェクトを初期化してコンテキストに載せること、そしてcloseするときにログ出力をする２つの横断的な処理を行ってくれる。</li>
+</ul>
+
+<h3 id="grpc-serverでログを詰め込む">gRPC Serverでログを詰め込む</h3>
+
+<p>gRPC Serverを一部抜粋したコードが次のとおりである。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">override</span> <span class="k">fun</span> <span class="nf">updateTaskService</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">UpdateTaskInbound</span><span class="p">?,</span> <span class="n">responseObserver</span><span class="p">:</span> <span class="n">StreamObserver</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">TaskOutbound</span><span class="p">&gt;?)</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="k">val</span> <span class="err">(</span><span class="py">taskId</span><span class="p">,</span> <span class="n">title</span><span class="p">)</span> <span class="p">=</span> <span class="n">GRpcInboundValidator</span><span class="p">.</span><span class="n">validUpdateTaskInbound</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="k">val</span> <span class="py">log</span> <span class="p">=</span> <span class="n">GRpcLogContextHandler</span><span class="p">.</span><span class="n">getLog</span><span class="p">()</span>
+        <span class="n">log</span><span class="p">.</span><span class="n">elem</span> <span class="p">{</span> <span class="s">&#34;taskId&#34;</span> <span class="n">to</span> <span class="n">taskId</span> <span class="p">}</span>
+        <span class="n">log</span><span class="p">.</span><span class="n">elem</span> <span class="p">{</span> <span class="s">&#34;title&#34;</span> <span class="n">to</span> <span class="n">title</span> <span class="p">}</span>
+
+        <span class="k">val</span> <span class="py">task</span> <span class="p">=</span> <span class="n">updateTaskService</span><span class="p">(</span><span class="n">UpdateTaskCommand</span><span class="p">(</span><span class="n">taskId</span><span class="p">.</span><span class="n">toLong</span><span class="p">(),</span> <span class="n">title</span><span class="p">))</span>
+        <span class="k">val</span> <span class="py">msg</span> <span class="p">=</span> <span class="n">getOutbound</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onNext</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onCompleted</span><span class="p">()</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">WebAppException</span><span class="p">.</span><span class="n">NotFoundException</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">logger</span><span class="p">.</span><span class="n">error</span> <span class="p">{</span> <span class="s">&#34;gRPC server error, task not found.&#34;</span> <span class="p">}</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onError</span><span class="p">(</span>
+                <span class="n">Status</span><span class="p">.</span><span class="n">NOT_FOUND</span><span class="p">.</span><span class="n">withDescription</span><span class="p">(</span><span class="s">&#34;task not found.&#34;</span><span class="p">).</span><span class="n">asRuntimeException</span><span class="p">())</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">WebAppException</span><span class="p">.</span><span class="n">BadRequestException</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">logger</span><span class="p">.</span><span class="n">error</span> <span class="p">{</span> <span class="s">&#34;gRPC server error, invalid request.&#34;</span> <span class="p">}</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onError</span><span class="p">(</span>
+                <span class="n">Status</span><span class="p">.</span><span class="n">INVALID_ARGUMENT</span><span class="p">.</span><span class="n">withDescription</span><span class="p">(</span><span class="s">&#34;invalid request.&#34;</span><span class="p">).</span><span class="n">asRuntimeException</span><span class="p">())</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のうち次の箇所でContextHandlerからログオブジェクトを取り出しログを詰め込んでいることが分かる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"> <span class="k">val</span> <span class="py">log</span> <span class="p">=</span> <span class="n">GRpcLogContextHandler</span><span class="p">.</span><span class="n">getLog</span><span class="p">()</span>
+ <span class="n">log</span><span class="p">.</span><span class="n">elem</span> <span class="p">{</span> <span class="s">&#34;taskId&#34;</span> <span class="n">to</span> <span class="n">taskId</span> <span class="p">}</span>
+ <span class="n">log</span><span class="p">.</span><span class="n">elem</span> <span class="p">{</span> <span class="s">&#34;title&#34;</span> <span class="n">to</span> <span class="n">title</span> <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>このgRPC Serverは前述したGRpcLogInterceptorがリクエストを前段でインターセプトしているためServerとGRpcLogInterceptorで共通のログオブジェクトを取り出し操作することができている。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li><code>io.grpc.Context</code>をつかったgRPC Serverの横断的な関心事の処理方法をまとめた</li>
+<li>今回はログ出力を取り上げたがユーザ認証も同様にインタセプターで認証をしてContextHandlerに認証ユーザを詰め込みgRPC Serverで取り出すことになる。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>エントリでは一部コードの抜粋になっているがgithubに全てのコードを参照できるので参考にしてほしい。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/aop/">AOP</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

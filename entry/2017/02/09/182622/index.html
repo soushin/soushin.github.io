@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>mackerelのグラフアノテーションをChatOpsに加えてみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="mackerelからリリースされたグラフアノテーションを追加できるコマンドラインツールをgoで作りました。 作ったコマンドをBot経由で実行で">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">mackerelのグラフアノテーションをChatOpsに加えてみた</h1>
+    <div class="post-meta">2017.2.9</div>
+  </header>
+  <div class="post-content">
+
+<p>mackerelからリリースされたグラフアノテーションを追加できるコマンドラインツールをgoで作りました。<br/>
+作ったコマンドをBot経由で実行できるうようにしてチームのChatOpsに加えていきたいのでbot scriptも作りました。<br/>
+コマンド作成方法やslack経由で実行できるようにする手順などの紹介エントリです。</p>
+
+<h2 id="グラフアノテーション">グラフアノテーション</h2>
+
+<p>mackerelのグラフアノテーションについてはリリースから確認できます。<a href="https://mackerel.io/ja/blog/entry/weekly/20170127">グラフアノテーションをリリースしました！ ほか - Mackerel ブログ #mackerelio</a><br/>
+ローカルで起動したコンテナのグラフを対象にアノテーションをつけると次のようになりました。<br/>
+<figure>
+    <img src="/images/20170209131211.png"/> 
+</figure>
+このアノテーションの作成をslackのBotにお願いして簡単にアノテーションが追加できるオペレーションを導入します。</p>
+
+<h2 id="コマンドラインツールをつくる">コマンドラインツールをつくる</h2>
+
+<p>それではmackerelにグラフアノテーションを追加するコマンドラインツールを作っていきます。クライアントにはmackerel-client-goを使います。
+<div class="github-card" data-user="mackerelio" data-repo="mackerel-client-go" data-width="400" data-height="" data-theme="default"></div></p>
+
+<p>コマンドラインライブラリはcobraを使います。</p>
+
+<div class="github-card" data-user="spf13" data-repo="cobra" data-width="400" data-height="" data-theme="default"></div>
+
+<p>cobraはKubernetesやDocker(distribution)などで採用されています。<br/>
+cobraを使えば簡単にサブコマンドを作れます。</p>
+
+<h3 id="どんなコマンドを作るか">どんなコマンドを作るか</h3>
+
+<p>次のようなコマンドを作ります。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ graph-annotation post -s <span class="s1">&#39;アノテーションのタイトル&#39;</span> MackerelRole1 MackerelRole2</code></pre></td></tr></table>
+</div>
+</div>
+<p>flagの-sでグラフに表示されるアノテーションのタイトルを指定できます。<br/>
+パラメータにはrole名を複数指定できます。<br/>
+チャットからメッセージを入力したいのでflagsを少なくします。</p>
+
+<h3 id="ファイル構成">ファイル構成</h3>
+
+<p>ファイル構成は次のようになりました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">./cmd
+├── graph-annotations
+│   └── main.go
+├── post.go
+└── root.go</code></pre></td></tr></table>
+</div>
+</div>
+<p>次からはcobraでコマンドを作る手順です。</p>
+
+<h4 id="コマンドの概要はroot-goにまとめる">コマンドの概要はroot.goにまとめる</h4>
+
+<p>コマンドの概要をroot.goにまとめます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">RootCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
+	<span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;graph-annotations&#34;</span><span class="p">,</span>
+	<span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Graph-annotations is a very simple tool for mackerel graph annotations API.&#34;</span><span class="p">,</span>
+	<span class="nx">Long</span><span class="p">:</span>  <span class="s">&#34;Complete API documentation is available at https://mackerel.io/api-docs/entry/graph-annotations&#34;</span><span class="p">,</span>
+	<span class="nx">Run</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+	<span class="p">},</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">cobra</span><span class="p">.</span><span class="nf">OnInitialize</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="グラフアノテーションの追加はpost-goにまとめる">グラフアノテーションの追加はpost.goにまとめる</h4>
+
+<p>グラフアノテーションの追加（mackerel-client-goをつかっているところ）はpost.goに実装しています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">postCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">title</span><span class="p">,</span> <span class="s">&#34;title&#34;</span><span class="p">,</span> <span class="s">&#34;s&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;required: annotation title&#34;</span><span class="p">)</span>
+	<span class="nx">postCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">description</span><span class="p">,</span> <span class="s">&#34;description&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;[optional] annotation details&#34;</span><span class="p">)</span>
+	<span class="nx">postCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">service</span><span class="p">,</span> <span class="s">&#34;service&#34;</span><span class="p">,</span> <span class="nx">os</span><span class="p">.</span><span class="nf">Getenv</span><span class="p">(</span><span class="s">&#34;MACKEREL_SERVICE_NAME&#34;</span><span class="p">),</span> <span class="s">&#34;required: service name, when it&#39;s empty value then will use enviroment variable of &#39;MACKEREL_SERVICE_NAME&#39;&#39;&#34;</span><span class="p">)</span>
+	<span class="nx">RootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">postCmd</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">title</span> <span class="kt">string</span>
+<span class="kd">var</span> <span class="nx">description</span> <span class="kt">string</span>
+<span class="kd">var</span> <span class="nx">service</span> <span class="kt">string</span>
+
+<span class="kd">var</span> <span class="nx">postCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
+	<span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;post&#34;</span><span class="p">,</span>
+	<span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Creating graph annotations&#34;</span><span class="p">,</span>
+	<span class="nx">Long</span><span class="p">:</span>  <span class="s">&#34;Tne post command creates graph annotations via graph-annotations API.&#34;</span><span class="p">,</span>
+	<span class="nx">Example</span><span class="p">:</span> <span class="s">`graph-annotations post -s &#39;deploy application&#39; ExampleRole1 ExampleRole2
+</span><span class="s">graph-annotations post --service ExampleService -s &#39;deploy application&#39; ExampleRole1 ExampleRole2`</span><span class="p">,</span>
+	<span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+
+		<span class="c1">// flagのバリデーションを省略しています
+</span><span class="c1"></span>
+		<span class="nx">time</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">Unix</span><span class="p">()</span>
+		<span class="nx">client</span> <span class="o">:=</span> <span class="nx">mkr</span><span class="p">.</span><span class="nf">NewClient</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nf">Getenv</span><span class="p">(</span><span class="s">&#34;MACKEREL_API_KEY&#34;</span><span class="p">))</span>
+
+		<span class="nx">annotation</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">mkr</span><span class="p">.</span><span class="nx">GraphAnnotation</span><span class="p">{</span>
+			<span class="nx">Service</span><span class="p">:</span>     <span class="nx">service</span><span class="p">,</span>
+			<span class="nx">Roles</span><span class="p">:</span>       <span class="nx">args</span><span class="p">,</span>
+			<span class="nx">From</span><span class="p">:</span>        <span class="nx">time</span><span class="p">,</span>
+			<span class="nx">To</span><span class="p">:</span>          <span class="nx">time</span><span class="p">,</span>
+			<span class="nx">Title</span><span class="p">:</span>       <span class="nx">title</span><span class="p">,</span>
+			<span class="nx">Description</span><span class="p">:</span> <span class="nx">description</span><span class="p">,</span>
+		<span class="p">}</span>
+
+		<span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">CreateGraphAnnotation</span><span class="p">(</span><span class="nx">annotation</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nf">Wrap</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="s">&#34;client error.&#34;</span><span class="p">)</span>
+		<span class="p">}</span>
+
+
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;completed. params title:%s, from:%d to:%d, service:%s, roles:%s&#34;</span><span class="p">,</span> <span class="nx">title</span><span class="p">,</span> <span class="nx">time</span><span class="p">,</span> <span class="nx">time</span><span class="p">,</span> <span class="nx">service</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="p">},</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>このようにグラフの追加はpost.goにして削除が必要であればdelete.goを追加してサブコマンドを分けることができます。※ 今回のコマンドではアノテーションをつける時刻範囲は現在時刻にしています。<br/>
+※ mackerelのサービス名の指定がなければ環境変数の&rsquo;MACKEREL_SERVICE_NAME&rsquo;を参照しています。</p>
+
+<h4 id="post-goで整理したコマンドのヘルプ">post.goで整理したコマンドのヘルプ</h4>
+
+<p>post.goに整理したコマンドのヘルプは次のように参照できます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ graph-annotation <span class="nb">help</span> post
+Tne post <span class="nb">command</span> creates graph annotations via graph-annotations API.
+
+Usage:
+  graph-annotations post <span class="o">[</span>flags<span class="o">]</span>
+
+Examples:
+graph-annotations post -s <span class="s1">&#39;deploy application&#39;</span> ExampleRole1 ExampleRole2
+graph-annotations post --service ExampleService -s <span class="s1">&#39;deploy application&#39;</span> ExampleRole1 ExampleRole2
+
+Flags:
+      --description string   <span class="o">[</span>optional<span class="o">]</span> annotation details
+      --service string       required: service name, when it<span class="s1">&#39;s empty value then will use enviroment variable of &#39;</span>MACKEREL_SERVICE_NAME<span class="s1">&#39;&#39;</span> <span class="o">(</span>default <span class="s2">&#34;local&#34;</span><span class="o">)</span>
+  -s, --title string         required: annotation title</code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="hubotを起動してslackに常駐させたbotにコマンドを実行させる">hubotを起動してslackに常駐させたBotにコマンドを実行させる</h2>
+
+<p>ローカルでhubotを起動してslackを連携させます。slackで発行したトークンを環境変数に加えます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ <span class="nb">export</span> <span class="nv">HUBOT_SLACK_TOKEN</span><span class="o">=</span><span class="p">&amp;</span>lt<span class="p">;</span>your slack token&gt;</code></pre></td></tr></table>
+</div>
+</div>
+<p>hubotを起動します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ <span class="nb">cd</span> <span class="o">(</span>path-to-hubot<span class="o">)</span>
+$ ./bin/hubot --adapter slack</code></pre></td></tr></table>
+</div>
+</div>
+<p>すべてローカルで実行することでローカルで起動したhubotがトークンを使いslackと連携できます。<br/>
+<img src="/images/20170209141526.png"></p>
+
+<h3 id="slackでの利用イメージ">slackでの利用イメージ</h3>
+
+<p>次のようなメッセージをBotに送ると先程つくったコマンドが実行されるようにします。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">@localbot note -s <span class="s1">&#39;プッシュ通知を送信しました&#39;</span> web</code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="コマンドを実行するscript">コマンドを実行するscript</h4>
+
+<p>コマンドを実行するscriptは次のように&rsquo;note &lsquo;以降の文字列をコマンドに渡して実行しています。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="nx">child_process</span> <span class="o">=</span> <span class="nx">require</span> <span class="s1">&#39;child_process&#39;</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">robot</span><span class="p">)</span> <span class="o">-&gt;</span>
+  <span class="nx">robot</span><span class="p">.</span><span class="nx">respond</span> <span class="o">/</span><span class="nx">note</span><span class="err">\</span><span class="nx">s</span><span class="o">+</span><span class="p">(.</span><span class="o">+</span><span class="p">)</span><span class="nx">$</span><span class="o">/</span><span class="p">,</span> <span class="p">(</span><span class="nx">msg</span><span class="p">)</span> <span class="o">-&gt;</span>
+    <span class="nx">option</span> <span class="o">=</span> <span class="nx">msg</span><span class="p">.</span><span class="nx">match</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="nx">child_process</span><span class="p">.</span><span class="nx">exec</span> <span class="s2">&#34;graph-annotation post #{option}&#34;</span><span class="p">,</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">stdout</span><span class="p">,</span> <span class="nx">stderr</span><span class="p">)</span> <span class="o">-&gt;</span>
+          <span class="k">if</span> <span class="o">!</span><span class="nx">error</span>
+            <span class="nx">output</span> <span class="o">=</span> <span class="nx">stdout</span><span class="o">+</span><span class="s1">&#39;&#39;</span>
+            <span class="nx">msg</span><span class="p">.</span><span class="nx">send</span> <span class="nx">output</span>
+          <span class="k">else</span>
+            <span class="nx">output</span> <span class="o">=</span> <span class="nx">stderr</span><span class="o">+</span><span class="s1">&#39;&#39;</span>
+            <span class="nx">msg</span><span class="p">.</span><span class="nx">send</span> <span class="nx">output</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="slackからメッセージを送ってみる">slackからメッセージを送ってみる</h3>
+
+<p><img src="/images/20170209142943.png" /></p>
+
+<p>bot経由でグラフアノテーションに追加できました。mackerelのグラフにも追加したアノテーションが表示されました。<br/></p>
+
+<p><img src="/images/20170209144516.png" /></p>
+
+<h2 id="まとめ">まとめ</h2>
+
+<ul>
+<li>mackerel-client-goが提供されているのでChatOpsに組み込む工程に集中できました。</li>
+<li>その他の言語でもクライアントライブラリは提供されているのでChatOps以外にもデイリーのバッチ処理実行前や後でアノテーションを追加してログを残す、なんてこともできます。</li>
+<li>今回のmackerelの設定はmicroservice毎にroleを分けていることを想定して複数のroleを指定できるようにしました。</li>
+<li>アノテーションの範囲を時間指定できるのでflagに追加してもよさそうです。今回は簡単にchatでアノテーションをつけられることをコンセプトに時間の指定は省略しました。</li>
+</ul>
+
+<h2 id="ソースを公開しています">ソースを公開しています。</h2>
+
+<div class="github-card" data-user="nsoushi" data-repo="mackerel-graph-annotation-tool" data-width="400" data-height="" data-theme="default"></div>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/mackerel/">mackerel</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/go/">Go</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%83%A9%E3%82%A4%E3%83%B3%E3%83%84%E3%83%BC%E3%83%AB/">コマンドラインツール</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/chatops/">ChatOps</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

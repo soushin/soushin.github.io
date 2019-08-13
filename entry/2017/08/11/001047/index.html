@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>grpc-javaのClient/ServerのテストをKotlinで書く - Client編 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="前回のエントリに続いて今回のエントリではgRPC Clientのテストの書き方をまとめていく。 grpc-javaのClient/Serverの">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">grpc-javaのClient/ServerのテストをKotlinで書く - Client編</h1>
+    <div class="post-meta">2017.8.11</div>
+  </header>
+  <div class="post-content">
+
+<p>前回のエントリに続いて今回のエントリではgRPC Clientのテストの書き方をまとめていく。</p>
+
+<p><a href="https://blog.soushi.me/entry/2017/08/04/000534">grpc-javaのClient/ServerのテストをKotlinで書く - Server編 - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<h3 id="テスト対象のproto">テスト対象のproto</h3>
+
+<p>テスト対象のprotoは次のとおりSimple-RPCとする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="kd">service</span> <span class="n">TaskService</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>  <span class="k">rpc</span> <span class="n">GetTaskService</span> <span class="p">(</span><span class="n">TaskInbound</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">TaskOutbound</span><span class="p">)</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>    <span class="k">option</span> <span class="p">(</span><span class="n">google.api.http</span><span class="p">)</span> <span class="o">=</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>      <span class="n">get</span><span class="o">:</span> <span class="s">&#34;/v1/task&#34;</span><span class="err">
+</span><span class="err"></span>    <span class="p">};</span><span class="err">
+</span><span class="err"></span>  <span class="p">}</span><span class="err">
+</span><span class="err"></span><span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="kd">message</span> <span class="nc">TaskInbound</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>  <span class="kt">uint32</span> <span class="n">task_id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="kd">message</span> <span class="nc">TaskOutbound</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>  <span class="kt">uint32</span> <span class="n">task_id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="kt">string</span> <span class="n">title</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="kt">string</span> <span class="n">finishedAt</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="kt">string</span> <span class="n">createdAt</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="kt">string</span> <span class="n">updatedAt</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>finishedAt</code>などは本来であれば<code>google/protobuf/timestamp.proto</code>を使いたいところが今回は<code>string</code>で定義している。</p>
+
+<h3 id="テストするgrpc-cleintとテスト内容">テストするgRPC Cleintとテスト内容</h3>
+
+<p>テスト対象のClientのコードは次のとおりである。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">suspend</span> <span class="k">fun</span> <span class="nf">getTask</span><span class="p">(</span><span class="n">taskId</span><span class="p">:</span> <span class="n">Long</span><span class="p">):</span> <span class="n">TaskOutbound</span> <span class="p">=</span>
+        <span class="n">async</span><span class="p">(</span><span class="n">CommonPool</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="p">{</span>
+                <span class="k">val</span> <span class="py">outbound</span> <span class="p">=</span> <span class="n">ShutdownLoan</span><span class="p">.</span><span class="n">using</span><span class="p">(</span><span class="n">getChannel</span><span class="p">(),</span> <span class="p">{</span> <span class="n">channel</span> <span class="p">-&gt;</span>
+                    <span class="k">val</span> <span class="py">msg</span> <span class="p">=</span> <span class="n">TaskInbound</span><span class="p">.</span><span class="n">newBuilder</span><span class="p">().</span><span class="n">setTaskId</span><span class="p">(</span><span class="n">taskId</span><span class="p">.</span><span class="n">toInt</span><span class="p">()).</span><span class="n">build</span><span class="p">()</span>
+                    <span class="n">TaskServiceGrpc</span><span class="p">.</span><span class="n">newBlockingStub</span><span class="p">(</span><span class="n">channel</span><span class="p">).</span><span class="n">getTaskService</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="p">})</span>
+                <span class="n">Result</span><span class="p">.</span><span class="n">Success</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">TaskOutbound</span><span class="p">,</span> <span class="n">GrpcException</span><span class="p">&gt;(</span><span class="n">outbound</span><span class="p">)</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">Exception</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">val</span> <span class="py">status</span> <span class="p">=</span> <span class="n">Status</span><span class="p">.</span><span class="n">fromThrowable</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="n">logger</span><span class="p">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="p">{</span> <span class="s">&#34;gRPC server error, code:{%d}, description:{%s}&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">code</span><span class="p">.</span><span class="n">value</span><span class="p">(),</span> <span class="n">status</span><span class="p">.</span><span class="n">description</span><span class="p">)</span> <span class="p">}</span>
+                <span class="n">Result</span><span class="p">.</span><span class="n">Failure</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">TaskOutbound</span><span class="p">,</span> <span class="n">GrpcException</span><span class="p">&gt;(</span><span class="n">status</span> <span class="n">with</span> <span class="n">status</span><span class="p">.</span><span class="n">description</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}.</span><span class="n">await</span><span class="p">().</span><span class="n">fold</span><span class="p">({</span> <span class="n">it</span> <span class="p">},</span> <span class="p">{</span> <span class="k">throw</span> <span class="n">it</span> <span class="p">})</span>
+
+<span class="k">private</span> <span class="k">fun</span> <span class="nf">getChannel</span><span class="p">()</span> <span class="p">=</span> <span class="n">NettyChannelBuilder</span><span class="p">.</span><span class="n">forAddress</span><span class="p">(</span><span class="n">appProperties</span><span class="p">.</span><span class="n">grpc</span><span class="p">.</span><span class="n">backend</span><span class="p">.</span><span class="n">host</span><span class="p">,</span> <span class="n">appProperties</span><span class="p">.</span><span class="n">grpc</span><span class="p">.</span><span class="n">backend</span><span class="p">.</span><span class="n">port</span><span class="p">)</span>
+        <span class="c1">// for testing
+</span><span class="c1"></span>        <span class="p">.</span><span class="n">usePlaintext</span><span class="p">(</span><span class="k">true</span><span class="p">)</span>
+        <span class="p">.</span><span class="n">build</span><span class="p">()</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>コルーチンをつかっているが、通常のgRPC Serverへリクエストするクライアントコードである。</p>
+
+<ul>
+<li><code>val msg = TaskInbound.newBuilder().setTaskId(taskId.toInt()).build()</code>でリクエスト変数を定義している。</li>
+<li><code>TaskServiceGrpc.newBlockingStub(channel).getTaskService(msg)</code>でgRPC serverへリクエストをしている。</li>
+<li>gRPC Serverから受け取ったレスポンスを <code>Result</code>型に格納し返却する。</li>
+<li><code>getChannel()</code>はgRPCのチャネルを返すメソッドである。</li>
+</ul>
+
+<h4 id="テスト内容">テスト内容</h4>
+
+<p>テストする内容を次のようにまとめる。</p>
+
+<ul>
+<li><code>getTask(taskId: Long)</code>を呼び出すとタスクが１件取得できるか。</li>
+<li><code>TaskServiceGrpc.newBlockingStub(channel).getTaskService(msg)</code>ではgRPC Serverへリクエストが渡るがリクエスト結果がエラーだった場合に例外エラー（<code>GrpcException</code>）を受け取ることができるか。</li>
+</ul>
+
+<h3 id="テストコード">テストコード</h3>
+
+<p>次にテストコードである。</p>
+
+<p>前回のエントリでまとめたとおりテストコードのなかでServerを起動させる。Clientのテストではテスト内容に応じて <code>成功を返すgRPC Server Service</code>、<code>エラーを返すgRPC Server Service</code>を用意する。そして起動しているServerにテスト対象のgRPC Sereverをアサインする。コードとしては次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Before</span>
+<span class="k">fun</span> <span class="nf">setup</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="n">serviceRegistry</span> <span class="p">=</span> <span class="n">MutableHandlerRegistry</span><span class="p">()</span>
+    <span class="n">inProcessServer</span> <span class="p">=</span> <span class="n">InProcessServerBuilder</span>
+            <span class="p">.</span><span class="n">forName</span><span class="p">(</span><span class="n">UNIQUE_SERVER_NAME</span><span class="p">).</span><span class="n">fallbackHandlerRegistry</span><span class="p">(</span><span class="n">serviceRegistry</span><span class="p">).</span><span class="n">directExecutor</span><span class="p">().</span><span class="n">build</span><span class="p">()</span>
+    <span class="n">inProcessChannel</span> <span class="p">=</span> <span class="n">InProcessChannelBuilder</span><span class="p">.</span><span class="n">forName</span><span class="p">(</span><span class="n">UNIQUE_SERVER_NAME</span><span class="p">).</span><span class="n">directExecutor</span><span class="p">().</span><span class="n">build</span><span class="p">()</span>
+
+    <span class="k">val</span> <span class="py">appProperties</span> <span class="p">=</span> <span class="n">AppProperties</span><span class="p">()</span>
+    <span class="n">target</span> <span class="p">=</span> <span class="n">TaskBackendClient</span><span class="p">(</span><span class="n">appProperties</span><span class="p">)</span>
+
+    <span class="n">inProcessServer</span><span class="p">.</span><span class="n">start</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="n">@After</span>
+<span class="k">fun</span> <span class="nf">shutdown</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">inProcessChannel</span><span class="p">.</span><span class="n">shutdownNow</span><span class="p">()</span>
+    <span class="n">inProcessServer</span><span class="p">.</span><span class="n">shutdownNow</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li><code>@Before</code>、<code>After</code>はServerのテストのエントリでまとめたようにサーバーの起動と停止を行っている。</li>
+</ul>
+
+<p>次のコードが重要である。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">private</span> <span class="k">class</span> <span class="nc">GetTaskServerOk</span><span class="p">:</span> <span class="n">TaskServiceGrpc</span><span class="p">.</span><span class="n">TaskServiceImplBase</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">getTaskService</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">TaskInbound</span><span class="p">?,</span> <span class="n">responseObserver</span><span class="p">:</span> <span class="n">StreamObserver</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">TaskOutbound</span><span class="p">&gt;?)</span> <span class="p">{</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onNext</span><span class="p">(</span><span class="n">TaskOutbound</span><span class="p">.</span><span class="n">newBuilder</span><span class="p">()</span>
+                <span class="p">.</span><span class="n">setTaskId</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+                <span class="p">.</span><span class="n">setTitle</span><span class="p">(</span><span class="s">&#34;mocked Task&#34;</span><span class="p">)</span>
+                <span class="p">.</span><span class="n">setFinishedAt</span><span class="p">(</span><span class="s">&#34;2017-01-01T23:59:59Z&#34;</span><span class="p">)</span>
+                <span class="p">.</span><span class="n">setCreatedAt</span><span class="p">(</span><span class="s">&#34;2017-01-02T23:59:59Z&#34;</span><span class="p">)</span>
+                <span class="p">.</span><span class="n">setUpdatedAt</span><span class="p">(</span><span class="s">&#34;2017-01-02T23:59:59Z&#34;</span><span class="p">)</span>
+                <span class="p">.</span><span class="n">build</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onCompleted</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>この<code>GetTaskServerOk</code>はテストするgRPC Serverが正常なレスポンスを返すServiceクラスである。<br/>
+このServiceクラスをテストで起動したgRPC Serverにアサインすることでレスポンスをモックできる。</p>
+
+<h4 id="正常系のテスト">正常系のテスト</h4>
+
+<p>次にメインとなるテストコードをまとめる。こちらは正常系のテストである</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Test</span>
+<span class="k">fun</span> <span class="nf">getTask</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">serviceRegistry</span><span class="p">.</span><span class="n">addService</span><span class="p">(</span><span class="n">GetTaskServerOk</span><span class="p">())</span>
+
+    <span class="c1">// mock
+</span><span class="c1"></span>    <span class="k">val</span> <span class="py">instance</span> <span class="p">=</span> <span class="n">PowerMockito</span><span class="p">.</span><span class="n">spy</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+    <span class="n">PowerMockito</span><span class="p">.</span><span class="n">doReturn</span><span class="p">(</span><span class="n">inProcessChannel</span><span class="p">).</span><span class="n">`when`</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s">&#34;getChannel&#34;</span><span class="p">)</span>
+
+    <span class="n">runBlocking</span> <span class="p">{</span>
+
+        <span class="c1">// assertion
+</span><span class="c1"></span>        <span class="k">val</span> <span class="py">actual</span> <span class="p">=</span> <span class="n">instance</span><span class="p">.</span><span class="n">getTask</span><span class="p">(</span><span class="m">1L</span><span class="p">)</span>
+
+        <span class="k">actual</span><span class="p">.</span><span class="n">taskId</span> <span class="n">shouldBe</span> <span class="m">1</span>
+        <span class="k">actual</span><span class="p">.</span><span class="n">title</span> <span class="n">shouldBe</span> <span class="s">&#34;mocked Task&#34;</span>
+        <span class="k">actual</span><span class="p">.</span><span class="n">finishedAt</span> <span class="n">shouldBe</span> <span class="s">&#34;2017-01-01T23:59:59Z&#34;</span>
+        <span class="k">actual</span><span class="p">.</span><span class="n">createdAt</span> <span class="n">shouldBe</span> <span class="s">&#34;2017-01-02T23:59:59Z&#34;</span>
+        <span class="k">actual</span><span class="p">.</span><span class="n">updatedAt</span> <span class="n">shouldBe</span> <span class="s">&#34;2017-01-02T23:59:59Z&#34;</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li><code>serviceRegistry.addService(GetTaskServerOk())</code>でモック化したServiceクラスをgRPC Serverに追加している。</li>
+<li><code>PowerMockito.doReturn(inProcessChannel).</code>when<code>(instance, "getChannel")</code>では、Clientコードにあった<code>getChannel()</code>をモック化している。<code>getChannel()</code>はgRPCのチャネルを返す関数であったが、テストコード内でモック化することでテストでビルドアップしたチャネルを適応している。</li>
+</ul>
+
+<h4 id="異常系のテスト">異常系のテスト</h4>
+
+<p>次に異常系のテストである。gRPC ServerからNot Foundのエラーを返すことを期待したテストコードである。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">private</span> <span class="k">class</span> <span class="nc">GetTaskServerNotFound</span> <span class="p">:</span> <span class="n">TaskServiceGrpc</span><span class="p">.</span><span class="n">TaskServiceImplBase</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">getTaskService</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">TaskInbound</span><span class="p">?,</span> <span class="n">responseObserver</span><span class="p">:</span> <span class="n">StreamObserver</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">TaskOutbound</span><span class="p">&gt;?)</span> <span class="p">{</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onError</span><span class="p">(</span><span class="n">Status</span><span class="p">.</span><span class="n">NOT_FOUND</span><span class="p">.</span><span class="n">withDescription</span><span class="p">(</span><span class="s">&#34;task not found.&#34;</span><span class="p">).</span><span class="n">asRuntimeException</span><span class="p">())</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onCompleted</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">@Test</span><span class="p">(</span><span class="n">expected</span> <span class="p">=</span> <span class="n">GrpcException</span><span class="o">::</span><span class="k">class</span><span class="p">)</span>
+<span class="k">fun</span> <span class="nf">getTask_then_NotFound</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">serviceRegistry</span><span class="p">.</span><span class="n">addService</span><span class="p">(</span><span class="n">GetTaskServerNotFound</span><span class="p">())</span>
+
+    <span class="c1">// mock
+</span><span class="c1"></span>    <span class="k">val</span> <span class="py">instance</span> <span class="p">=</span> <span class="n">PowerMockito</span><span class="p">.</span><span class="n">spy</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+    <span class="n">PowerMockito</span><span class="p">.</span><span class="n">doReturn</span><span class="p">(</span><span class="n">inProcessChannel</span><span class="p">).</span><span class="n">`when`</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s">&#34;getChannel&#34;</span><span class="p">)</span>
+
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="n">runBlocking</span> <span class="p">{</span>
+            <span class="n">instance</span><span class="p">.</span><span class="n">getTask</span><span class="p">(</span><span class="m">1L</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">GrpcException</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">e</span><span class="p">.</span><span class="n">message</span> <span class="n">shouldBe</span> <span class="s">&#34;task not found.&#34;</span>
+        <span class="n">e</span><span class="p">.</span><span class="n">status</span> <span class="n">shouldBe</span> <span class="n">HttpStatus</span><span class="p">.</span><span class="n">NOT_FOUND</span>
+        <span class="k">throw</span> <span class="n">e</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>エラーを返す<code>GetTaskServerNotFound</code>クラスを定義してgRPC Serverにアサインしている。</li>
+<li>テストコードではエラーが発生しているか、エラーメッセージ、コードが期待どおりかテストをしている。</li>
+</ul>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>Server編とClient編に分けてgRPC ServerとClientのテストコードをまとめた。</li>
+<li>今回は<code>Simple-RPC</code>をまとめたが次の機会には<code>ServerSideStreaming-RPC</code>や<code>ClientSideStreaming-RPC</code>、<code>BidirectionalStreaming-RPC</code>のStreamingのテストをまとめていきたい。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>エントリで紹介したコードは一部分のためコード全体はgithubを参照してください。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>テストコードは<a href="https://github.com/nsoushi/spring5-kotlin-application/blob/master/api/src/test/kotlin/app/grpc/client/GetTaskClientTest.kt">こちら</a>です。</p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/test/">Test</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

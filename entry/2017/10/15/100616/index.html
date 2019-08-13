@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>grpc-javaのClientでHeaderをセットしてリクエストする方法をまとめる - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="gRPCのClientで認証ヘッダーなどリクエストHeaderに値をセットしてgRPC Serverへリクエストするにはどうすればよいか？今回">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">grpc-javaのClientでHeaderをセットしてリクエストする方法をまとめる</h1>
+    <div class="post-meta">2017.10.15</div>
+  </header>
+  <div class="post-content">
+
+<p>gRPCのClientで認証ヘッダーなどリクエストHeaderに値をセットしてgRPC Serverへリクエストするにはどうすればよいか？今回のエントリではgrpc-javaのClientでHeaderをセットしてリクエストする方法をまとめていく。</p>
+
+<p>これまでのエントリではgRPC ServerのほうでClientからリクエストされたHeaderを参照する方法に <code>ServerInterceptor</code>を用いることをまとめてきた。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/08/18/234615">gRPC ServerのExceptionFilterの方法をまとめた（grpc-java） - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p>Clientでも同様にInterceptorを用いてリクエストHeaderに値をセットすることになる。<code>ClientInterceptor</code>を継承した<code>AuthInterceptor</code>を用意する。</p>
+
+<h3 id="clientinterceptorを準備する">ClientInterceptorを準備する</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">AuthInterceptor</span> <span class="p">:</span> <span class="n">ClientInterceptor</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">CUSTOM_HEADER_KEY</span> <span class="p">=</span> <span class="n">Metadata</span><span class="p">.</span><span class="n">Key</span><span class="p">.</span><span class="n">of</span><span class="p">(</span><span class="s">&#34;authorization&#34;</span><span class="p">,</span> <span class="n">Metadata</span><span class="p">.</span><span class="n">ASCII_STRING_MARSHALLER</span><span class="p">)</span>
+    <span class="k">private</span> <span class="k">val</span> <span class="py">AUTH_TOKEN</span> <span class="p">=</span> <span class="s">&#34;your-auth-token&#34;</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="err">&amp;</span><span class="nf">lt</span><span class="p">;</span><span class="n">ReqT</span> <span class="p">:</span> <span class="n">Any</span><span class="p">?,</span> <span class="n">RespT</span> <span class="p">:</span> <span class="n">Any</span><span class="p">?&gt;</span> <span class="n">interceptCall</span><span class="p">(</span><span class="n">method</span><span class="p">:</span> <span class="n">MethodDescriptor</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?,</span> <span class="n">callOptions</span><span class="p">:</span> <span class="n">CallOptions</span><span class="p">?,</span> <span class="n">next</span><span class="p">:</span> <span class="n">Channel</span><span class="p">?):</span> <span class="n">ClientCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">object</span> <span class="err">: </span><span class="nc">ForwardingClientCall</span><span class="p">.</span><span class="n">SimpleForwardingClientCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;(</span><span class="n">next</span><span class="o">?.</span><span class="n">newCall</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">callOptions</span><span class="p">))</span> <span class="p">{</span>
+
+            <span class="k">override</span> <span class="k">fun</span> <span class="nf">start</span><span class="p">(</span><span class="n">responseListener</span><span class="p">:</span> <span class="n">ClientCall</span><span class="p">.</span><span class="n">Listener</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">RespT</span><span class="p">&gt;,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Metadata</span><span class="p">)</span> <span class="p">{</span>
+                <span class="cm">/* put custom header */</span>
+                <span class="n">headers</span><span class="p">.</span><span class="n">put</span><span class="p">(</span><span class="n">CUSTOM_HEADER_KEY</span><span class="p">,</span> <span class="n">AUTH_TOKEN</span><span class="p">)</span>
+                <span class="k">super</span><span class="p">.</span><span class="n">start</span><span class="p">(</span><span class="k">object</span> <span class="err">: </span><span class="nc">ForwardingClientCallListener</span><span class="p">.</span><span class="n">SimpleForwardingClientCallListener</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">RespT</span><span class="p">&gt;(</span><span class="n">responseListener</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onHeaders</span><span class="p">(</span><span class="n">headers</span><span class="p">:</span> <span class="n">Metadata</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="k">super</span><span class="p">.</span><span class="n">onHeaders</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span>
+                    <span class="p">}</span>
+                <span class="p">},</span> <span class="n">headers</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li><code>CUSTOM_HEADER_KEY</code>変数にHeaderのKeyを<code>authorization</code>に定義したMetadataインスタンスをセットしている</li>
+<li><code>start</code>関数をoverrideしてheaderにセットすればよい</li>
+</ul>
+
+<p>これで<code>authorization</code>をキーにした認証ヘッダーをセットする<code>AuthInterceptor</code>ができた。</p>
+
+<h3 id="managedchannelのビルド工程にinterceptorをセットする">ManagedChannelのビルド工程にinterceptorをセットする</h3>
+
+<p>gRPC ClientではManagedChannelをビルドすることになるが、ビルドアップのパラメータに<code>intercept</code>がある。これに先ほど作った<code>AuthInterceptor</code>をセットすれば良い。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">private</span> <span class="k">fun</span> <span class="nf">getNettyChannel</span><span class="p">():</span> <span class="n">ManagedChannel</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">NettyChannelBuilder</span>
+            <span class="p">.</span><span class="n">forAddress</span><span class="p">(</span><span class="n">DOMAIN</span><span class="p">,</span> <span class="n">PORT</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">sslContext</span><span class="p">(</span>
+                    <span class="n">GrpcSslContexts</span><span class="p">.</span><span class="n">forClient</span><span class="p">()</span>
+                            <span class="p">.</span><span class="n">trustManager</span><span class="p">(</span><span class="n">File</span><span class="p">(</span><span class="n">CERT_PATH</span><span class="p">)).</span><span class="n">build</span><span class="p">())</span>
+            <span class="p">.</span><span class="n">intercept</span><span class="p">(</span><span class="n">AuthInterceptor</span><span class="p">())</span>
+            <span class="p">.</span><span class="n">build</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>grpc-javaのClientでHeaderをセットしてリクエストする方法をまとめた</li>
+<li>ClientもServerと似ていて<code>ClientInterceptor</code>を継承したinterceptorを実装しChannelBuilderの<code>intercept</code>にセットすればよい</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>コードはgithubに置いています。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="sandbox-kt" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>参考になるコードは<a href="https://github.com/soushin/sandbox-kt/blob/master/src/test/kotlin/soushin/sandbox/kt/client/grpc/GrpcClientTest.kt">こちら</a>。</p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/client/">Client</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/header/">Header</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

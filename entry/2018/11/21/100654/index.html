@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>BazelでDockerイメージのビルドとレジストリへのプッシュをする - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="前回までのエントリに引き続きBazelのビルドをまとめていく。 GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">BazelでDockerイメージのビルドとレジストリへのプッシュをする</h1>
+    <div class="post-meta">2018.11.21</div>
+  </header>
+  <div class="post-content">
+
+<p>前回までのエントリに引き続きBazelのビルドをまとめていく。</p>
+
+<ul>
+<li><a href="https://blog.soushi.me/entry/2018/11/14/145038">GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット週末アウトプットぶろぐ</a></li>
+<li><a href="https://blog.soushi.me/entry/2018/11/16/132000">BazelでGoプロジェクトのビルド。Gazelleのgo_repositoryで外部ライブラリの依存とBazelのgo_testでテスト。 - 平日インプット週末アウトプットぶろぐ</a></li>
+<li><a href="https://blog.soushi.me/entry/2018/11/20/105331">gRPCサーバを含むGoプロジェクトをBazelでビルドする - 平日インプット週末アウトプットぶろぐ</a></li>
+</ul>
+
+<p>今回はDockerイメージのビルドとビルドしたイメージをレジストリにプッシュする方法をまとめる。</p>
+
+<h3 id="bazelの魅力">Bazelの魅力</h3>
+
+<p>具体的な方法に入る前にBazelの魅力を整理したい。</p>
+
+<p>Bazelの魅力はマルチ言語のビルドをサポートしている点が挙げられる。GoプロジェクトであればGazelleがWORKSPACEとBUILDファイルの中間コードを補完してくれる。そしてコンテナ周辺のビルドタスクも定義できる。</p>
+
+<p>コンテナ周辺のビルドタスクのサポートがBazelの最大の魅力だと感じる。マイクロサービスを取り入れたプロジェクトであればサービスをどのような単位で管理するだろうか。シンプルに考えればサービス１つに対してレポジトリを作るだろう。そのレポジトリにDockerfileを置けばビルド時にイメージのビルドとレジストリへのプッシュも行える。しかしいくつかの課題がある。レポジトリ間の依存である。ユーティリティ系のレポジトリやgRPCのprotoファイルなどレポジトリを分けることによって運用の手数が増えることになる。</p>
+
+<p>その点Bazelは１つのレポジトリにマルチプロジェクトを構成しgRPCのprotoファイルを集約させることができる。そしてDockerイメージのビルドとプッシュも行えるとあれば一連の運用フローがBazelで完遂することができるのだ。</p>
+
+<h3 id="goプロジェクトをdistrolessをベースイメージとしてビルドする">Goプロジェクトをdistrolessをベースイメージとしてビルドする</h3>
+
+<p>Goプロジェクトをdistrolessイメージでビルドしたい。</p>
+
+<p><div class="github-card" data-user="GoogleContainerTools" data-repo="distroless" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>これまではalpineイメージをベースにRUNでglibc, openssl , ca-certificateなどをインストールしていたのだがdistrolessはこれらがセットアップされた軽量なイメージである。また調べる限りではcontainer_imageなどのDockerビルドの機能にRUN相当のオプションが指定できない。</p>
+
+<p>distrolessのイメージを使わずともBazelには<code>go_image</code>が用意されていてDockerイメージのビルドが行えるのだがentrypointやcmdが指定できない。これらの理由からベースイメージを変える方法の知見を残す意味でもdistrolessを利用している。</p>
+
+<p>WORKSPACEにベースイメージとするdistroless/baseを定義する。container_pullを定義することで以降のビルド定義で<code>distroless_base_image</code>でベースイメージを参照できる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># WORKSPACE</span>
+
+<span class="n">container_pull</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;distroless_base_image&#34;</span><span class="p">,</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="s2">&#34;gcr.io&#34;</span><span class="p">,</span>
+    <span class="n">repository</span> <span class="o">=</span> <span class="s2">&#34;distroless/base&#34;</span><span class="p">,</span>
+    <span class="n">digest</span> <span class="o">=</span> <span class="s2">&#34;sha256:628939ac8bf3f49571d05c6c76b8688cb4a851af6c7088e599388259875bde20&#34;</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>pkg/public_go/BUILD.bazelのcontainer_imageで<code>distroless_base_image</code>を参照する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># pkg/public_go/BUILD.bazel</span>
+
+<span class="n">container_image</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;public_go_image&#34;</span><span class="p">,</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="s2">&#34;@distroless_base_image//image&#34;</span><span class="p">,</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;:public_go&#34;</span><span class="p">],</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&#34;/public_go&#34;</span><span class="p">,</span>
+        <span class="s2">&#34;-greet&#34;</span><span class="p">,</span>
+        <span class="s2">&#34;Awesome&#34;</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>filesに指定している<code>:public_go</code>はgo_binaryで定義されたタスクでGoバイナリを生成する。これによりイメージ内にGoバイナリが配置される。あとはcmdにアプリケーションを起動するコマンドを定義する。ここらへんの定義方法はDockerとほぼ同じである。</p>
+
+<p>public_go_imageのタスクを実行するとDockerイメージがビルドできる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ bazel run --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //pkg/public_go:public_go_image 
+INFO: Build options have changed, discarding analysis cache.
+INFO: Analysed target //pkg/public_go:public_go_image (97 packages loaded).
+INFO: Found 1 target...
+Target //pkg/public_go:public_go_image up-to-date:
+  bazel-bin/pkg/public_go/public_go_image-layer.tar
+INFO: Elapsed time: 5.632s, Critical Path: 1.53s
+INFO: 6 processes: 6 darwin-sandbox.
+INFO: Build completed successfully, 11 total actions
+INFO: Build completed successfully, 11 total actions
+Loaded image ID: sha256:5626914bed1706245748cf5a090fcf4afed675592d7a17ec0116907b49102758
+Tagging 5626914bed1706245748cf5a090fcf4afed675592d7a17ec0116907b49102758 as bazel/pkg/public_go:public_go_image</pre></td></tr></table>
+</div>
+</div>
+<p><code>&ndash;platforms=@io_bazel_rules_go//go/toolchain:linux_amd64</code>でクロスコンパイルオプションを追加している。</p>
+
+<h3 id="レジストリにプッシュする">レジストリにプッシュする</h3>
+
+<p>レジストリへのプッシュは次のように定義する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># pkg/public_go/BUILD.bazel</span>
+
+<span class="n">container_push</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;push_public_go_image&#34;</span><span class="p">,</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="s2">&#34;:public_go_image&#34;</span><span class="p">,</span>
+    <span class="n">format</span> <span class="o">=</span> <span class="s2">&#34;Docker&#34;</span><span class="p">,</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="s2">&#34;index.docker.io&#34;</span><span class="p">,</span>
+    <span class="n">repository</span> <span class="o">=</span> <span class="s2">&#34;soushin/bazel-multiprojects-go&#34;</span><span class="p">,</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="s2">&#34;latest&#34;</span><span class="p">,</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>imageでcontainer_imageの<code>public_go_image</code>を参照する。</p>
+
+<p>push_public_go_imageのタスクを実行するとレジストリにプッシュされたことが確認できる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ bazel run //pkg/public_go:push_public_go_image
+INFO: Build options have changed, discarding analysis cache.
+INFO: Analysed target //pkg/public_go:push_public_go_image (0 packages loaded).
+INFO: Found 1 target...
+Target //pkg/public_go:push_public_go_image up-to-date:
+  bazel-bin/pkg/public_go/push_public_go_image
+INFO: Elapsed time: 3.065s, Critical Path: 2.48s
+INFO: 5 processes: 5 darwin-sandbox.
+INFO: Build completed successfully, 7 total actions
+INFO: Build completed successfully, 7 total actions
+index.docker.io/soushin/bazel-multiprojects-go:latest was published with digest: sha256:3025afe23e007e6d48b7b661a3a2726f7bc32940bbb56feeb6a14acded613dc1</pre></td></tr></table>
+</div>
+</div>
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>BazelでDockerイメージのビルドとレジストリへのプッシュする方法をまとめた。</li>
+<li>Bazelの魅力でまとめたとおりContainer周辺のタスクもビルド定義できるのでコードのビルド、テスト、コンテナのビルド、プッシュまでワンストップで行えるBazelはすごい。</li>
+<li>マルチプロジェクトでBazelをつかっていきたいので効率的なCIとの連携を考えていきたい。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p><div class="github-card" data-user="soushin" data-repo="bazel-multiprojects" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/bazel/">Bazel</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/docker/">Docker</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

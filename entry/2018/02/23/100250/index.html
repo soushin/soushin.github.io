@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Dagger2（android support module）をつかってFragmentにDIする - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Dagger2（android support module）をつかってFragmentにDIする方法をまとめていく。 HasSupportFragmentI">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Dagger2（android support module）をつかってFragmentにDIする</h1>
+    <div class="post-meta">2018.2.23</div>
+  </header>
+  <div class="post-content">
+
+<p>Dagger2（android support module）をつかってFragmentにDIする方法をまとめていく。</p>
+
+<h2 id="hassupportfragmentinjectorを実装する">HasSupportFragmentInjectorを実装する</h2>
+
+<p>MainActivityにHasSupportFragmentInjectorを継承させ必要な実装をします。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">MainActivity</span> <span class="p">:</span> <span class="n">AppCompatActivity</span><span class="p">(),</span> <span class="n">HasSupportFragmentInjector</span> <span class="p">{</span>
+
+    <span class="n">@Inject</span>
+    <span class="k">lateinit</span> <span class="k">var</span> <span class="py">androidInjector</span><span class="p">:</span> <span class="n">DispatchingAndroidInjector</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Fragment</span><span class="p">&gt;</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">supportFragmentInjector</span><span class="p">()</span> <span class="p">=</span> <span class="n">androidInjector</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreate</span><span class="p">(</span><span class="n">savedInstanceState</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">?)</span> <span class="p">{</span>
+        <span class="n">AndroidInjection</span><span class="p">.</span><span class="n">inject</span><span class="p">(</span><span class="k">this</span><span class="p">)</span>
+        <span class="k">super</span><span class="p">.</span><span class="n">onCreate</span><span class="p">(</span><span class="n">savedInstanceState</span><span class="p">)</span>
+        <span class="n">setContentView</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">layout</span><span class="p">.</span><span class="n">activity_main</span><span class="p">)</span>
+        <span class="n">setContentFragment</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">mainLayout</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">fun</span> <span class="nf">setContentFragment</span><span class="p">(</span><span class="n">containerViewId</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">supportFragmentManager</span><span class="p">.</span><span class="n">let</span> <span class="p">{</span> <span class="n">manager</span> <span class="p">-&gt;</span>
+            <span class="n">manager</span><span class="p">.</span><span class="n">findFragmentById</span><span class="p">(</span><span class="n">containerViewId</span><span class="p">)</span><span class="o">?.</span><span class="n">let</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+            <span class="n">ForecastsFragment</span><span class="p">.</span><span class="n">newInstance</span><span class="p">().</span><span class="n">apply</span> <span class="p">{</span>
+                <span class="n">manager</span><span class="o">?.</span><span class="n">beginTransaction</span><span class="p">()</span><span class="o">?.</span><span class="n">add</span><span class="p">(</span><span class="n">containerViewId</span><span class="p">,</span> <span class="k">this</span><span class="p">)</span><span class="o">?.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="fragmenのモジュールをまとめる">Fragmenのモジュールをまとめる</h2>
+
+<p>Fragmentで管理するモジュールを <code>MainModule</code>としてまとめる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Module</span>
+<span class="k">internal</span> <span class="k">abstract</span> <span class="k">class</span> <span class="nc">MainModule</span> <span class="p">{</span>
+
+    <span class="n">@ContributesAndroidInjector</span>
+    <span class="k">abstract</span> <span class="k">fun</span> <span class="nf">contributeMainFragment</span><span class="p">():</span> <span class="n">ForecastsFragment</span>
+
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>MainActivityのSubcomponentにMainModuleを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Module</span>
+<span class="k">internal</span> <span class="k">abstract</span> <span class="k">class</span> <span class="nc">UiModule</span> <span class="p">{</span>
+
+    <span class="n">@ContributesAndroidInjector</span><span class="p">(</span><span class="n">modules</span> <span class="p">=</span> <span class="p">[</span><span class="n">MainModule</span><span class="o">::</span><span class="k">class</span><span class="p">])</span>
+    <span class="k">internal</span> <span class="k">abstract</span> <span class="k">fun</span> <span class="nf">contributeMainActivity</span><span class="p">():</span> <span class="n">MainActivity</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>今後、MainActivityに機能が追加する場合は、MainModuleに依存するモジュールを追加していく。</p>
+
+<h2 id="fragmenのライフサイクルに合わせてinject">Fragmenのライフサイクルに合わせてInject</h2>
+
+<p>サンプルのコードでは<code>onAttach</code>でInjetctをしている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">ForecastsFragment</span> <span class="p">:</span> <span class="n">Fragment</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="n">@Inject</span>
+    <span class="k">lateinit</span> <span class="k">var</span> <span class="py">openWeatherMapRepository</span><span class="p">:</span> <span class="n">OpenWeatherMapRepository</span>
+
+    <span class="k">private</span> <span class="k">var</span> <span class="py">listView</span><span class="p">:</span> <span class="n">ListView</span> <span class="k">by</span> <span class="n">Delegates</span><span class="p">.</span><span class="n">notNull</span><span class="p">()</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onAttach</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">Context</span><span class="p">?)</span> <span class="p">{</span>
+        <span class="n">AndroidSupportInjection</span><span class="p">.</span><span class="n">inject</span><span class="p">(</span><span class="k">this</span><span class="p">)</span>
+        <span class="k">super</span><span class="p">.</span><span class="n">onAttach</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreateView</span><span class="p">(</span><span class="n">inflater</span><span class="p">:</span> <span class="n">LayoutInflater</span><span class="p">?,</span> <span class="n">container</span><span class="p">:</span> <span class="n">ViewGroup</span><span class="p">?,</span> <span class="n">savedInstanceState</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">?):</span> <span class="n">View</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">val</span> <span class="py">view</span> <span class="p">=</span> <span class="n">inflater</span><span class="o">?.</span><span class="n">inflate</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">layout</span><span class="p">.</span><span class="n">forcasts_fragment</span><span class="p">,</span> <span class="n">container</span><span class="p">,</span> <span class="k">false</span><span class="p">)</span> <span class="o">?:</span> <span class="k">return</span> <span class="k">null</span>
+        <span class="n">listView</span> <span class="p">=</span> <span class="n">view</span><span class="p">.</span><span class="n">findViewById</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ListView</span><span class="p">&gt;(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">list_view</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">view</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onActivityCreated</span><span class="p">(</span><span class="n">savedInstanceState</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">?)</span> <span class="p">{</span>
+        <span class="k">super</span><span class="p">.</span><span class="n">onActivityCreated</span><span class="p">(</span><span class="n">savedInstanceState</span><span class="p">)</span>
+
+        <span class="n">openWeatherMapRepository</span><span class="p">.</span><span class="n">findForecastByDaily</span><span class="p">()</span>
+                <span class="p">.</span><span class="n">subscribeOn</span><span class="p">(</span><span class="n">Schedulers</span><span class="p">.</span><span class="n">io</span><span class="p">())</span>
+                <span class="p">.</span><span class="n">observeOn</span><span class="p">(</span><span class="n">AndroidSchedulers</span><span class="p">.</span><span class="n">mainThread</span><span class="p">())</span>
+                <span class="p">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">forecasts</span> <span class="p">-&gt;</span>
+                    <span class="n">listView</span><span class="p">.</span><span class="n">adapter</span> <span class="p">=</span> <span class="n">ArrayAdapter</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;(</span><span class="n">activity</span><span class="p">,</span> <span class="n">android</span><span class="p">.</span><span class="n">R</span><span class="p">.</span><span class="n">layout</span><span class="p">.</span><span class="n">simple_list_item_1</span><span class="p">,</span>
+                            <span class="n">forecasts</span><span class="p">.</span><span class="n">list</span><span class="p">.</span><span class="n">map</span> <span class="p">{</span>
+                                <span class="s">&#34;%s - %s %s/%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span>
+                                        <span class="n">DateUtils</span><span class="p">.</span><span class="n">formatDateTime</span><span class="p">(</span><span class="n">activity</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">dt</span> <span class="p">*</span> <span class="m">1000L</span><span class="p">,</span> <span class="n">FORMAT_NO_YEAR</span><span class="p">),</span>
+                                        <span class="n">it</span><span class="p">.</span><span class="n">weather</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="m">0</span><span class="p">).</span><span class="n">main</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">temp</span><span class="p">.</span><span class="n">min</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">temp</span><span class="p">.</span><span class="n">max</span><span class="p">)</span>
+                            <span class="p">})</span>
+                <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">companion</span> <span class="k">object</span> <span class="p">{</span>
+        <span class="k">fun</span> <span class="nf">newInstance</span><span class="p">()</span> <span class="p">=</span> <span class="n">ForecastsFragment</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>Fragmentの理解は<a href="https://developer.android.com/guide/components/fragments.html?hl=ja">公式のドキュメント</a>が分かりやすい。</li>
+<li>Fragmentを部品と捉えてタブレットとハンドセットで異なるレイアウトでも部品（Fragment）を組み合わせることで柔軟に対応することができるし部品の再利用も容易にできる。</li>
+</ul>
+
+<h2 id="コード">コード</h2>
+
+<p>今回のコードはこちらのPRにまとまっていますので参考になれば嬉しいです。</p>
+
+<p><div class="github-card" data-user="soushin/sunshine-app/pull" data-repo="2" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/android/">Android</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/dagger/">Dagger</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/di/">DI</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/fragment/">Fragment</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

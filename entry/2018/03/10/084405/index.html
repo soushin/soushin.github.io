@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>rx-preferencesをつかってSharedPreferencesの更新をSubscribeする - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="ブログエントリで試しているAndroidアプリにFluxアーキテクチャを導入をしたことでデータの流れがStreamになった。SharedPr">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">rx-preferencesをつかってSharedPreferencesの更新をSubscribeする</h1>
+    <div class="post-meta">2018.3.10</div>
+  </header>
+  <div class="post-content">
+
+<p>ブログエントリで試しているAndroidアプリにFluxアーキテクチャを導入をしたことでデータの流れがStreamになった。SharedPreferencesも <code>rx-preferences</code>をつかえば更新状態をSubscribeできるので導入過程をまとめていく。</p>
+
+<p><div class="github-card" data-user="f2prateek" data-repo="rx-preferences" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>お試し中のアプリはOpenWeatherMapのAPIを使い天気情報を取得する。ZipCodeをクエリに追加すれば地域の天気情報が取得できる。アプリ内でZipCodeを登録できるようにしたいのでSharedPreferencesで管理することにする。</p>
+
+<h3 id="rx-preferencesをつかう">rx-preferencesをつかう</h3>
+
+<p><code>rx-preferences</code>を追加してRepository化するまで。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"># dependencies.gradle
+
+rxPreferences = &#39;com.f2prateek.rx.preferences2:rx-preferences:2.0.0-RC3&#39;</pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="err">#</span> <span class="n">SettingsRepository</span><span class="p">.</span><span class="n">kt</span>
+
+<span class="n">@Singleton</span>
+<span class="k">class</span> <span class="nc">SettingsRepository</span> <span class="n">@Inject</span> <span class="k">constructor</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">application</span><span class="p">:</span> <span class="n">Application</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">SETTING_NAME</span> <span class="p">=</span> <span class="s">&#34;setting&#34;</span>
+    <span class="k">private</span> <span class="k">val</span> <span class="py">ZIP_CODE_NAME</span> <span class="p">=</span> <span class="s">&#34;zip_code&#34;</span>
+
+    <span class="k">fun</span> <span class="nf">getZipCode</span><span class="p">()</span> <span class="p">=</span> <span class="n">getRxSharedPreferences</span><span class="p">(</span><span class="n">SETTING_NAME</span><span class="p">).</span><span class="n">getString</span><span class="p">(</span><span class="n">ZIP_CODE_NAME</span><span class="p">)</span>
+    <span class="k">fun</span> <span class="nf">updateZipCode</span><span class="p">(</span><span class="n">zipCode</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">getZipCode</span><span class="p">().</span><span class="k">set</span><span class="p">(</span><span class="n">zipCode</span><span class="p">)</span>
+
+    <span class="k">private</span> <span class="k">fun</span> <span class="nf">getRxSharedPreferences</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">RxSharedPreferences</span><span class="p">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">application</span><span class="p">.</span><span class="n">getSharedPreferences</span><span class="p">(</span><span class="n">BuildConfig</span><span class="p">.</span><span class="n">APPLICATION_ID</span> <span class="p">+</span> <span class="sc">&#39;.&#39;</span> <span class="p">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">Context</span><span class="p">.</span><span class="n">MODE_PRIVATE</span><span class="p">))</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Repository層の役割はデータ取得や更新など。Repositoryを使う側はその先がAPIかDBかに関心する必要させたくないのでSharedPreferencesのデータ取得や更新もRepository層で実装した。<br/>
+このRepositoryをFluxアーキテクチャに乗せていく。</p>
+
+<h3 id="actionとstoreをつくる-dispatcherはつくらない">ActionとStoreをつくる。Dispatcherはつくらない。</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="err">#</span> <span class="n">SettingsAction</span><span class="p">.</span><span class="n">kt</span>
+
+<span class="n">@Singleton</span>
+<span class="k">class</span> <span class="nc">SettingsAction</span> <span class="n">@Inject</span> <span class="k">constructor</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">settingsRepository</span><span class="p">:</span> <span class="n">SettingsRepository</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">fun</span> <span class="nf">updateZipCode</span><span class="p">(</span><span class="n">zipCode</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">settingsRepository</span><span class="p">.</span><span class="n">updateZipCode</span><span class="p">(</span><span class="n">zipCode</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>ActionはZipCodeを更新するメソッドを追加した。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="err">#</span> <span class="n">SettingsStore</span><span class="p">.</span><span class="n">kt</span>
+
+<span class="n">@Singleton</span>
+<span class="k">class</span> <span class="nc">SettingsStore</span> <span class="n">@Inject</span> <span class="k">constructor</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">settingsRepository</span><span class="p">:</span> <span class="n">SettingsRepository</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">zipCode</span><span class="p">()</span> <span class="p">=</span> <span class="n">settingsRepository</span><span class="p">.</span><span class="n">getZipCode</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">asObservable</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">subscribeOn</span><span class="p">(</span><span class="n">Schedulers</span><span class="p">.</span><span class="n">io</span><span class="p">())</span>
+            <span class="p">.</span><span class="n">toFlowable</span><span class="p">(</span><span class="n">BackpressureStrategy</span><span class="p">.</span><span class="n">LATEST</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>StoreにはZipCodeの状態をObserveする <code>zipCode()</code>メソッドを追加した。</p>
+
+<p>rx-preferencesは <code>asObservable()</code>を呼び出せばStreamオブジェクトを取得できる。<code>BackpressureStrategy.LATEST</code>を有効にすることで常に最新の値が流れるようにした。</p>
+
+<p>Fluxアーキテクチャに乗るならばDispatcherを作るところだが、 <code>rx-preferences</code>がStreamを提供してくれるのでこのエントリではDispatcherを追加していない。このアプリはまだ小さいのでDispatcherの追加はしない判断をしたが大きなアプリであればデータのアクションに応じて専用のDispatcherに乗せたほうが良い場合もあると思う。</p>
+
+<h3 id="zipcodeの更新をsubscribeする">ZipCodeの更新をSubscribeする</h3>
+
+<p>FragmentでZipCodeの更新をSubscribeする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="err">#</span> <span class="n">ForecastsFragment</span><span class="p">.</span><span class="n">kt</span>
+
+<span class="k">class</span> <span class="nc">ForecastsFragment</span> <span class="p">:</span> <span class="n">AutoDisposeFragmentKotlin</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="c1">// ---
+</span><span class="c1"></span>
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onViewCreated</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n">View</span><span class="p">,</span> <span class="n">savedInstanceState</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">?)</span> <span class="p">{</span>
+
+        <span class="n">forecastsStore</span><span class="p">.</span><span class="n">forecasts</span><span class="p">()</span>
+                <span class="p">.</span><span class="n">observeOn</span><span class="p">(</span><span class="n">AndroidSchedulers</span><span class="p">.</span><span class="n">mainThread</span><span class="p">())</span>
+                <span class="p">.</span><span class="n">`as`</span><span class="p">(</span><span class="n">autoDisposable</span><span class="p">(</span><span class="k">this</span><span class="p">))</span>
+                <span class="p">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">forecasts</span> <span class="p">-&gt;</span>
+                    <span class="n">cityView</span><span class="p">.</span><span class="n">text</span> <span class="p">=</span> <span class="s">&#34;%s/%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">forecasts</span><span class="p">.</span><span class="n">city</span><span class="p">.</span><span class="n">name</span><span class="p">,</span> <span class="n">forecasts</span><span class="p">.</span><span class="n">city</span><span class="p">.</span><span class="n">country</span><span class="p">)</span>
+                    <span class="n">listView</span><span class="p">.</span><span class="n">adapter</span> <span class="p">=</span> <span class="n">ArrayAdapter</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;(</span><span class="n">activity</span><span class="p">,</span> <span class="n">android</span><span class="p">.</span><span class="n">R</span><span class="p">.</span><span class="n">layout</span><span class="p">.</span><span class="n">simple_list_item_1</span><span class="p">,</span>
+                            <span class="n">forecasts</span><span class="p">.</span><span class="n">list</span><span class="p">.</span><span class="n">map</span> <span class="p">{</span>
+                                <span class="s">&#34;%s - %s %s/%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span>
+                                        <span class="n">DateUtils</span><span class="p">.</span><span class="n">formatDateTime</span><span class="p">(</span><span class="n">activity</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">dt</span> <span class="p">*</span> <span class="m">1000L</span><span class="p">,</span> <span class="n">FORMAT_NO_YEAR</span><span class="p">),</span>
+                                        <span class="n">it</span><span class="p">.</span><span class="n">weather</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="m">0</span><span class="p">).</span><span class="n">main</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">temp</span><span class="p">.</span><span class="n">min</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">temp</span><span class="p">.</span><span class="n">max</span><span class="p">)</span>
+                            <span class="p">})</span>
+                <span class="p">}</span>
+
+        <span class="n">savedInstanceState</span> <span class="o">?:</span> <span class="n">settingsStore</span><span class="p">.</span><span class="n">zipCode</span><span class="p">()</span>
+                <span class="p">.</span><span class="n">observeOn</span><span class="p">(</span><span class="n">AndroidSchedulers</span><span class="p">.</span><span class="n">mainThread</span><span class="p">())</span>
+                <span class="p">.</span><span class="n">`as`</span><span class="p">(</span><span class="n">AutoDispose</span><span class="p">.</span><span class="n">autoDisposable</span><span class="p">(</span><span class="k">this</span><span class="p">))</span>
+                <span class="p">.</span><span class="n">subscribe</span> <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="n">isNotBlank</span><span class="p">())</span> <span class="p">{</span>
+                        <span class="n">forecastsAction</span><span class="p">.</span><span class="n">findByDaily</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+                    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                        <span class="n">errorAction</span><span class="p">.</span><span class="n">onError</span><span class="p">(</span><span class="s">&#34;You must to set ZipCode.&#34;</span><span class="p">)</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// ---
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>SettingActivityでZipCodeが更新されると <code>settingsStore.zipCode()</code>に最新のZipCodeが流れてくるのでSubscribeをしてAPIを呼びだしている。<br/>
+<code>forecastsAction.findByDaily(it)</code>が呼び出されれば、 <code>forecastsStore.forecasts()</code>に最新のAPI結果が流れてくるのでViewが切り替わる。</p>
+
+<h3 id="コード">コード</h3>
+
+<p>rx-preferencesの導入前と後のコード比較ができるようにPRを残しています。 エントリで紹介したコードは断片的なので参考になれば嬉しいです。</p>
+
+<p><a href="https://github.com/soushin/sunshine-app/pull/4">https://github.com/soushin/sunshine-app/pull/4</a><cite class="hatena-citation"><a href="https://github.com/soushin/sunshine-app/pull/4">github.com</a></cite></p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>rx-preferencesをつかってSharedPreferencesの更新をSubsribeしてみた。１つのアクションが発火されると連鎖的に複数のStreamが流動するのを体験できた。</li>
+<li>まだ２つのStream（APIとSharedPreferences）だけであるが３つ,４つといったStreamが絡み合う条件などは実装が複雑になりそうである。ただRxには実装の複雑性を回避するものもあるので今後のエントリでまとめていきたい。</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/android/">android</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/rx/">rx</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/sharedpreferences/">SharedPreferences</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

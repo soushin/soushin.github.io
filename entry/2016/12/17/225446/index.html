@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Kotlinで快適なJSONパース。Klaxon - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="前回の記事ではMoshiライブラリを使ったJSON文字列からのオブジェクト変換、オブジェクトからのJSON文字列変換の話でした。kotlin">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Kotlinで快適なJSONパース。Klaxon</h1>
+    <div class="post-meta">2016.12.17</div>
+  </header>
+  <div class="post-content">
+
+<p>前回の記事ではMoshiライブラリを使ったJSON文字列からのオブジェクト変換、オブジェクトからのJSON文字列変換の話でした。<a href="https://blog.soushi.me/entry/2016/12/14/215542">kotlinでtoJsonとfromJsonのJSONパース。MoshiのCustom Type Adaptersを使ってオブジェクトのテストを快適に。 - 平日インプット週末アウトプットぶろぐ</a>JSONが複雑な構造でもあってもMoshiの<strong>Custom Type Adapters</strong>を使って@ToJsonと@FromJsonを実装すればJSON←→オブジェクトの変換が難なく行えます。難なく行えますと書きましたが、Moshiのカスタムアダプタを利用する難点もあります。<br/>
+次のような難点が考えられます。</p>
+
+<ul>
+<li>複数のカスタムアダプタの実装が必要になると骨が折れる作業となる</li>
+<li>複雑ではないJSON構造でもカスタムアダプタが必要な場合には実装コストがかかる</li>
+<li>実装したカスタムアダプタの整合性テストが必要になる</li>
+</ul>
+
+<p>カスタムアダプタを実装して整合性テストまでのコストを考えると多くのカスタムアダプタの実装は避けたいところです。<br/>
+開発の過程でJSONパースの処理は多く登場します。JSON文字列をオブジェクトに変換して値を取り出すような良くあるケースでカスタムアダプタの実装は避けたいなぁ・・・と考え調べていたところ「Klaxon: JSON for Kotlin」を見つけました。</p>
+
+<div class="github-card" data-user="cbeust" data-repo="klaxon" data-width="400" data-height="" data-theme="default"></div>
+
+<h3 id="klaxon-json-for-kotlin">Klaxon: JSON for Kotlin</h3>
+
+<p>Klaxonはkotlin製のJSONパースライブラリです。簡易的な使い方の紹介をします。次のようなJSON構造を例にします。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+    <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Sakib Sami&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;age&#34;</span><span class="p">:</span> <span class="mi">23</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>次は使い方です。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">parser</span><span class="p">:</span> <span class="n">Parser</span> <span class="p">=</span> <span class="n">Parser</span><span class="p">()</span>
+<span class="k">val</span> <span class="py">stringBuilder</span><span class="p">:</span> <span class="n">StringBuilder</span> <span class="p">=</span> <span class="n">StringBuilder</span><span class="p">(</span><span class="s">&#34;{\&#34;name\&#34;:\&#34;Sakib Sami\&#34;, \&#34;age\&#34;:23}&#34;</span><span class="p">)</span>
+<span class="k">val</span> <span class="py">json</span><span class="p">:</span> <span class="n">JsonObject</span> <span class="p">=</span> <span class="n">parser</span><span class="p">.</span><span class="n">parse</span><span class="p">(</span><span class="n">stringBuilder</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span>
+<span class="n">println</span><span class="p">(</span><span class="s">&#34;Name : ${json.string(&#34;</span><span class="n">name</span><span class="s">&#34;)}, Age : ${json.int(&#34;</span><span class="n">age</span><span class="s">&#34;)}&#34;</span><span class="p">)</span> <span class="c1">// Name : Sakib Sami, Age : 23</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>KlaxonのParsrにJSON文字列の入力ストリームを渡しJsonObjectでキャストします。あとはキャストしたJsonObjectのdata classに用意されたstiringやintメソッドに取得したいJSON構造のkeyを渡せば値を参照することができます。<br/>
+stringやintなどのメソッドはJSON値の型に合わせたメソッドが用意されています。その他にlongやbooleanなどがあり、値が新たなJSON構造であればobj、配列の場合はarrayのメソッドを利用します。<br/>
+<strong>as JsonObject</strong>のようにJSON値をキャストする型はobjなどのメソッドと対になっています。詳しくはドキュメントを参照してください。</p>
+
+<h3 id="aggregationbuildersクラスをjson化してパースしてみる">AggregationBuildersクラスをJSON化してパースしてみる</h3>
+
+<p>前の記事で紹介したAggregationBuildersクラスのオブジェクト構造をJSON文字列にして、KlaxonでJSONパースした例を紹介します。<br/>
+AggregationBuildersクラスのオブジェクト構造は次のように表せます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+    <span class="nt">&#34;aggs_post_id&#34;</span><span class="p">:</span> <span class="p">{</span>  <span class="nt">&#34;terms&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;field&#34;</span><span class="p">:</span> <span class="s2">&#34;post_id&#34;</span><span class="p">,</span> <span class="nt">&#34;size&#34;</span><span class="p">:</span> <span class="mi">1000</span> <span class="p">},</span> <span class="nt">&#34;aggregations&#34;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&#34;aggs_category_id&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;terms&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;field&#34;</span><span class="p">:</span> <span class="s2">&#34;category_id&#34;</span><span class="p">,</span> <span class="nt">&#34;size&#34;</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span> <span class="nt">&#34;aggregations&#34;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="nt">&#34;aggs_user_id&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;terms&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;field&#34;</span><span class="p">:</span> <span class="s2">&#34;user_id&#34;</span><span class="p">,</span> <span class="nt">&#34;size&#34;</span><span class="p">:</span> <span class="mi">2500</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のようなJSONをKlaxonでパースして値を検証してみました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">parser</span><span class="p">:</span> <span class="n">Parser</span> <span class="p">=</span> <span class="n">Parser</span><span class="p">()</span>
+<span class="k">val</span> <span class="py">jsonObject</span> <span class="p">=</span> <span class="n">parser</span><span class="p">.</span><span class="n">parse</span><span class="p">(</span><span class="n">json</span><span class="p">.</span><span class="n">byteInputStream</span><span class="p">())</span> <span class="k">as</span> <span class="n">JsonObject</span>
+
+<span class="n">should</span><span class="p">(</span><span class="s">&#34;valid aggs_post_id.terms&#34;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">aggsPostIdTerms</span> <span class="p">=</span> <span class="p">(</span><span class="n">jsonObject</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;aggs_post_id&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span><span class="p">).</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;terms&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span>
+
+    <span class="n">aggsPostIdTerms</span><span class="p">.</span><span class="n">string</span><span class="p">(</span><span class="s">&#34;field&#34;</span><span class="p">)</span> <span class="n">shouldBe</span> <span class="s">&#34;post_id&#34;</span>
+    <span class="n">aggsPostIdTerms</span><span class="p">.</span><span class="n">int</span><span class="p">(</span><span class="s">&#34;size&#34;</span><span class="p">)</span> <span class="n">shouldBe</span> <span class="m">1000</span>
+<span class="p">}</span>
+
+<span class="n">should</span><span class="p">(</span><span class="s">&#34;valid aggs_category_id.terms&#34;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">aggsCategoryId</span> <span class="p">=</span> <span class="p">((</span><span class="n">jsonObject</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;aggs_post_id&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span><span class="p">).</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;aggregations&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span><span class="p">).</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;aggs_category_id&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span>
+    <span class="k">val</span> <span class="py">aggCategoryIdTerms</span> <span class="p">=</span> <span class="n">aggsCategoryId</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;terms&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span>
+
+    <span class="n">aggCategoryIdTerms</span><span class="p">.</span><span class="n">string</span><span class="p">(</span><span class="s">&#34;field&#34;</span><span class="p">)</span> <span class="n">shouldBe</span> <span class="s">&#34;category_id&#34;</span>
+    <span class="n">aggCategoryIdTerms</span><span class="p">.</span><span class="n">int</span><span class="p">(</span><span class="s">&#34;size&#34;</span><span class="p">)</span> <span class="n">shouldBe</span> <span class="m">20</span>
+<span class="p">}</span>
+
+<span class="n">should</span><span class="p">(</span><span class="s">&#34;valid aggs_user_id.terms&#34;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">aggsUserId</span> <span class="p">=</span> <span class="p">((((</span><span class="n">jsonObject</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;aggs_post_id&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span><span class="p">).</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;aggregations&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span><span class="p">).</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;aggs_category_id&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span><span class="p">).</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;aggregations&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span><span class="p">).</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;aggs_user_id&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span>
+    <span class="k">val</span> <span class="py">aggUserIdTerms</span> <span class="p">=</span> <span class="n">aggsUserId</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;terms&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">JsonObject</span>
+
+    <span class="n">aggUserIdTerms</span><span class="p">.</span><span class="n">string</span><span class="p">(</span><span class="s">&#34;field&#34;</span><span class="p">)</span> <span class="n">shouldBe</span> <span class="s">&#34;user_id&#34;</span>
+    <span class="n">aggUserIdTerms</span><span class="p">.</span><span class="n">int</span><span class="p">(</span><span class="s">&#34;size&#34;</span><span class="p">)</span> <span class="n">shouldBe</span> <span class="m">2500</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>構造が深いため<strong>as JsonObject</strong>が連続して可読性が損なわれていますが、json構造を辿れることが伝えたく敢えて上記のように書きました。fieldは文字列なのでstringメソッドで、sizeは数値なのでintメソッドで取得できます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">aggsPostIdTerms</span><span class="p">.</span><span class="n">string</span><span class="p">(</span><span class="s">&#34;field&#34;</span><span class="p">)</span> <span class="n">shouldBe</span> <span class="s">&#34;post_id&#34;</span>
+<span class="n">aggsPostIdTerms</span><span class="p">.</span><span class="n">int</span><span class="p">(</span><span class="s">&#34;size&#34;</span><span class="p">)</span> <span class="n">shouldBe</span> <span class="m">1000</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="apiのレスポンスをklaxonでパースして値を検証してみる">APIのレスポンスをKlaxonでパースして値を検証してみる</h2>
+
+<p>次のようなレスポンスを返すAPIを想定してKlaxonでパースして値を検証してみます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="nt">&#34;postId&#34;</span><span class="p">:</span> <span class="mi">1324231431</span><span class="p">,</span>
+        <span class="nt">&#34;categoryId&#34;</span><span class="p">:</span> <span class="mi">11</span><span class="p">,</span>
+        <span class="nt">&#34;user&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;userId&#34;</span><span class="p">:</span> <span class="mi">1413241</span><span class="p">,</span> <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;John&#34;</span><span class="p">,</span> <span class="nt">&#34;age&#34;</span><span class="p">:</span> <span class="mi">20</span> <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="nt">&#34;postId&#34;</span><span class="p">:</span> <span class="mi">1321231341</span><span class="p">,</span>
+        <span class="nt">&#34;categoryId&#34;</span><span class="p">:</span> <span class="mi">22</span><span class="p">,</span>
+        <span class="nt">&#34;user&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;userId&#34;</span><span class="p">:</span> <span class="mi">1453124</span><span class="p">,</span> <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Amy&#34;</span><span class="p">,</span> <span class="nt">&#34;age&#34;</span><span class="p">:</span> <span class="mi">25</span> <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="nt">&#34;postId&#34;</span><span class="p">:</span> <span class="mi">1329709858</span><span class="p">,</span>
+        <span class="nt">&#34;categoryId&#34;</span><span class="p">:</span> <span class="mi">33</span><span class="p">,</span>
+        <span class="nt">&#34;user&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;userId&#34;</span><span class="p">:</span> <span class="mi">1409709</span><span class="p">,</span> <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Jessica&#34;</span><span class="p">,</span> <span class="nt">&#34;age&#34;</span><span class="p">:</span> <span class="mi">38</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">]</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>kotlintestを使ってSpecテストをしていますのでそれぞれの値の検証意図はSpecのnameを参照してください。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">init</span> <span class="p">{</span>
+    <span class="n">given</span><span class="p">(</span><span class="s">&#34;GET: /test/content_list&#34;</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">target</span> <span class="p">=</span> <span class="n">TestController</span><span class="p">()</span>
+        <span class="n">mvc</span> <span class="p">=</span> <span class="n">MockMvcBuilders</span><span class="p">.</span><span class="n">standaloneSetup</span><span class="p">(</span><span class="n">target</span><span class="p">).</span><span class="n">build</span><span class="p">()</span>
+
+        <span class="k">val</span> <span class="py">response</span> <span class="p">=</span> <span class="n">mvc</span><span class="p">.</span><span class="n">perform</span><span class="p">(</span><span class="n">MockMvcRequestBuilders</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="s">&#34;/test/content_list&#34;</span><span class="p">))</span>
+                <span class="p">.</span><span class="n">andExpect</span><span class="p">(</span><span class="n">MockMvcResultMatchers</span><span class="p">.</span><span class="n">status</span><span class="p">().</span><span class="n">isOk</span><span class="p">()).</span><span class="n">andReturn</span><span class="p">().</span><span class="n">response</span><span class="p">.</span><span class="n">contentAsString</span>
+
+        <span class="n">`when`</span><span class="p">(</span><span class="s">&#34;response is ok&#34;</span><span class="p">)</span> <span class="p">{</span>
+
+            <span class="k">val</span> <span class="py">array</span> <span class="p">=</span> <span class="n">Parser</span><span class="p">().</span><span class="n">parse</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">byteInputStream</span><span class="p">())</span> <span class="k">as</span> <span class="n">JsonArray</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">JsonObject</span><span class="p">&gt;</span>
+
+            <span class="n">then</span><span class="p">(</span><span class="s">&#34;レスポンスに含まれるPostは `3つ`&#34;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">val</span> <span class="py">postIds</span> <span class="p">=</span> <span class="n">array</span><span class="p">.</span><span class="n">long</span><span class="p">(</span><span class="s">&#34;postId&#34;</span><span class="p">)</span>
+                <span class="n">postIds</span><span class="p">.</span><span class="n">size</span> <span class="n">shouldBe</span> <span class="m">3</span>
+            <span class="p">}</span>
+
+            <span class="n">then</span><span class="p">(</span><span class="s">&#34;categoryIdが30以上のPostは `1つ`でpostIdは `1329709858`&#34;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">val</span> <span class="py">post</span> <span class="p">=</span> <span class="n">array</span><span class="p">.</span><span class="n">filter</span> <span class="p">{</span>
+                    <span class="n">it</span><span class="p">.</span><span class="n">long</span><span class="p">(</span><span class="s">&#34;categoryId&#34;</span><span class="p">)</span><span class="o">!!</span> <span class="p">&gt;</span> <span class="m">30L</span>
+                <span class="p">}</span>
+                <span class="n">post</span><span class="p">.</span><span class="n">size</span> <span class="n">shouldBe</span> <span class="m">1</span>
+                <span class="n">post</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="m">0</span><span class="p">).</span><span class="n">long</span><span class="p">(</span><span class="s">&#34;postId&#34;</span><span class="p">)</span> <span class="n">shouldBe</span> <span class="m">1329709858L</span>
+            <span class="p">}</span>
+
+            <span class="n">then</span><span class="p">(</span><span class="s">&#34;categoryIdが30以下のPostでuserのageが20以上のうち最後のレスポンスのuserのnameは `Amy`&#34;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">val</span> <span class="py">post</span> <span class="p">=</span> <span class="n">array</span><span class="p">.</span><span class="n">filter</span> <span class="p">{</span>
+                    <span class="n">it</span><span class="p">.</span><span class="n">long</span><span class="p">(</span><span class="s">&#34;categoryId&#34;</span><span class="p">)</span><span class="o">!!</span> <span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="m">30</span>
+                <span class="p">}.</span><span class="n">findLast</span><span class="p">{</span>
+                    <span class="n">it</span><span class="p">.</span><span class="n">obj</span><span class="p">(</span><span class="s">&#34;user&#34;</span><span class="p">)</span><span class="o">!!</span><span class="p">.</span><span class="n">int</span><span class="p">(</span><span class="s">&#34;age&#34;</span><span class="p">)</span><span class="o">!!</span> <span class="p">&gt;</span> <span class="m">20</span>
+                <span class="p">}</span><span class="o">!!</span>
+
+                <span class="n">post</span><span class="p">.</span><span class="n">obj</span><span class="p">(</span><span class="s">&#34;user&#34;</span><span class="p">)</span><span class="o">!!</span><span class="p">.</span><span class="n">string</span><span class="p">(</span><span class="s">&#34;name&#34;</span><span class="p">)</span> <span class="n">shouldBe</span> <span class="s">&#34;Amy&#34;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>APIのレスポンスをパースすることでJsonArrayが取得できます。配列が取れればkotlinのコレクションが使えるのでfilterやmap、findLastのメソッドを利用して値を検証することでテストコードの可読性があがります。<br/>
+さらにkotlintestのBehaviorSpecでテストコード全体を仕上げたので、それぞれのテストの意図も伝わりやすいです。<br/>
+JSONパースにコストをかけずJSON構造を上から辿っていく間隔で値の取り出しをできるKlaxonはテストコードで重宝しそうです。</p>
+
+<h3 id="ソースを公開しています">ソースを公開しています</h3>
+
+<p>ソースコードを公開しています。Moshiライブラリの検証が入っているプロジェクトに入れました。良ければ参考にしてみてください。</p>
+
+<p><a href="https://github.com/soushin/kotlin-json-parse">https://github.com/soushin/kotlin-json-parse</a></p>
+
+<h3 id="関連エントリ">関連エントリ</h3>
+
+<ul>
+<li><a href="https://blog.soushi.me/entry/2016/12/14/215542">kotlinでtoJsonとfromJsonのJSONパース。MoshiのCustom Type Adaptersを使ってオブジェクトのテストを快適に。 - 平日インプット週末アウトプットぶろぐ</a></li>
+<li><a href="https://blog.soushi.me/entry/2016/12/29/134940">Kotlin + Spring Boot／ResponseEntityを使ったJSONレスポンスにJacksonの@JsonPropertyを有効にする - 平日インプット週末アウトプットぶろぐ</a></li>
+</ul>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/json/">json</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/klaxon/">Klaxon</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

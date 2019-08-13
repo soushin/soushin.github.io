@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>みんGO を読んでec2インスンスリストをタグ検索するコマンドラインツールを作ってみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="プロジェクトでGO言語に触れながら学習のためにコマンドラインツールを作り拡張させながら言語理解を深めようと目標を立てた。「みんなのGO言語」">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">みんGO を読んでec2インスンスリストをタグ検索するコマンドラインツールを作ってみた</h1>
+    <div class="post-meta">2017.1.22</div>
+  </header>
+  <div class="post-content">
+
+<p>プロジェクトでGO言語に触れながら学習のためにコマンドラインツールを作り拡張させながら言語理解を深めようと目標を立てた。「みんなのGO言語」を参考にしながら自作のコマンドラインツールを作ったのでまとめます。</p>
+
+<h2 id="どんなコマンドラインツールを作ったか">どんなコマンドラインツールを作ったか</h2>
+
+<p>ec2インスタンスをタグ検索してインスタンス情報を取得できるコマンドラインツールを作りました。<br/>
+生成したインスタンスリストをpecoでインクリメンタルサーチできるようにして選択したインスタンスにsshできるようなzsh関数も合わせて作りました。<br/>
+作ったサブコマンドとpecoを組み合わせればインスタンスへのssh接続が快適になります。</p>
+
+<h3 id="ec2インスタンスリストを生成してくれるコマンドラインツール">ec2インスタンスリストを生成してくれるコマンドラインツール</h3>
+
+<p>作りたいイメージは次のようなものです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">describe_es2 tag -tag-key Name *myweb*</code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>describe_es2はインスタンスを検索できる</li>
+<li>describe_es2はサブコマンドを提供する</li>
+<li>サブコマンドのtagはインスタンスをtag検索できる</li>
+<li>pecoでインクリメンタルサーチしたいので、検索したインスタンスごとにローカルにファイルを生成して中身にはパブリックDNSを保存されるようにする</li>
+</ul>
+
+<p>コマンドを実行したイメージは次のようになります。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ describe_es2 tag -tag-key Name <span class="s1">&#39;*myweb*&#39;</span>
+Completed saving file ./myweb001_i-xxxxxxxxxxxxxx, that content is ec2-xx-xx-xx-xx.region.compute.amazonaws.com
+Completed saving file ./myweb002_i-xxxxxxxxxxxxxx, that content is ec2-xx-xx-xx-xx.region.compute.amazonaws.com
+Completed saving file ./myweb003_i-xxxxxxxxxxxxxx, that content is ec2-xx-xx-xx-xx.region.compute.amazonaws.com
+$ find . -type f
+./myweb001_i-xxxxxxxxxxxxxx
+./myweb002_i-xxxxxxxxxxxxxx
+./myweb003_i-xxxxxxxxxxxxxx
+$ cat ./myweb001_i-xxxxxxxxxxxxxx
+ec2-xx-xx-xx-xx.region.compute.amazonaws.com // インスタンスのパブリックDNSがファイルの中身に保存されている</code></pre></td></tr></table>
+</div>
+</div>
+<p>tagのサブコマンドには次のオプションを指定できるようにします。</p>
+
+<ul>
+<li>aws認証ファイルパス（デフォルトはLinux/OSXであれば"$HOME/.aws/credentials）</li>
+<li>aws認証プロフィール（デフォルトは'default'）</li>
+<li>region（デフォルトは'ap-northeast-1'）</li>
+<li>検索対象のタグキー（デフォルトは'Name'）</li>
+</ul>
+
+<p>aws認証プロフィールをmyprojectに指定して検索する場合は次のようなコマンドになります。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">describe_es2 tag -credential-profile myproject <span class="s1">&#39;*myweb*&#39;</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="サブコマンドにはgoogle-subcommandsを使った">サブコマンドにはgoogle/subcommandsを使った</h2>
+
+<p>今回はtag検索のみのツールですが今後の拡張でEC2 Container Serviceのクラスタ名を指定すればインスタンスリストが生成されるような拡張を考えているためサブコマンド化したかった。「みんなのGO言語」の「4.4 サブコマンドをもったCLIツール」ではmitchellh/cliの使い方を紹介いただいてますが情報が少なそうな「google/subcommands」を使ってみた。</p>
+
+<div class="github-card" data-user="google" data-repo="subcommands" data-width="400" data-height="" data-theme="default"></div>
+
+<p>サブコマンドをインターフェースとして定義できるので定義したサブコマンドのオプションのコード化など見通しの良いコードが書ける。<br/>
+次からはgoogle/subcommandsを利用したコードの説明をしていきます。</p>
+
+<h3 id="google-subcommandsの実装例">google/subcommandsの実装例</h3>
+
+<h4 id="サブコマンドのオプションを定義する">サブコマンドのオプションを定義する</h4>
+
+<p>サブコマンドのオプションをstructで定義します</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// オプションのaws認証情報とタグキー、regionを定義
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">tagCmd</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">credential</span> <span class="nx">credential</span>
+	<span class="nx">tagKey</span>     <span class="kt">string</span>
+	<span class="nx">region</span>     <span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="c1">// aws認証情報は個別にstructで定義
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">credential</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">profile</span>  <span class="kt">string</span>
+	<span class="nx">filename</span> <span class="kt">string</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="subcommands-commandのインターフェースを実装する">subcommands.Commandのインターフェースを実装する</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">subcommands</span>
+
+<span class="c1">// A Command represents a single command.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Command</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="c1">// Name returns the name of the command.
+</span><span class="c1"></span>	<span class="nf">Name</span><span class="p">()</span> <span class="kt">string</span>
+
+	<span class="c1">// Synopsis returns a short string (less than one line) describing the command.
+</span><span class="c1"></span>	<span class="nf">Synopsis</span><span class="p">()</span> <span class="kt">string</span>
+
+	<span class="c1">// Usage returns a long string explaining the command and giving usage
+</span><span class="c1"></span>	<span class="c1">// information.
+</span><span class="c1"></span>	<span class="nf">Usage</span><span class="p">()</span> <span class="kt">string</span>
+
+	<span class="c1">// SetFlags adds the flags for this command to the specified set.
+</span><span class="c1"></span>	<span class="nf">SetFlags</span><span class="p">(</span><span class="o">*</span><span class="nx">flag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">)</span>
+
+	<span class="c1">// Execute executes the command and returns an ExitStatus.
+</span><span class="c1"></span>	<span class="nf">Execute</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">f</span> <span class="o">*</span><span class="nx">flag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">,</span> <span class="nx">args</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="nx">ExitStatus</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>tagのサブコマンドがsubcommands.Commandを実装している例</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="o">*</span><span class="nx">tagCmd</span><span class="p">)</span> <span class="nf">Name</span><span class="p">()</span> <span class="kt">string</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="s">&#34;tag&#34;</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="o">*</span><span class="nx">tagCmd</span><span class="p">)</span> <span class="nf">Synopsis</span><span class="p">()</span> <span class="kt">string</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="s">&#34;Fetch the ec2 instance public dns name by tag search, then that stored to text file in the current directory.&#34;</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="o">*</span><span class="nx">tagCmd</span><span class="p">)</span> <span class="nf">Usage</span><span class="p">()</span> <span class="kt">string</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="s">`tag [-credential-profile default] [-credential-filename &#39;~/.aws/credentials&#39;] [-region ap-northeast-1] [-tag-key Name] &#39;*dev*&#39; :
+</span><span class="s">  Created or updated text file
+</span><span class="s">`</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">tagCmd</span><span class="p">)</span> <span class="nf">SetFlags</span><span class="p">(</span><span class="nx">f</span> <span class="o">*</span><span class="nx">flag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">f</span><span class="p">.</span><span class="nf">StringVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">credential</span><span class="p">.</span><span class="nx">filename</span><span class="p">,</span> <span class="s">&#34;credential-filename&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;optional: aws credential file name, when filename is empty, that will use &#39;$HOME/.aws/credentials&#39;&#34;</span><span class="p">)</span>
+	<span class="nx">f</span><span class="p">.</span><span class="nf">StringVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">credential</span><span class="p">.</span><span class="nx">profile</span><span class="p">,</span> <span class="s">&#34;credential-profile&#34;</span><span class="p">,</span> <span class="s">&#34;default&#34;</span><span class="p">,</span> <span class="s">&#34;optional: aws credential profile, default value is &#39;default&#39;&#34;</span><span class="p">)</span>
+	<span class="nx">f</span><span class="p">.</span><span class="nf">StringVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">region</span><span class="p">,</span> <span class="s">&#34;region&#34;</span><span class="p">,</span> <span class="s">&#34;ap-northeast-1&#34;</span><span class="p">,</span> <span class="s">&#34;optional: aws region, default value is &#39;ap-northeast-1&#39;&#34;</span><span class="p">)</span>
+	<span class="nx">f</span><span class="p">.</span><span class="nf">StringVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">tagKey</span><span class="p">,</span> <span class="s">&#34;tag-key&#34;</span><span class="p">,</span> <span class="s">&#34;Name&#34;</span><span class="p">,</span> <span class="s">&#34;target tag key, default value is &#39;Name&#39;&#34;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">tagCmd</span><span class="p">)</span> <span class="nf">Execute</span><span class="p">(</span><span class="nx">_</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">f</span> <span class="o">*</span><span class="nx">flag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">,</span> <span class="nx">_</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="nx">subcommands</span><span class="p">.</span><span class="nx">ExitStatus</span> <span class="p">{</span>
+	<span class="c1">// 省略
+</span><span class="c1"></span>	<span class="k">return</span> <span class="nx">subcommands</span><span class="p">.</span><span class="nx">ExitSuccess</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="err">&#34;</span><span class="nf">Execute</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">f</span> <span class="o">*</span><span class="nx">flag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">,</span> <span class="nx">args</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="nx">ExitStatus</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>↑のメソッドはサブコマンドのメインの処理です。詳細は&rdquo;github.com/nsoushi/describe-ec2&rdquo;を参照してください。</p>
+
+<h4 id="定義したtagcmdをsubcommands-registerで追加する">定義したtagCmdをsubcommands.Registerで追加する</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">subcommands</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="nx">subcommands</span><span class="p">.</span><span class="nf">HelpCommand</span><span class="p">(),</span> <span class="s">&#34;&#34;</span><span class="p">)</span>
+	<span class="nx">subcommands</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="nx">subcommands</span><span class="p">.</span><span class="nf">FlagsCommand</span><span class="p">(),</span> <span class="s">&#34;&#34;</span><span class="p">)</span>
+	<span class="nx">subcommands</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="nx">subcommands</span><span class="p">.</span><span class="nf">CommandsCommand</span><span class="p">(),</span> <span class="s">&#34;&#34;</span><span class="p">)</span>
+	<span class="nx">subcommands</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">tagCmd</span><span class="p">{},</span> <span class="s">&#34;&#34;</span><span class="p">)</span>
+
+	<span class="nx">flag</span><span class="p">.</span><span class="nf">Parse</span><span class="p">()</span>
+	<span class="nx">ctx</span> <span class="o">:=</span> <span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">()</span>
+	<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">subcommands</span><span class="p">.</span><span class="nf">Execute</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)))</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="インターフェースを実装することでコマンドの使い方やヘルプがまとまる">インターフェースを実装することでコマンドの使い方やヘルプがまとまる</h4>
+
+<p>上記のコードにある通り</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="nf">Name</span><span class="p">()</span><span class="err">、</span><span class="nf">Synopsis</span><span class="p">()</span><span class="err">、</span><span class="nf">Usage</span><span class="p">()</span><span class="err">、</span><span class="nf">SetFlags</span><span class="p">(</span><span class="o">*</span><span class="nx">flag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>↑を実装することでtagサブコマンドのヘルプが綺麗に出力されます。subcommands.Registerで登録したサブコマンドが列挙されている</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">describe</span><span class="o">-</span><span class="nx">ec2</span>
+<span class="nx">Usage</span><span class="p">:</span> <span class="nx">describe</span><span class="o">-</span><span class="nx">ec2</span> <span class="o">&amp;</span><span class="nx">lt</span><span class="p">;</span><span class="nx">flags</span><span class="p">&gt;</span> <span class="o">&amp;</span><span class="nx">lt</span><span class="p">;</span><span class="nx">subcommand</span><span class="p">&gt;</span> <span class="o">&amp;</span><span class="nx">lt</span><span class="p">;</span><span class="nx">subcommand</span> <span class="nx">args</span><span class="p">&gt;</span>
+
+<span class="nx">Subcommands</span><span class="p">:</span>
+	<span class="nx">commands</span>         <span class="nx">list</span> <span class="nx">all</span> <span class="nx">command</span> <span class="nx">names</span>
+	<span class="nx">flags</span>            <span class="nx">describe</span> <span class="nx">all</span> <span class="nx">known</span> <span class="nx">top</span><span class="o">-</span><span class="nx">level</span> <span class="nx">flags</span>
+	<span class="nx">help</span>             <span class="nx">describe</span> <span class="nx">subcommands</span> <span class="nx">and</span> <span class="nx">their</span> <span class="nx">syntax</span>
+	<span class="nx">tag</span>              <span class="nx">Fetch</span> <span class="nx">the</span> <span class="nx">ec2</span> <span class="nx">instance</span> <span class="nx">public</span> <span class="nx">dns</span> <span class="nx">name</span> <span class="nx">by</span> <span class="nx">tag</span> <span class="nx">search</span><span class="p">,</span> <span class="nx">then</span> <span class="nx">that</span> <span class="nx">stored</span> <span class="nx">to</span> <span class="nx">text</span> <span class="nx">file</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">current</span> <span class="nx">directory</span><span class="p">.</span>
+
+
+<span class="nx">Use</span> <span class="s">&#34;describe-ec2 flags&#34;</span> <span class="k">for</span> <span class="nx">a</span> <span class="nx">list</span> <span class="nx">of</span> <span class="nx">top</span><span class="o">-</span><span class="nx">level</span> <span class="nx">flags</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>tagサブコマンドのヘルプ出力</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="p">.</span><span class="o">/</span><span class="nx">describe</span><span class="o">-</span><span class="nx">ec2</span> <span class="nx">help</span> <span class="nx">tag</span> <span class="nx">help</span> <span class="nx">tag</span>
+<span class="nx">tag</span> <span class="p">[</span><span class="o">-</span><span class="nx">credential</span><span class="o">-</span><span class="nx">profile</span> <span class="k">default</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="nx">credential</span><span class="o">-</span><span class="nx">filename</span> <span class="err">&#39;~</span><span class="o">/</span><span class="p">.</span><span class="nx">aws</span><span class="o">/</span><span class="nx">credentials</span><span class="err">&#39;</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="nx">region</span> <span class="nx">ap</span><span class="o">-</span><span class="nx">northeast</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="nx">tag</span><span class="o">-</span><span class="nx">key</span> <span class="nx">Name</span><span class="p">]</span> <span class="err">&#39;</span><span class="o">*</span><span class="nx">dev</span><span class="o">*</span><span class="err">&#39;</span> <span class="p">:</span>
+  <span class="nx">Created</span> <span class="nx">or</span> <span class="nx">updated</span> <span class="nx">text</span> <span class="nx">file</span>
+  <span class="o">-</span><span class="nx">credential</span><span class="o">-</span><span class="nx">filename</span> <span class="kt">string</span>
+    	<span class="nx">optional</span><span class="p">:</span> <span class="nx">aws</span> <span class="nx">credential</span> <span class="nx">file</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">when</span> <span class="nx">filename</span> <span class="nx">is</span> <span class="nx">empty</span><span class="p">,</span> <span class="nx">that</span> <span class="nx">will</span> <span class="nx">use</span> <span class="err">&#39;$</span><span class="nx">HOME</span><span class="o">/</span><span class="p">.</span><span class="nx">aws</span><span class="o">/</span><span class="nx">credentials</span><span class="err">&#39;</span>
+  <span class="o">-</span><span class="nx">credential</span><span class="o">-</span><span class="nx">profile</span> <span class="kt">string</span>
+    	<span class="nx">optional</span><span class="p">:</span> <span class="nx">aws</span> <span class="nx">credential</span> <span class="nx">profile</span><span class="p">,</span> <span class="k">default</span> <span class="nx">value</span> <span class="nx">is</span> <span class="err">&#39;</span><span class="k">default</span><span class="err">&#39;</span> <span class="p">(</span><span class="k">default</span> <span class="s">&#34;default&#34;</span><span class="p">)</span>
+  <span class="o">-</span><span class="nx">region</span> <span class="kt">string</span>
+    	<span class="nx">optional</span><span class="p">:</span> <span class="nx">aws</span> <span class="nx">region</span><span class="p">,</span> <span class="k">default</span> <span class="nx">value</span> <span class="nx">is</span> <span class="err">&#39;</span><span class="nx">ap</span><span class="o">-</span><span class="nx">northeast</span><span class="o">-</span><span class="mi">1</span><span class="err">&#39;</span> <span class="p">(</span><span class="k">default</span> <span class="s">&#34;ap-northeast-1&#34;</span><span class="p">)</span>
+  <span class="o">-</span><span class="nx">tag</span><span class="o">-</span><span class="nx">key</span> <span class="kt">string</span>
+    	<span class="nx">target</span> <span class="nx">tag</span> <span class="nx">key</span><span class="p">,</span> <span class="k">default</span> <span class="nx">value</span> <span class="nx">is</span> <span class="err">&#39;</span><span class="nx">Name</span><span class="err">&#39;</span> <span class="p">(</span><span class="k">default</span> <span class="s">&#34;Name&#34;</span><span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="subcommands-commandを使ってみて">subcommands.Commandを使ってみて</h4>
+
+<ul>
+<li>導入は難しくなく簡単にサブコマンドを増やせるので拡張しやすくヘルプも綺麗にまとまり保守性も良さそうです。</li>
+</ul>
+
+<h4 id="みんなのgo言語-を参考にして">「みんなのGO言語」を参考にして</h4>
+
+<ul>
+<li>ossで誰かに使われる意識を持ってエラーメッセージやヘルプなど詳細に記載した</li>
+<li>ライブラリをメインの成果物とする場合のディレクトリ構成を参考に 'cmd/describe-ec2/'配下にmainパッケージを置いた</li>
+</ul>
+
+<h3 id="作ったサブコマンドで生成したインスンスリストをpecoでインクリメンタルサーチする">作ったサブコマンドで生成したインスンスリストをpecoでインクリメンタルサーチする</h3>
+
+<p>次のようなzsh関数を使って生成したインスタンスリストをインクリメンタルサーチして選択したインスタンスにsshできます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-zsh" data-lang="zsh"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-zsh" data-lang="zsh">peco-describe-ec2<span class="o">()</span> <span class="o">{</span>
+  <span class="nb">local</span> <span class="nv">MAXDEPTH</span><span class="o">=</span><span class="si">${</span><span class="nv">1</span><span class="k">:-</span><span class="nv">1</span><span class="si">}</span>
+  <span class="nb">local</span> <span class="nv">BASE_DIR</span><span class="o">=</span><span class="s2">&#34;</span><span class="si">${</span><span class="nv">2</span><span class="k">:-</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span><span class="si">}</span><span class="s2">&#34;</span>
+
+  <span class="nb">local</span> <span class="nv">FILENAME</span><span class="o">=</span><span class="k">$(</span>find <span class="si">${</span><span class="nv">BASE_DIR</span><span class="si">}</span> -maxdepth <span class="si">${</span><span class="nv">MAXDEPTH</span><span class="si">}</span> -type f -exec basename <span class="o">{}</span> <span class="s1">&#39;;&#39;</span> <span class="p">|</span> peco <span class="p">|</span> head -n <span class="m">1</span><span class="k">)</span>
+
+  <span class="k">if</span> <span class="o">[</span> -n <span class="s2">&#34;</span><span class="nv">$FILENAME</span><span class="s2">&#34;</span> <span class="o">]</span> <span class="p">;</span> <span class="k">then</span>
+    <span class="nb">local</span> <span class="nv">HOST</span><span class="o">=</span><span class="sb">`</span>cat <span class="nv">$BASE_DIR</span>/<span class="nv">$FILENAME</span><span class="sb">`</span>
+    <span class="nb">echo</span> <span class="s2">&#34;ssh </span><span class="nv">$HOST</span><span class="s2">&#34;</span>
+    <span class="nv">BUFFER</span><span class="o">=</span><span class="s2">&#34;ssh </span><span class="si">${</span><span class="nv">HOST</span><span class="si">}</span><span class="s2">&#34;</span>
+    zle accept-line
+  <span class="k">fi</span>
+  zle clear-screen
+<span class="o">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="ソースを公開しています">ソースを公開しています</h2>
+
+<p><a href="https://github.com/soushin/describe-ec2">https://github.com/soushin/describe-ec2</a></p>
+
+<h3 id="使い方">使い方</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-zsh" data-lang="zsh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-zsh" data-lang="zsh">$ go get github.com/nsoushi/describe-ec2/cmd/describe-ec2
+$ <span class="nb">source</span> <span class="nv">$GOPATH</span>/src/github.com/nsoushi/describe-ec2/.zsh.describe_ec2
+$ describe-ec2 tag <span class="s1">&#39;*AWS*&#39;</span>
+$ peco-describe-ec2　// <span class="s1">&#39;*AWS*&#39;</span>がtag.Nameに含まれるインスタンスリストをpecoでインクリメンタルサーチして選択したらsshします</code></pre></td></tr></table>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/golang/">golang</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%83%A9%E3%82%A4%E3%83%B3%E3%83%84%E3%83%BC%E3%83%AB/">コマンドラインツール</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/zsh/">zsh</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/peco/">peco</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/ssh/">ssh</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

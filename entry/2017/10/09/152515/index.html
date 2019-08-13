@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>grpc-javaのServerでTLSを有効にした場合はALPN対応しているか確認すべし - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="開発中のプロジェクトでTLSが有効なGo製 gRPC ServerにAndorid8.0(Oreo)からは接続ができて、Kotlin製（grpc-ja">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">grpc-javaのServerでTLSを有効にした場合はALPN対応しているか確認すべし</h1>
+    <div class="post-meta">2017.10.9</div>
+  </header>
+  <div class="post-content">
+
+<p>開発中のプロジェクトでTLSが有効なGo製 gRPC ServerにAndorid8.0(Oreo)からは接続ができて、Kotlin製（grpc-java） gRPC Serverには接続ができない状況に直面した。</p>
+
+<p>原因はOpenSSLでTLSを有効にしていたがALPN対応ができていなかった。Android8.0(Oreo)ではプロトコルのネゴシエーションにALPNが用いられる。Android8.0以下(Lolipopなど)では接続ができてAndroid8.0(Oreo)では接続できない、そんな状況であった。そして次のgrpc-javaのissue報告と同じような経験を踏んでいた。</p>
+
+<p><div class="github-card" data-user="grpc/grpc-java/issues" data-repo="3277" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>このissueによるとServer側がALPN対応していないことが原因でALPN対応することで解決した、ということで参考にしながら解決まで進めた。対応内容をまとめていきたい。</p>
+
+<h3 id="alpn対応ができているか確認する方法">ALPN対応ができているか確認する方法</h3>
+
+<p>issueを参考に次の方法でALPN対応ができているか確認したところ「<strong>No ALPN negotiated</strong>」と出力されALPN対応できていないことが発覚した。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">$ openssl s_client -alpn h2 -connect &amp;lt;domain&gt;:&amp;lt;port&gt;
+
+---
+・・・省略
+No ALPN negotiated　←　ALPN対応していないと、`No ALPN negotiated`と出力される
+SSL-Session:
+    Protocol  : TLSv1.2
+    Cipher    : XXXX
+・・・省略
+---</pre></td></tr></table>
+</div>
+</div>
+<p>プロジェクトではGo製のTLSが有効なgRPC Serverがあり同じ方法で確認したところ「<strong>ALPN protocol: h2</strong>」の出力が確認できた。そしてAndroid8.0(Oreo)からも接続ができていた。SSL Clientを用いた違い（<code>No ALPN negotiated</code>と<code>ALPN protocol: h2</code>）を頼りにKotlin製（grpc-java）のgRPC Serverでも「<code>ALPN protocol: h2</code>」が出力されることを目指した。</p>
+
+<h3 id="改めてgrpc-java-security-mdを参照する">改めてgrpc-java/SECURITY.mdを参照する</h3>
+
+<p><a href="https://github.com/grpc/grpc-java/blob/master/SECURITY.md">https://github.com/grpc/grpc-java/blob/master/SECURITY.md</a></p>
+
+<p>Security.mdによるとTLSを有効にするためには２つの方法がありOpenSSLを用いるかjar起動のオプションのjavaagentにjetty-alpn-agentを加える方法がある。
+以前のエントリでもまとめていた。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/05/11/122139">KotlinでgRPC。grpc-javaのTLS with JDKとTLS with OpenSSLの使い方をまとめた。 - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p>プロジェクトではOpenSSLをつかっていたのだがALPN対応ができていなかった。最初はコンテナのubutsuが14.04／OpenSSLが1.0.1のためALPNがサポートされていないことが判明したので、OpenSSLを1.0.2にあげてみたが「<code>ALPN protocol: h2</code>」が出力されることはなかった。</p>
+
+<p>そのため２つ目の方法のjar起動のオプションのjavaagentにjetty-alpn-agentを加える方法を試したところ「<strong>ALPN protocol: h2</strong>」の出力が確認できた。これでServer側の対応は準備ができた。そして実機からも無事接続が確認できた。解決である。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>grpc-javaのServerでTLSを有効にした場合はALPN対応しているかOpenSSLのSSLクライアントで確認できるので忘れずに実施する
+
+<ul>
+<li><code>openssl s_client -alpn h2 -connect &lt;domain>:&lt;port></code></li>
+<li>出力に<code>ALPN protocol: h2</code>があるか確認する</li>
+</ul>
+</li>
+<li>grpc-javaをつかっているならクライアント接続に用いられるChannelでテストを実施してクロスチェックを強化する
+
+<ul>
+<li>Androidは<code>OkHttpChannelBuilder</code>を用いるのでServerのテストにもOkHttpChannelBuilderを想定したクライアントのテストを加える</li>
+</ul>
+</li>
+<li>コンテナのOpenSSLをALPNサポートしているVersionにしてもALPN対応できていなかった件については引き続き調査を進める。</li>
+</ul>
+
+<p>ということで、タイトルのとおり「grpc-javaのServerでTLSを有効にした場合はALPN対応しているか確認すべし」を教訓として学んだ。</p>
+
+<h3 id="コード">コード</h3>
+
+<p>TLSが有効なgRPC Serverに接続するgrpc-javaのクライアントテストをgithubに追加しています。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="sandbox-kt" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>テストコードは<a href="https://github.com/soushin/sandbox-kt/blob/master/src/test/kotlin/soushin/sandbox/kt/client/grpc/GrpcClientTest.kt">こちら</a>。</p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/alpn/">ALPN</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/tls/">TLS</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

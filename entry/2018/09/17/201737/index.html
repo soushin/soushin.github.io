@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Spring Web Flux でServer Sent EventsのPush型APIをつくってみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="Spring Boot 2.0からWebFlux frameworkが導入された。Reactorが使えてReactive Programmingが可能になったのでP">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Spring Web Flux でServer Sent EventsのPush型APIをつくってみた</h1>
+    <div class="post-meta">2018.9.17</div>
+  </header>
+  <div class="post-content">
+
+<p>Spring Boot 2.0からWebFlux frameworkが導入された。Reactorが使えてReactive Programmingが可能になったのでPush型のAPIをつくってみた。</p>
+
+<h3 id="どんなapiをつくるか">どんなAPIをつくるか</h3>
+
+<ul>
+<li>コンテンツが更新されたら件数を教えてくるAPI</li>
+<li>Server Sent EventsのContent-typeをサポートする</li>
+<li>コンテンツの件数が変更されたらAPIをSubscribeしているクライアントに件数を通知する</li>
+</ul>
+
+<h3 id="redisのpub-subを使う">RedisのPub/Subを使う</h3>
+
+<p>RedisのPub/Subを使ってリアルタイムのコンテンツ更新を通知する。アプリはServerSide+Kotlinで実装したのでJedisのライブラリを使う。</p>
+
+<p><div class="github-card" data-user="xetorthio" data-repo="jedis" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>Jedisは<code>JedisPubSub</code>のクラスを実装すればチャンネルに通知されたメッセージをSubscribeできる。<code>onMessage</code>でReactorクラスのFluxにデータを流すようにした。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Service</span>
+<span class="k">class</span> <span class="nc">TaskService</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">jedisPool</span><span class="p">:</span> <span class="n">JedisPool</span><span class="p">,</span>
+                  <span class="k">private</span> <span class="k">val</span> <span class="py">taskBackendClient</span><span class="p">:</span> <span class="n">TaskBackendClient</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">companion</span> <span class="k">object</span> <span class="p">{</span>
+        <span class="k">private</span> <span class="k">val</span> <span class="py">CHANNEL</span> <span class="p">=</span> <span class="s">&#34;task&#34;</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">flux</span> <span class="p">=</span> <span class="n">Flux</span><span class="p">.</span><span class="n">create</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;</span> <span class="p">{</span> <span class="n">emitter</span> <span class="p">-&gt;</span>
+        <span class="n">TaskSubscriber</span><span class="p">(</span><span class="n">emitter</span><span class="p">).</span><span class="n">let</span> <span class="p">{</span> <span class="n">sub</span> <span class="p">-&gt;</span>
+            <span class="n">jedisPool</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">use</span> <span class="p">{</span>
+                <span class="n">it</span><span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">sub</span><span class="p">,</span> <span class="n">CHANNEL</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">fun</span> <span class="nf">publishUpdateTask</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">jedisPool</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">use</span> <span class="p">{</span>
+            <span class="n">it</span><span class="p">.</span><span class="n">publish</span><span class="p">(</span><span class="n">CHANNEL</span><span class="p">,</span> <span class="s">&#34;updateTask&#34;</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">fun</span> <span class="nf">subscribeTaskCount</span><span class="p">()</span> <span class="p">=</span>
+            <span class="n">flux</span><span class="p">.</span><span class="n">map</span> <span class="p">{</span>
+                <span class="n">taskBackendClient</span><span class="p">.</span><span class="n">getTaskCount</span><span class="p">().</span><span class="n">count</span>
+            <span class="p">}.</span><span class="n">run</span> <span class="p">{</span>
+                <span class="n">share</span><span class="p">()</span>
+            <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">TaskSubscriber</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">fluxSink</span><span class="p">:</span> <span class="n">FluxSink</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;)</span> <span class="p">:</span> <span class="n">JedisPubSub</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onMessage</span><span class="p">(</span><span class="n">channel</span><span class="p">:</span> <span class="n">String</span><span class="p">?,</span> <span class="n">message</span><span class="p">:</span> <span class="n">String</span><span class="p">?)</span> <span class="p">{</span>
+        <span class="n">fluxSink</span><span class="p">.</span><span class="n">next</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>ポイントは<code>Flux.create&lt;T&gt;</code>で作られるFluxをTaskSubscriberのコンストラクタに渡してTaskSubscriberのonMessageでデータを流すようにしているところ。<br/>
+コンテンツが更新されたら<code>TaskService#publishUpdateTask</code>を呼び出しチャンネルに通知をPublishする。</p>
+
+<hr/>
+
+<p>ここまでくればTaskServiceを必要なところで使えばOK。</p>
+
+<h3 id="api-handlerでsever-send-eventsのserverresponseを返す">API HandlerでSever-Send-EventsのServerResponseを返す</h3>
+
+<p><code>bodyToServerSentEvents</code>の拡張関数を使えばSever-Send-EventsのServerResponseを返せる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Component</span>
+<span class="k">class</span> <span class="nc">TaskHandler</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">taskBackendClient</span><span class="p">:</span> <span class="n">TaskBackendClient</span><span class="p">,</span>
+                  <span class="k">private</span> <span class="k">val</span> <span class="py">taskService</span><span class="p">:</span> <span class="n">TaskService</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="c1">// ---
+</span><span class="c1"></span>
+    <span class="k">fun</span> <span class="nf">create</span><span class="p">(</span><span class="n">req</span><span class="p">:</span> <span class="n">ServerRequest</span><span class="p">):</span> <span class="n">Mono</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ServerResponse</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">ok</span><span class="p">().</span><span class="n">json</span><span class="p">().</span><span class="n">body</span><span class="p">(</span>
+                <span class="n">req</span><span class="p">.</span><span class="n">bodyToMono</span><span class="p">(</span><span class="n">CreateTaskInbound</span><span class="o">::</span><span class="k">class</span><span class="p">.</span><span class="n">java</span><span class="p">).</span><span class="n">map</span> <span class="p">{</span> <span class="n">p</span> <span class="p">-&gt;</span>
+                    <span class="n">TaskModel</span><span class="p">(</span><span class="n">taskBackendClient</span><span class="p">.</span><span class="n">createTask</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">)).</span><span class="n">also</span> <span class="p">{</span>
+                        <span class="n">taskService</span><span class="p">.</span><span class="n">publishUpdateTask</span><span class="p">()</span>
+                    <span class="p">}</span>
+                <span class="p">})</span>
+    <span class="p">}</span>
+
+    <span class="c1">// ---
+</span><span class="c1"></span>
+    <span class="k">fun</span> <span class="nf">fetchTaskCount</span><span class="p">(</span><span class="n">req</span><span class="p">:</span> <span class="n">ServerRequest</span><span class="p">):</span> <span class="n">Mono</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ServerResponse</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">ok</span><span class="p">().</span><span class="n">json</span><span class="p">().</span><span class="n">bodyToServerSentEvents</span><span class="p">(</span>
+                <span class="n">taskService</span><span class="p">.</span><span class="n">subscribeTaskCount</span><span class="p">()</span>
+                        <span class="p">.</span><span class="n">map</span> <span class="p">{</span>
+                            <span class="n">TaskCount</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+                        <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="text-event-streamをacceptするroutingをrouterfunctiondslに追加する">text/event-streamをacceptするroutingをRouterFunctionDslに追加する</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Configuration</span>
+<span class="k">class</span> <span class="nc">TaskRoutes</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">taskHandler</span><span class="p">:</span> <span class="n">TaskHandler</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">@Bean</span>
+    <span class="k">fun</span> <span class="nf">taskRouter</span><span class="p">()</span> <span class="p">=</span> <span class="n">router</span> <span class="p">{</span>
+        <span class="s">&#34;/api&#34;</span><span class="p">.</span><span class="n">nest</span> <span class="p">{</span>
+            <span class="n">accept</span><span class="p">(</span><span class="n">TEXT_EVENT_STREAM</span><span class="p">).</span><span class="n">nest</span> <span class="p">{</span>
+                <span class="n">GET</span><span class="p">(</span><span class="s">&#34;/task-count&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">fetchTaskCount</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>Spring BootでServer Sent EventsのPush型APIをつくってみた</li>
+<li>ReactorをサポートしているのとServer Sent EventsのAPIを作りやすい仕組みがSpring Boot 2.0から整っているのありがたい</li>
+<li>ReactorにProcessorが用意されているがRx javaと機能差異がどれくらいあるか気になる</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>動くコードあります。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

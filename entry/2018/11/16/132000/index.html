@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>BazelでGoプロジェクトのビルド。Gazelleのgo_repositoryで外部ライブラリの依存とBazelのgo_testでテスト。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="BazelをつかったGoプロジェクトのビルドをまとめている。前回のエントリではバイナリのビルドとDockerイメージのビルドをまとめた。 Go">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">BazelでGoプロジェクトのビルド。Gazelleのgo_repositoryで外部ライブラリの依存とBazelのgo_testでテスト。</h1>
+    <div class="post-meta">2018.11.16</div>
+  </header>
+  <div class="post-content">
+
+<p>BazelをつかったGoプロジェクトのビルドをまとめている。前回のエントリではバイナリのビルドとDockerイメージのビルドをまとめた。</p>
+
+<p><a href="https://blog.soushi.me/entry/2018/11/14/145038">GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p>今回は外部ライブラリをGoプロジェクトに依存させる方法とテストの方法をまとめていく。</p>
+
+<h3 id="gazelleのgo-repositoryで外部のライブラリを依存させる">Gazelleのgo_repositoryで外部のライブラリを依存させる</h3>
+
+<p>外部ライブラリの依存はGazelleのgo_repositoryをつかう。</p>
+
+<p><a href="https://github.com/bazelbuild/bazel-gazelle/blob/master/repository.rst#go_repository">bazel-gazelle/repository.rst at master · bazelbuild/bazel-gazelle · GitHub</a></p>
+
+<p>依存させるライブラリはDIツールのwireを選んだ。</p>
+
+<p><div class="github-card" data-user="google/go-cloud/tree/master" data-repo="wire" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h4 id="workspace">WORKSPACE</h4>
+
+<p>WORKSPACEにgo_repositoryを有効にしてruleを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="n">load</span><span class="p">(</span><span class="s2">&#34;@bazel_gazelle//:deps.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;gazelle_dependencies&#34;</span><span class="p">,</span> <span class="s2">&#34;go_repository&#34;</span><span class="p">)</span>
+
+<span class="n">gazelle_dependencies</span><span class="p">()</span>
+
+<span class="n">go_repository</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;com_github_google_cloud&#34;</span><span class="p">,</span>
+    <span class="n">commit</span> <span class="o">=</span> <span class="s2">&#34;2152f209f3c907645f7ebdcacdb2c18cd89e6fa8&#34;</span><span class="p">,</span>
+    <span class="n">importpath</span> <span class="o">=</span> <span class="s2">&#34;github.com/google/go-cloud&#34;</span><span class="p">,</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>name</code>はWORKSPACE内の固有をつける。<code>commit</code>はgoogle/go-cloud 0.5.0 バージョンのハッシュ値を設定する。<code>import_path</code>はGoコードでwireを利用するときにimport文のパスをセットする。</p>
+
+<h4 id="wireをつかってdiするコードを用意する">wireをつかってDIするコードを用意する。</h4>
+
+<p>簡易的なstruceのインスタンスをDIするコードを用意する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="err">#</span> <span class="nx">pkg</span><span class="o">/</span><span class="nx">public_go</span><span class="o">/</span><span class="nx">usecase</span><span class="o">/</span><span class="nx">greet_usecase</span><span class="p">.</span><span class="k">go</span>
+
+<span class="kn">package</span> <span class="nx">usecase</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+        <span class="s">&#34;github.com/google/go-cloud/wire&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">var</span> <span class="nx">GreetUsecaseSet</span> <span class="p">=</span> <span class="nx">wire</span><span class="p">.</span><span class="nf">NewSet</span><span class="p">(</span><span class="nx">ProvideUseCase</span><span class="p">)</span>
+
+<span class="kd">type</span> <span class="nx">GreetUsecase</span> <span class="kd">struct</span> <span class="p">{</span>
+    <span class="nx">Msg</span> <span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">ProvideUseCase</span><span class="p">(</span><span class="nx">msg</span> <span class="kt">string</span><span class="p">)</span> <span class="nx">GreetUsecase</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">GreetUsecase</span><span class="p">{</span>
+        <span class="nx">Msg</span><span class="p">:</span> <span class="nx">msg</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のコードを追加してgazelleコマンドを実行する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ bazel run gazelle</pre></td></tr></table>
+</div>
+</div>
+<p>コマンドを実行するとGazelleはWORKSPACEに追加したgo_repositoryの依存とgreet_usecase.goのwireの利用を理解して次のようなBUILD.bazelファイルを生成してくれる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># pkg/public_go/usecase/BUILD.bazel</span>
+
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_go//go:def.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;go_library&#34;</span><span class="p">)</span>
+
+<span class="n">go_library</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;go_default_library&#34;</span><span class="p">,</span>
+    <span class="n">srcs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;greet_usecase.go&#34;</span><span class="p">],</span>
+    <span class="n">importpath</span> <span class="o">=</span> <span class="s2">&#34;github.com/soushin/bazel-multiprojects/pkg/public_go/usecase&#34;</span><span class="p">,</span>
+    <span class="n">visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//visibility:public&#34;</span><span class="p">],</span>
+    <span class="n">deps</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;@com_github_google_cloud//wire:go_default_library&#34;</span><span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>greet_usecase.goをソースにしたライブラリのruleが定義されている。depsにはWORKSPACEで定義した<code>com_github_google_cloud</code>のレポジトリが参照されている。</p>
+
+<h4 id="gazelleの魅力">Gazelleの魅力</h4>
+
+<p>Bazel + Gazelleの魅力はこのようにWORKSPACEで定義した依存とコードの中間の役割のBUILDファイルを自動で生成してくれるところだ。</p>
+
+<p>最終的にはmainパッケージからusecaseパッケージを参照することになる。wireで生成したwire_gen.goコードは次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="err">#</span> <span class="nx">pkg</span><span class="o">/</span><span class="nx">public_go</span><span class="o">/</span><span class="nx">wire_gen</span><span class="p">.</span><span class="k">go</span>
+
+<span class="c1">// Code generated by Wire. DO NOT EDIT.
+</span><span class="c1"></span>
+<span class="c1">//go:generate wire
+</span><span class="c1">//+build !wireinject
+</span><span class="c1"></span>
+<span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;context&#34;</span>
+    <span class="s">&#34;github.com/soushin/bazel-multiprojects/pkg/public_go/usecase&#34;</span>
+<span class="p">)</span>
+
+<span class="c1">// Injectors from injector.go:
+</span><span class="c1"></span>
+<span class="kd">func</span> <span class="nf">initializeGreetUsecase</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">greet</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">usecase</span><span class="p">.</span><span class="nx">GreetUsecase</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">greetUsecase</span> <span class="o">:=</span> <span class="nx">usecase</span><span class="p">.</span><span class="nf">ProvideUseCase</span><span class="p">(</span><span class="nx">greet</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nx">greetUsecase</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>mainパッケージにusecaseが依存した状態で再度、gazelleコマンドを実行するとmainパッケージのBUILD.bazelは次のような差分になる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">diff --git a/pkg/public_go/BUILD.bazel b/pkg/public_go/BUILD.bazel
+index 06f7a04..b50739a 100644
+--- a/pkg/public_go/BUILD.bazel
++++ b/pkg/public_go/BUILD.bazel
+@@ -2,10 +2,16 @@ load(&#34;@io_bazel_rules_go//go:def.bzl&#34;, &#34;go_binary&#34;, &#34;go_library&#34;)
+
+ go_library(
+     name = &#34;go_default_library&#34;,
+-    srcs = [&#34;main.go&#34;],
++    srcs = [
++        &#34;main.go&#34;,
++        &#34;wire_gen.go&#34;,
++    ],
+     importpath = &#34;github.com/soushin/bazel-multiprojects/pkg/public_go&#34;,
+     visibility = [&#34;//visibility:private&#34;],
+-    deps = [&#34;//pkg/common_go/util:go_default_library&#34;],
++    deps = [
++        &#34;//pkg/common_go/util:go_default_library&#34;,
++        &#34;//pkg/public_go/usecase:go_default_library&#34;,
++    ],
+ )
+
+ go_binary(</pre></td></tr></table>
+</div>
+</div>
+<p>depsに<code>//pkg/public_go/usecase:go_default_library</code>が追加されている。usecaseパッケージに定義している<code>go_library</code>を参照している。</p>
+
+<p>Gazelleは各パッケージの依存とWORKSPACEの外部依存を理解してBUILDファイルを生成するだけでなくパッケージ間の依存も理解をしてくれる。</p>
+
+<h3 id="bazelのgo-testでテスト">Bazelのgo_testでテスト</h3>
+
+<p>テストのビルドもBazelで行う。</p>
+
+<p>次のようなstringのテストコードを用意する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="err">#</span> <span class="nx">pkg</span><span class="o">/</span><span class="nx">common_go</span><span class="o">/</span><span class="nx">util</span><span class="o">/</span><span class="nx">string_test</span><span class="p">.</span><span class="k">go</span>
+
+<span class="kn">package</span> <span class="nx">util</span>
+
+<span class="kn">import</span> <span class="s">&#34;testing&#34;</span>
+
+<span class="kd">func</span> <span class="nf">TestAdd</span><span class="p">(</span><span class="nx">t</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">actual</span> <span class="o">:=</span> <span class="nf">Add</span><span class="p">(</span><span class="s">&#34;test&#34;</span><span class="p">)</span>
+    <span class="nx">expected</span> <span class="o">:=</span> <span class="s">&#34;test - built by Bazel!&#34;</span>
+    <span class="k">if</span> <span class="nx">actual</span> <span class="o">!=</span> <span class="nx">expected</span> <span class="p">{</span>
+        <span class="nx">t</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;invalid text: got %s want %s&#34;</span><span class="p">,</span> <span class="nx">actual</span><span class="p">,</span> <span class="nx">expected</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>このテストコードを配置した状態でgazelleコマンドを実行するとutilパッケージのBUILD.bazelは次のような差分になる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">diff --git a/pkg/common_go/util/BUILD.bazel b/pkg/common_go/util/BUILD.bazel
+index ce90025..d48f3ca 100644
+--- a/pkg/common_go/util/BUILD.bazel
++++ b/pkg/common_go/util/BUILD.bazel
+@@ -1,4 +1,4 @@
+-load(&#34;@io_bazel_rules_go//go:def.bzl&#34;, &#34;go_library&#34;)
++load(&#34;@io_bazel_rules_go//go:def.bzl&#34;, &#34;go_library&#34;, &#34;go_test&#34;)
+
+ go_library(
+     name = &#34;go_default_library&#34;,
+@@ -6,3 +6,9 @@ go_library(
+     importpath = &#34;github.com/soushin/bazel-multiprojects/pkg/common_go/util&#34;,
+     visibility = [&#34;//visibility:public&#34;],
+ )
++
++go_test(
++    name = &#34;go_default_test&#34;,
++    srcs = [&#34;string_test.go&#34;],
++    embed = [&#34;:go_default_library&#34;],
++)</pre></td></tr></table>
+</div>
+</div>
+<p>Gazelleがパッケージ内のテストコードを解釈して<code>go_test</code>のruleを追加してくれる。このgo_testは次のように実行する</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ bazel run //pkg/common_go/util:go_default_test 
+INFO: Analysed target //pkg/common_go/util:go_default_test (4 packages loaded).
+INFO: Found 1 target...
+Target //pkg/common_go/util:go_default_test up-to-date:
+  bazel-bin/pkg/common_go/util/darwin_amd64_stripped/go_default_test
+INFO: Elapsed time: 0.244s, Critical Path: 0.01s
+INFO: 0 processes.
+INFO: Build completed successfully, 1 total action
+INFO: Build completed successfully, 1 total action
+exec ${PAGER:-/usr/bin/less} &#34;$0&#34; || exit 1
+Executing tests from //pkg/common_go/util:go_default_test
+-----------------------------------------------------------------------------
+PASS</pre></td></tr></table>
+</div>
+</div>
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>Gazelleを使ったGoプロジェクトの外部ライブラリ依存とテストの方法をまとめた。</li>
+<li>GoプロジェクトにおいてはGazelleの働きが素晴らしくビルドルールの追加からビルドまでストレスフリーで開発が行える印象。</li>
+<li>KotlinプロジェクトにおいてもGazelleが生成するBUILDファイルに沿ってルールの追加をしていくと捗りそう。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p><div class="github-card" data-user="soushin" data-repo="bazel-multiprojects" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/bazel/">Bazel</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/gazelle/">Gazelle</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/dependencies/">Dependencies</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/test/">Test</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

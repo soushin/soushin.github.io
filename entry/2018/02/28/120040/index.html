@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Dagger2 &#43; uber/Autodispose &#43; RxJava2でFluxアーキテクチャを導入してみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="ブログエントリで試しているAndroidアプリにFluxアーキテクチャを導入してみたのでまとめる。 Fluxアーキテクチャ Fluxアーキテクチ">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Dagger2 &#43; uber/Autodispose &#43; RxJava2でFluxアーキテクチャを導入してみた</h1>
+    <div class="post-meta">2018.2.28</div>
+  </header>
+  <div class="post-content">
+
+<p>ブログエントリで試しているAndroidアプリにFluxアーキテクチャを導入してみたのでまとめる。</p>
+
+<h2 id="fluxアーキテクチャ">Fluxアーキテクチャ</h2>
+
+<p>Fluxアーキテクチャに関する情報は調べるとたくさん見つかるので概要までに留めておく。</p>
+
+<p><div class="github-card" data-user="facebook/flux/tree/master/examples" data-repo="flux-concepts" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>Fluxはアプリケーションデータを管理するためのデータフローのパターンで、最も重要なコンセプトはデータの流れが<strong>単一方向</strong>であること。</p>
+
+<figure>
+    <img src="/images/20180228092104.png"/> 
+</figure>
+
+
+<p>出典：<a href="https://github.com/facebook/flux/tree/master/examples/flux-concepts">https://github.com/facebook/flux/tree/master/examples/flux-concepts</a></p>
+
+<p>Fluxを理解するための要素として、<strong>Action</strong>、<strong>Dispatcher</strong>、<strong>Store</strong>、<strong>View</strong>がある。上記の図にもあるとおりActionからViewまでデータは一方向に流れている。ActionからDispatcherを通してStoreへデータを流す。Storeから状態変更されたデータをViewへ渡す。ViewからActionを通してDispatcherに伝達するフローはViewがonClickなどのイベントを検知して応じたActionを発火させているものである。</p>
+
+<p>ViewはStoreの状態変更の検知やActionを発火させる役割を担う。ViewはStoreの状態変更があれば即座に対応したり、イベントが起きたらActionへ伝えActionからDispatcherを通してStoreの状態変更を検知するためにPub/Subを行う必要がある。ActionとStoreを仲介するDispatcherにStreamを導入することでデータのPub/Subを実現する。このエントリではRxJava2を採用した。</p>
+
+<p>ここからはFluxアーキテクチャをAndroidアプリに導入する過程のコードをまとめていく。</p>
+
+<h2 id="dispatcher">Dispatcher</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">ForecastsDispatcher</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">forecastsProcessor</span> <span class="p">=</span> <span class="n">PublishProcessor</span><span class="p">.</span><span class="n">create</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Forecasts</span><span class="p">&gt;()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>PublishProcessor</code>でFlowableなPublisherを定義する。<code>forecastsProcessor</code>は天気情報を保持する。</p>
+
+<h2 id="action">Action</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Singleton</span>
+<span class="k">class</span> <span class="nc">ForecastsAction</span> <span class="n">@Inject</span> <span class="k">constructor</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">forecastsDispatcher</span><span class="p">:</span> <span class="n">ForecastsDispatcher</span><span class="p">,</span>
+                                          <span class="k">private</span> <span class="k">val</span> <span class="py">errorDispatcher</span><span class="p">:</span> <span class="n">ErrorDispatcher</span><span class="p">,</span>
+                                          <span class="k">private</span> <span class="k">val</span> <span class="py">openWeatherMapRepository</span><span class="p">:</span> <span class="n">OpenWeatherMapRepository</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">findByDaily</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">openWeatherMapRepository</span><span class="p">.</span><span class="n">findForecastByDaily</span><span class="p">()</span>
+                <span class="p">.</span><span class="n">subscribeOn</span><span class="p">(</span><span class="n">Schedulers</span><span class="p">.</span><span class="n">io</span><span class="p">())</span>
+                <span class="p">.</span><span class="n">subscribe</span><span class="p">({</span>
+                    <span class="n">forecastsDispatcher</span><span class="p">.</span><span class="n">forecastsProcessor</span><span class="p">.</span><span class="n">onNext</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+                <span class="p">},</span> <span class="p">{</span>
+                    <span class="n">errorDispatcher</span><span class="p">.</span><span class="n">onError</span><span class="p">(</span><span class="n">Err</span><span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="n">message</span><span class="p">))</span>
+                <span class="p">})</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>openWeatherMapRepositoryを通して天気情報を取得して<code>forecastsDispatcher.forecastsProcessor.onNext(it)</code>でStreamにデータを流す。</p>
+
+<h2 id="store">Store</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Singleton</span>
+<span class="k">class</span> <span class="nc">ForecastsStore</span> <span class="n">@Inject</span> <span class="k">constructor</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">forecastsDispatcher</span><span class="p">:</span> <span class="n">ForecastsDispatcher</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">forecasts</span><span class="p">()</span> <span class="p">=</span> <span class="n">forecastsDispatcher</span><span class="p">.</span><span class="n">forecastsProcessor</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Storeはデータの状態を保持する。またSetterは定義せずデータ取得のメソッドを定義する。<code>forecasts()</code>はdispatcherを通して最新の情報を取得する。</p>
+
+<h2 id="view">View</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">ForecastsFragment</span> <span class="p">:</span> <span class="n">AutoDisposeFragmentKotlin</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="n">@Inject</span> <span class="k">lateinit</span> <span class="k">var</span> <span class="py">forecastsAction</span><span class="p">:</span> <span class="n">ForecastsAction</span>
+    <span class="n">@Inject</span> <span class="k">lateinit</span> <span class="k">var</span> <span class="py">forecastsStore</span><span class="p">:</span> <span class="n">ForecastsStore</span>
+    <span class="n">@Inject</span> <span class="k">lateinit</span> <span class="k">var</span> <span class="py">errorStore</span><span class="p">:</span> <span class="n">ErrorStore</span>
+
+    <span class="c1">// ---
+</span><span class="c1"></span>
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onViewCreated</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n">View</span><span class="p">,</span> <span class="n">savedInstanceState</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">?)</span> <span class="p">{</span>
+        <span class="k">super</span><span class="p">.</span><span class="n">onViewCreated</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">savedInstanceState</span><span class="p">)</span>
+
+        <span class="n">forecastsStore</span><span class="p">.</span><span class="n">forecasts</span><span class="p">()</span>
+                <span class="p">.</span><span class="n">observeOn</span><span class="p">(</span><span class="n">AndroidSchedulers</span><span class="p">.</span><span class="n">mainThread</span><span class="p">())</span>
+                <span class="p">.</span><span class="n">`as`</span><span class="p">(</span><span class="n">autoDisposable</span><span class="p">(</span><span class="k">this</span><span class="p">))</span>
+                <span class="p">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">forecasts</span> <span class="p">-&gt;</span>
+                    <span class="n">listView</span><span class="p">.</span><span class="n">adapter</span> <span class="p">=</span> <span class="n">ArrayAdapter</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;(</span><span class="n">activity</span><span class="p">,</span> <span class="n">android</span><span class="p">.</span><span class="n">R</span><span class="p">.</span><span class="n">layout</span><span class="p">.</span><span class="n">simple_list_item_1</span><span class="p">,</span>
+                            <span class="n">forecasts</span><span class="p">.</span><span class="n">list</span><span class="p">.</span><span class="n">map</span> <span class="p">{</span>
+                                <span class="s">&#34;%s - %s %s/%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span>
+                                        <span class="n">DateUtils</span><span class="p">.</span><span class="n">formatDateTime</span><span class="p">(</span><span class="n">activity</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">dt</span> <span class="p">*</span> <span class="m">1000L</span><span class="p">,</span> <span class="n">FORMAT_NO_YEAR</span><span class="p">),</span>
+                                        <span class="n">it</span><span class="p">.</span><span class="n">weather</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="m">0</span><span class="p">).</span><span class="n">main</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">temp</span><span class="p">.</span><span class="n">min</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">temp</span><span class="p">.</span><span class="n">max</span><span class="p">)</span>
+                            <span class="p">})</span>
+                <span class="p">}</span>
+
+        <span class="n">savedInstanceState</span> <span class="o">?:</span> <span class="n">forecastsAction</span><span class="p">.</span><span class="n">findByDaily</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="c1">// ---</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Actionの<code>forecastsAction.findByDaily()</code>を実行して、<code>forecastsStore.forecasts()</code>で購読処理をする。</p>
+
+<h3 id="autodisposable">autoDisposable</h3>
+
+<p>ライフサイクルに合わせてStreamを廃棄させたい。 <code>forecastsStore.forecasts()</code>でStreamを購読しているが他のActivityやFragmentに切り替わってもStreamのインスタンスを保持し続けるとメモリリークを起こす原因となるため不要なStreamを廃棄する必要がある。</p>
+
+<p>そこで<code>uber/AutoDispose</code>を導入すれば、Streamの廃棄をAndroidのライフサイクルに合わせて自動で行ってくれる。</p>
+
+<p><div class="github-card" data-user="uber" data-repo="AutoDispose" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">abstract</span> <span class="k">class</span> <span class="nc">AutoDisposeFragmentKotlin</span> <span class="p">:</span> <span class="n">Fragment</span><span class="p">(),</span> <span class="n">LifecycleScopeProvider</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">AutoDisposeFragmentKotlin</span><span class="p">.</span><span class="n">FragmentEvent</span><span class="p">&gt;</span> <span class="p">{</span>
+
+    <span class="c1">// ---
+</span><span class="c1"></span>
+    <span class="k">companion</span> <span class="k">object</span> <span class="p">{</span>
+
+        <span class="cm">/**
+</span><span class="cm">         * This is a function of current event -&gt; target disposal event. That is to say that if event A
+</span><span class="cm">         * returns B, then any stream subscribed to during A will autodispose on B. In Android, we make
+</span><span class="cm">         * symmetric boundary conditions. Create -&gt; Destroy, Start -&gt; Stop, etc. For anything after
+</span><span class="cm">         * Resume we dispose on the next immediate destruction event. Subscribing after Detach is an
+</span><span class="cm">         * error.
+</span><span class="cm">         */</span>
+        <span class="k">private</span> <span class="k">val</span> <span class="py">CORRESPONDING_EVENTS</span><span class="p">:</span> <span class="n">Function</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">FragmentEvent</span><span class="p">,</span> <span class="n">FragmentEvent</span><span class="p">&gt;</span> <span class="p">=</span>
+                <span class="n">Function</span> <span class="p">{</span> <span class="n">lifecycleEvents</span> <span class="p">-&gt;</span>
+            <span class="k">when</span> <span class="p">(</span><span class="n">lifecycleEvents</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">ATTACH</span> <span class="p">-&gt;</span> <span class="n">DETACH</span>
+                <span class="n">CREATE</span> <span class="p">-&gt;</span> <span class="n">DESTROY</span>
+                <span class="n">CREATE_VIEW</span> <span class="p">-&gt;</span> <span class="n">DESTROY_VIEW</span>
+                <span class="n">START</span> <span class="p">-&gt;</span> <span class="n">STOP</span>
+                <span class="n">RESUME</span> <span class="p">-&gt;</span> <span class="n">PAUSE</span>
+                <span class="n">PAUSE</span> <span class="p">-&gt;</span> <span class="n">STOP</span>
+                <span class="n">STOP</span> <span class="p">-&gt;</span> <span class="n">DESTROY_VIEW</span>
+                <span class="n">DESTROY_VIEW</span> <span class="p">-&gt;</span> <span class="n">DESTROY</span>
+                <span class="n">DESTROY</span> <span class="p">-&gt;</span> <span class="n">DETACH</span>
+                <span class="k">else</span> <span class="p">-&gt;</span> <span class="k">throw</span> <span class="n">LifecycleEndedException</span><span class="p">(</span><span class="s">&#34;Cannot bind to Fragment lifecycle after detach.&#34;</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Streamの購読を開始したイベントとStreamを廃棄させるイベントをマッピングしているコードが上記である。このコードはuber/AutoDisposeの<a href="https://github.com/uber/AutoDispose/blob/master/sample/src/main/kotlin/com/uber/autodispose/recipes/AutoDisposeFragmentKotlin.kt">recipe</a>を参考にした。</p>
+
+<p>AutoDisposeを使えばCREATEで購読を開始したStreamをDESTROYで廃棄してくれる。</p>
+
+<h3 id="errordispatcher">ErrorDispatcher</h3>
+
+<p>APIエラーが起きた場合のエラーをViewまで伝達させるためにErrorDispatcherを定義した。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">ErrorDispatcher</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">errors</span> <span class="p">=</span> <span class="n">PublishSubject</span><span class="p">.</span><span class="n">create</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Err</span><span class="p">&gt;().</span><span class="n">toSerialized</span><span class="p">()</span>
+
+    <span class="k">fun</span> <span class="nf">onError</span><span class="p">(</span><span class="n">err</span><span class="p">:</span> <span class="n">Err</span><span class="p">)</span> <span class="p">=</span> <span class="n">errors</span><span class="p">.</span><span class="n">onNext</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>エラーはBackpressureは必要ないのでPublishSubjectを定義してシリアライズしている。</p>
+
+<h4 id="errorstoreとview">ErrorStoreとView</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Singleton</span>
+<span class="k">class</span> <span class="nc">ErrorStore</span> <span class="n">@Inject</span> <span class="k">constructor</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">errorDispatcher</span><span class="p">:</span> <span class="n">ErrorDispatcher</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">errors</span><span class="p">()</span> <span class="p">=</span> <span class="n">errorDispatcher</span><span class="p">.</span><span class="n">errors</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>ErrorStoreを定義することでViewから最新のエラーを取得することができる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">ForecastsFragment</span> <span class="p">:</span> <span class="n">AutoDisposeFragmentKotlin</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="n">@Inject</span> <span class="k">lateinit</span> <span class="k">var</span> <span class="py">forecastsAction</span><span class="p">:</span> <span class="n">ForecastsAction</span>
+    <span class="n">@Inject</span> <span class="k">lateinit</span> <span class="k">var</span> <span class="py">forecastsStore</span><span class="p">:</span> <span class="n">ForecastsStore</span>
+    <span class="n">@Inject</span> <span class="k">lateinit</span> <span class="k">var</span> <span class="py">errorStore</span><span class="p">:</span> <span class="n">ErrorStore</span>
+
+    <span class="c1">// ---
+</span><span class="c1"></span>
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onResume</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">super</span><span class="p">.</span><span class="n">onResume</span><span class="p">()</span>
+
+        <span class="n">errorStore</span><span class="p">.</span><span class="n">errors</span><span class="p">()</span>
+                <span class="p">.</span><span class="n">observeOn</span><span class="p">(</span><span class="n">AndroidSchedulers</span><span class="p">.</span><span class="n">mainThread</span><span class="p">())</span>
+                <span class="p">.</span><span class="n">`as`</span><span class="p">(</span><span class="n">autoDisposable</span><span class="p">(</span><span class="k">this</span><span class="p">))</span>
+                <span class="p">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">error</span> <span class="p">-&gt;</span>
+                    <span class="n">Toast</span><span class="p">.</span><span class="n">makeText</span><span class="p">(</span><span class="n">activity</span><span class="p">,</span> <span class="n">error</span><span class="p">.</span><span class="n">message</span><span class="p">,</span> <span class="n">Toast</span><span class="p">.</span><span class="n">LENGTH_LONG</span><span class="p">).</span><span class="n">show</span><span class="p">()</span>
+                <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// ---
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="コード">コード</h2>
+
+<p>Fluxアーキテクチャの導入前と後のコード比較ができるようにPRを残しています。 エントリで紹介したコードは断片的なので参考になれば嬉しいです。</p>
+
+<p><div class="github-card" data-user="soushin/sunshine-app/pull" data-repo="3" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h2 id="まとめ">まとめ</h2>
+
+<ul>
+<li>Fluxアーキテクチャを構成する要素であるAction、Dispatcher、Store、Viewを理解してコード化してみた。</li>
+<li>コード化すると各要素の責務が明確になる。明確になるということはコード運用に置いてPullRequestの注視ポイントも明確になると思う。</li>
+<li>Fluxアーキテクチャのコンセプトである単一方向のデータフローはコード化するとより理解が深まった。</li>
+<li>View（Fragment）のコードをシンプルに構成してくれているのはRxJavaの恩恵でありFluxアーキテクチャとStreamのマッチングは切り離せないものである。</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/android/">android</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/flux/">flux</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/rx/">rx</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

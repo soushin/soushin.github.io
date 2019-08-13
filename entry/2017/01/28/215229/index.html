@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>golang - Kotlinのmicroservice構成のConsumer-Driven Contract testingをpactをつかって作ってみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="今回はConsumer-Driven Contract testingのサンプルを作ってみました。以前のSelenideを使ったE2Eの記事の流れからCons">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">golang - Kotlinのmicroservice構成のConsumer-Driven Contract testingをpactをつかって作ってみた</h1>
+    <div class="post-meta">2017.1.28</div>
+  </header>
+  <div class="post-content">
+
+<p>今回はConsumer-Driven Contract testingのサンプルを作ってみました。以前の<a href="https://blog.soushi.me/entry/2017/01/15/205751">Selenideを使ったE2Eの記事</a>の流れからConsumer-Driven Contract testingも試してみようというモチベーションです。</p>
+
+<h2 id="consumer-driven-contract-testingとは">Consumer-Driven Contract testingとは</h2>
+
+<p>Consumer-Driven Contract（以下、CDC）で検索すると定義についての記事がたくさん見つかりますので詳細な説明は他の記事にお任せします。</p>
+
+<ul>
+<li><a href="http://qiita.com/AHA_oretama/items/e2c7db87cc5264c701ae">Consumer-Driven Contracts testingを徹底解説！ - Qiita</a></li>
+<li><a href="https://martinfowler.com/articles/consumerDrivenContracts.html">Consumer-Driven Contracts: A Service Evolution Pattern</a></li>
+</ul>
+
+<p>CDCテストはmicroservice architectureをベースに複数のmicroserviceでサービス全体を構築しサービスが成長する過程で直面する問題に向き合うためのテスト手法の１つ、というのが私の理解です。</p>
+
+<h3 id="どういった問題に直面するか">どういった問題に直面するか</h3>
+
+<ul>
+<li>複雑化するmicroservice間の依存関係</li>
+<li>依存関係が正常に保たれているかを検証するためのコスト</li>
+<li>不安要素の蓄積がmicroserviceの拡張難易度を上げる</li>
+</ul>
+
+<p>これらの問題要素がデスマーチのように回り始めるとmicroserviceの拡張が止まり更にサービス全体の成長が止まります。</p>
+
+<h3 id="問題を解消するには">問題を解消するには</h3>
+
+<p>多くのmicroservice間の連携はAPIの提供と利用で成り立っています。<br/>
+２つのmicroserviceの関係はAPIを提供する側（<strong>Provider</strong>）、APIを利用する側（<strong>Consumer</strong>）になります。またConsumerのmicroserviceの機能はProviderが提供するAPIを基盤として動きます。このように整理するとProviderが提供するAPIに不備があったり不明なAPI仕様があったりするとConsumerは困ってしまいます。<br/>
+そのためにお互いにAPIのルール（<strong>Contract</strong>）を定義します。そしてルールの定義をConsumer側が行い（<strong>Consumer-Driven Contract</strong>）、Providerがルールを守ることでmicroservice間の連携を保ちます。<br/>
+このCDCテストを複数のmicroservce間で継続的に行うことで先に挙げた問題を解消します。</p>
+
+<h3 id="pact">Pact</h3>
+
+<p>Pactはmicroservce間のCDCテストを順序立て実行するためのフレームワークです。<br/></p>
+
+<div class="github-card" data-user="realestate-com-au" data-repo="pact" data-width="400" data-height="" data-theme="default"></div>
+
+<p>今回はPactをインプリメントした次のプロジェクトを利用してCDCテストを作りました。<br/></p>
+
+<div class="github-card" data-user="pact-foundation" data-repo="pact-specification" data-width="400" data-height="" data-theme="default"></div>
+
+<p>上記のプロジェクトから更にgolangやjavaなど各言語に最適化されたプロジェクトが派生しています。</p>
+
+<h3 id="pactをインプリメントした各種言語のライブラリを使う">Pactをインプリメントした各種言語のライブラリを使う</h3>
+
+<p>次のプロジェクトに各種言語のプロジェクトがまとまっていますので参考にしました。<br/>
+<a href="https://github.com/DiUS/pact-jvm">https://github.com/DiUS/pact-jvm</a>各ライブラリにはCDCテストをするために次のような仕組みを用意しています。</p>
+
+<ul>
+<li>ConsumerがProviderのAPIをモック化する仕組み</li>
+<li>ConsumerとProviderがルールを共有するためのPactファイルを生成する仕組み</li>
+<li>ProviderがAPI仕様を満たしているかテストする仕組み</li>
+</ul>
+
+<h4 id="golangのライブラリ">golangのライブラリ</h4>
+
+<div class="github-card" data-user="seek-jobs" data-repo="pact-go" data-width="400" data-height="" data-theme="default"></div>
+
+<h4 id="kotlinのライブラリ">kotlinのライブラリ</h4>
+
+<div class="github-card" data-user="DiUS/pact-jvm/tree/master" data-repo="pact-jvm-provider-junit" data-width="400" data-height="" data-theme="default"></div>
+
+<h4 id="pact仕様はversion1-1を使う">Pact仕様はversion1.1を使う</h4>
+
+<p>go-langのライブラリが1.1までの対応のため今回作ったテストもversion1.1を使っています。</p>
+
+<ul>
+<li><a href="https://github.com/pact-foundation/pact-specification/tree/version-1.1">GitHub - pact-foundation/pact-specification at version-1.1</a></li>
+<li>現在はVersion4まで開発が進んでいます。その他のVersionは<a href="https://github.com/pact-foundation/pact-specification">こちら</a>で確認できます。</li>
+</ul>
+
+<h2 id="consumer-driven-contract-testをつくる">Consumer-Driven Contract testをつくる</h2>
+
+<p>まずmicroserviceの定義ですがConsumerのmicroserviceはgolang、Providerのmicroserviceはkotlinで構築しました。<br/>
+シンプルなユーザ情報を取得するAPIをProvider（kotlin）が提供しConsumer（golang）がAPIを利用するという構成でCDC testをつくっていきます。</p>
+
+<h3 id="consumerのコード-golang">Consumerのコード（golang）</h3>
+
+<p>Provider APIへ接続するClient定義です。ユーザIDを受け取りAPIリクエストを送るシンプルなつくりです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">client</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;encoding/json&#34;</span>
+	<span class="s">&#34;fmt&#34;</span>
+	<span class="s">&#34;net/http&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span> <span class="nx">UserClient</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">baseURL</span> <span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">User</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Name</span> <span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">UserClient</span><span class="p">)</span> <span class="nf">GetResource</span><span class="p">(</span><span class="nx">id</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">User</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">url</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%s/user/%d&#34;</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">baseURL</span><span class="p">,</span> <span class="nx">id</span><span class="p">)</span>
+	<span class="nx">req</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nf">NewRequest</span><span class="p">(</span><span class="s">&#34;GET&#34;</span><span class="p">,</span> <span class="nx">url</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+
+	<span class="nx">client</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="p">{}</span>
+	<span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="nx">req</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="k">defer</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">Body</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+
+	<span class="kd">var</span> <span class="nx">res</span> <span class="nx">User</span>
+	<span class="nx">decoder</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">NewDecoder</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nx">Body</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">decoder</span><span class="p">.</span><span class="nf">Decode</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">res</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">res</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のClinetのリクエストとレスポンスをテストコードでモック化しAPI仕様のバリエーションを作成しPactファイルを生成します。<br/>
+次のコードはテストコードです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">client</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="nx">pact</span> <span class="s">&#34;github.com/SEEK-Jobs/pact-go&#34;</span>
+	<span class="s">&#34;github.com/SEEK-Jobs/pact-go/provider&#34;</span>
+	<span class="s">&#34;net/http&#34;</span>
+	<span class="s">&#34;testing&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">buildPact</span><span class="p">()</span> <span class="nx">pact</span><span class="p">.</span><span class="nx">Builder</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">pact</span><span class="p">.</span>
+		<span class="nf">NewConsumerPactBuilder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pact</span><span class="p">.</span><span class="nx">BuilderConfig</span><span class="p">{</span><span class="nx">PactPath</span><span class="p">:</span> <span class="s">&#34;../../pacts&#34;</span><span class="p">}).</span>
+		<span class="nf">ServiceConsumer</span><span class="p">(</span><span class="s">&#34;consumer_user_client&#34;</span><span class="p">).</span>
+		<span class="nf">HasPactWith</span><span class="p">(</span><span class="s">&#34;provider_user_client&#34;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">Test_ContractUserClientProvider_StatusIsOk</span><span class="p">(</span><span class="nx">t</span> <span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span> <span class="p">{</span>
+
+	<span class="nx">builder</span> <span class="o">:=</span> <span class="nf">buildPact</span><span class="p">()</span>
+	<span class="nx">ms</span><span class="p">,</span> <span class="nx">msUrl</span> <span class="o">:=</span> <span class="nx">builder</span><span class="p">.</span><span class="nf">GetMockProviderService</span><span class="p">()</span>
+
+	<span class="nx">request</span> <span class="o">:=</span> <span class="nx">provider</span><span class="p">.</span><span class="nf">NewJSONRequest</span><span class="p">(</span><span class="s">&#34;GET&#34;</span><span class="p">,</span> <span class="s">&#34;/user/1192&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+	<span class="nx">header</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">Header</span><span class="p">)</span>
+	<span class="nx">header</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;content-type&#34;</span><span class="p">,</span> <span class="s">&#34;application/json&#34;</span><span class="p">)</span>
+	<span class="nx">response</span> <span class="o">:=</span> <span class="nx">provider</span><span class="p">.</span><span class="nf">NewJSONResponse</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="nx">header</span><span class="p">)</span>
+	<span class="nx">response</span><span class="p">.</span><span class="nf">SetBody</span><span class="p">(</span><span class="s">`{&#34;Name&#34;: &#34;1192-User&#34;}`</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ms</span><span class="p">.</span><span class="nf">Given</span><span class="p">(</span><span class="s">&#34;fetch user by id 1192&#34;</span><span class="p">).</span>
+		<span class="nf">UponReceiving</span><span class="p">(</span><span class="s">&#34;get request for user with id 1192&#34;</span><span class="p">).</span>
+		<span class="nf">With</span><span class="p">(</span><span class="o">*</span><span class="nx">request</span><span class="p">).</span>
+		<span class="nf">WillRespondWith</span><span class="p">(</span><span class="o">*</span><span class="nx">response</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">t</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+		<span class="nx">t</span><span class="p">.</span><span class="nf">FailNow</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Test request user client
+</span><span class="c1"></span>	<span class="nx">client</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">UserClient</span><span class="p">{</span><span class="nx">baseURL</span><span class="p">:</span> <span class="nx">msUrl</span><span class="p">}</span>
+	<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">GetResource</span><span class="p">(</span><span class="mi">1192</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">t</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+		<span class="nx">t</span><span class="p">.</span><span class="nf">FailNow</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Verify registered interaction
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ms</span><span class="p">.</span><span class="nf">VerifyInteractions</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">t</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+		<span class="nx">t</span><span class="p">.</span><span class="nf">FailNow</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Clear interaction for this test scope, if you need to register and verify another interaction for another test scope
+</span><span class="c1"></span>	<span class="nx">ms</span><span class="p">.</span><span class="nf">ClearInteractions</span><span class="p">()</span>
+
+	<span class="c1">//Finally, build to produce the pact json file
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">builder</span><span class="p">.</span><span class="nf">Build</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">t</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>**buildPact()**でPactファイルの生成フォルダの指定とConsumer名称の**consumer_user_client**とProvider名称の**provider_user_client**を定義しています。</li>
+<li>**Test_ContractUserClientProvider_StatusIsOk(t *testing.T)**ではUserClientのリクエストとレスポンスを定義しモック化しPactファイルを生成します。</li>
+<li>**fetch user by id 1192**の文字列はprovider stateとして定義されます。このprovider stateの数がAPI仕様の数と一致するようにUserClientのリクエストとレスポンスを定義します。例えばデータが存在しない404エラーレスポンスや入力値が不正な400エラーレスポンスが必要であればprovider stateとして定義します。</li>
+</ul>
+
+<p>テストを実行してPactファイルを生成します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">$ go <span class="nb">test</span> -v ./...
+<span class="o">===</span> RUN   Test_ContractUserClientProvider_StatusIsOk
+--- PASS: Test_ContractUserClientProvider_StatusIsOk <span class="o">(</span><span class="m">0</span>.00s<span class="o">)</span>
+PASS
+ok  	github.com/nsoushi/cdc-test/pact-go-consumer/client	<span class="m">0</span>.014s
+$ ls ../pacts
+consumer_user_client-provider_user_client.json</code></pre></td></tr></table>
+</div>
+</div>
+<p>生成したPactファイルは次のようになりました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+	<span class="nt">&#34;consumer&#34;</span><span class="p">:</span> <span class="p">{</span>
+		<span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;consumer_user_client&#34;</span>
+	<span class="p">},</span>
+	<span class="nt">&#34;provider&#34;</span><span class="p">:</span> <span class="p">{</span>
+		<span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;provider_user_client&#34;</span>
+	<span class="p">},</span>
+	<span class="nt">&#34;interactions&#34;</span><span class="p">:</span> <span class="p">[</span>
+		<span class="p">{</span>
+			<span class="nt">&#34;provider_state&#34;</span><span class="p">:</span> <span class="s2">&#34;fetch user by id 1192&#34;</span><span class="p">,</span>
+			<span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;get request for user with id 1192&#34;</span><span class="p">,</span>
+			<span class="nt">&#34;request&#34;</span><span class="p">:</span> <span class="p">{</span>
+				<span class="nt">&#34;method&#34;</span><span class="p">:</span> <span class="s2">&#34;GET&#34;</span><span class="p">,</span>
+				<span class="nt">&#34;path&#34;</span><span class="p">:</span> <span class="s2">&#34;/user/1192&#34;</span>
+			<span class="p">},</span>
+			<span class="nt">&#34;response&#34;</span><span class="p">:</span> <span class="p">{</span>
+				<span class="nt">&#34;body&#34;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="nt">&#34;Name&#34;</span><span class="p">:</span> <span class="s2">&#34;1192-User&#34;</span>
+				<span class="p">},</span>
+				<span class="nt">&#34;headers&#34;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="nt">&#34;Content-Type&#34;</span><span class="p">:</span> <span class="s2">&#34;application/json&#34;</span>
+				<span class="p">},</span>
+				<span class="nt">&#34;status&#34;</span><span class="p">:</span> <span class="mi">200</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">],</span>
+	<span class="nt">&#34;metaData&#34;</span><span class="p">:</span> <span class="p">{</span>
+		<span class="nt">&#34;pactSpecificationVersion&#34;</span><span class="p">:</span> <span class="s2">&#34;1.1.0&#34;</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>このPactファイルをProvider（kotlin）が読み込みProvider側で更にテストを実行します。</p>
+
+<h3 id="providerのコード-kotlin">Providerのコード（kotlin）</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@RunWith</span><span class="p">(</span><span class="n">PactRunner</span><span class="o">::</span><span class="k">class</span><span class="p">)</span>
+<span class="n">@Provider</span><span class="p">(</span><span class="s">&#34;provider_user_client&#34;</span><span class="p">)</span>
+<span class="n">@PactFolder</span><span class="p">(</span><span class="s">&#34;pacts&#34;</span><span class="p">)</span>
+<span class="n">@WebAppConfiguration</span>
+<span class="k">open</span> <span class="k">class</span> <span class="nc">ContractUserTest</span> <span class="p">{</span>
+
+    <span class="k">lateinit</span> <span class="k">var</span> <span class="py">wireMockServer</span><span class="p">:</span> <span class="n">WireMockServer</span>
+
+    <span class="k">companion</span> <span class="k">object</span> <span class="p">{</span>
+
+        <span class="c1">// mock port
+</span><span class="c1"></span>        <span class="k">private</span> <span class="k">val</span> <span class="py">port</span> <span class="p">=</span> <span class="m">8080</span>
+
+        <span class="n">@TestTarget</span>
+        <span class="k">lateinit</span> <span class="k">var</span> <span class="py">target</span><span class="p">:</span> <span class="n">Target</span>
+
+        <span class="n">@BeforeClass</span> <span class="n">@JvmStatic</span> <span class="k">fun</span> <span class="nf">setUpService</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">target</span> <span class="p">=</span> <span class="n">HttpTarget</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="n">@Before</span>
+    <span class="k">fun</span> <span class="nf">before</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">wireMockServer</span> <span class="p">=</span> <span class="n">WireMockServer</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+        <span class="n">wireMockServer</span><span class="p">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">WireMock</span><span class="p">.</span><span class="n">configureFor</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="n">@State</span><span class="p">(</span><span class="s">&#34;fetch user by id 1192&#34;</span><span class="p">)</span>
+    <span class="k">open</span> <span class="k">fun</span> <span class="nf">toDefaultState</span><span class="p">()</span> <span class="p">{</span>
+
+        <span class="k">val</span> <span class="py">path</span> <span class="p">=</span> <span class="s">&#34;/user/1192&#34;</span>
+
+        <span class="k">val</span> <span class="py">target</span> <span class="p">=</span> <span class="n">UserController</span><span class="p">()</span>
+        <span class="k">val</span> <span class="py">mvc</span> <span class="p">=</span> <span class="n">MockMvcBuilders</span><span class="p">.</span><span class="n">standaloneSetup</span><span class="p">(</span><span class="n">target</span><span class="p">).</span><span class="n">build</span><span class="p">()</span>
+        <span class="k">val</span> <span class="py">mvcResult</span> <span class="p">=</span> <span class="n">mvc</span><span class="p">.</span><span class="n">perform</span><span class="p">(</span><span class="n">MockMvcRequestBuilders</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="n">path</span><span class="p">)).</span><span class="n">andReturn</span><span class="p">()</span>
+
+        <span class="n">WireMock</span><span class="p">.</span><span class="n">stubFor</span><span class="p">(</span><span class="n">WireMock</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="n">WireMock</span><span class="p">.</span><span class="n">urlEqualTo</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+                <span class="p">.</span><span class="n">willReturn</span><span class="p">(</span><span class="n">WireMock</span><span class="p">.</span><span class="n">aResponse</span><span class="p">()</span>
+                        <span class="p">.</span><span class="n">withStatus</span><span class="p">(</span><span class="n">mvcResult</span><span class="p">.</span><span class="n">response</span><span class="p">.</span><span class="n">status</span><span class="p">)</span>
+                        <span class="p">.</span><span class="n">withHeader</span><span class="p">(</span><span class="s">&#34;Content-Type&#34;</span><span class="p">,</span> <span class="n">mvcResult</span><span class="p">.</span><span class="n">response</span><span class="p">.</span><span class="n">getHeader</span><span class="p">(</span><span class="s">&#34;Content-Type&#34;</span><span class="p">))</span>
+                        <span class="p">.</span><span class="n">withBody</span><span class="p">(</span><span class="n">mvcResult</span><span class="p">.</span><span class="n">response</span><span class="p">.</span><span class="n">contentAsString</span><span class="p">)))</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>**@RunWith(PactRunner::class)**／テスト実行クラスにPactRunnerクラスを指定</li>
+<li>**@Provider("provider_user_client")**／Pactファイルから参照するProvider名称を指定</li>
+<li>**@PactFolder("pacts")**／Pactファイルの保存ディレクトリを指定</li>
+<li>**private val port = 8080**／PactRunnerクラスはテスト実行時にポートをポーリングし実行したリクエストとレスポンスを監視します。このコードでポーリングするポートを指定します。</li>
+<li>**@State("fetch user by id 1192")**／Pactファイルにあるinteractionsの１つのprovider_stateを指定しています。このメソッドのスコープ内でAPIのリクエストを実行しレスポンスをモック化し定義したAPIの振る舞いを再現することでAPI定義と一致しているか検証が行われます。（ポーリングの仕組みがこのリクエストとレスポンスを検証します）</li>
+</ul>
+
+<p>Consumerが定義したPactファイルをProviderがリクエストとレスポンスをモック化してAPI定義を満たしているか検証します。今回はPactファイルにあるinteractionsが１つのみでしたが複数ある場合はProviderのテストでも複数の<strong>@State</strong>を作り検証します。<br/>
+このようにConsumerとProviderの両者で共通の定義を不足なく検証を行うことができます。</p>
+
+<h2 id="まとめ">まとめ</h2>
+
+<p>２つの異なる言語のmicroservice間のCDCテストをPactの仕組みを使いテストを行いました。ConsumerとProviderで最新の定義ファイルを共有することでデプロイ時などにテストを走らせることでmicroservice間の連携エラーになることを防げます。<br/>
+今回は定義ファイルをファイルシステムで参照しましたがgithubにファイルをプッシュし参照する方法やbrokerと呼ばれるPactファイルの中継地点を介する方法などPactファイルを参照する様々な仕組みがあります。</p>
+
+<h2 id="ソースを公開しています">ソースを公開しています</h2>
+
+<div class="github-card" data-user="nsoushi" data-repo="cdc-test-sample" data-width="400" data-height="" data-theme="default"></div>
+
+<h2 id="関連エントリ">関連エントリ</h2>
+
+<p><a href="https://blog.soushi.me/entry/2017/02/05/005941">Pact Broker DockerコンテナをつかってPact Broker環境を構築してみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/e2e/">E2E</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/golang/">golang</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/test/">Test</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/cdc/">CDC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/pact/">Pact</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

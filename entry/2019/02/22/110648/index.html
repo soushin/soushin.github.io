@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Kotlin MultiplatformサポートのGoogle Analyticsライブラリ「Measurer」をつくった - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="年始から個人的に大流行のKotlin Multiplatform。開発が楽しい。BFF Server触るエンジニアとネイティブエンジニアの距離感">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Kotlin MultiplatformサポートのGoogle Analyticsライブラリ「Measurer」をつくった</h1>
+    <div class="post-meta">2019.2.22</div>
+  </header>
+  <div class="post-content">
+
+<p>年始から個人的に大流行のKotlin Multiplatform。開発が楽しい。BFF Server触るエンジニアとネイティブエンジニアの距離感が非常に近くなる。「いや、チームとして当たり前でしょ」みたいなツッコミはあるだろうけど、新しい技術を軸にエンジニア達が「あーだこーだ」言ってる楽しい時間がKotlin Multiplatformでは職域が違うエンジニアが議論することで更に熱が加速する現象を目の当たりにしてます。</p>
+
+<h2 id="モチベーション">モチベーション</h2>
+
+<p>私はBFF Serverのほうを主に開発していましたが、プラットフォーム横断で共通するロジックをcommonモジュールにつくった辺りからKotlin Multiplatformサポートのライブラリの開発欲が湧いてきました。</p>
+
+<p>当時ですと既存していた２つのライブラリに着目しました。</p>
+
+<p><div class="github-card" data-user="netguru" data-repo="Kissme" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p><div class="github-card" data-user="konform-kt" data-repo="konform" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>Kissmeはセキュアストレージの扱いをマルチプラットフォーム化できて、KonformはValidationのユーティリティなライブラリです。また社内からも自作ライブラリが飛び出していたりと活発な流れを感じていました。</p>
+
+<p>どのライブラリも「プラットフォーム横断で共通するロジック」であればKotlin Multiplatformにするコンセプトがあり、私も何か作りたいなーと感じていました。同僚の<a href="https://twitter.com/_a_akira">@AAkira</a>からGoogle Analyticsのログ送信部分をライブラリするのはどうだろうか、という話をしたのをきっかけにGoogle Analyticsライブラリを作るモチベーションが高まりました。</p>
+
+<h2 id="measurer">Measurer</h2>
+
+<p>そして開発をしたのがMeasurerです。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="measurer" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>Googleは<a href="https://developers.google.com/analytics/devguides/collection/protocol/v1/">Measurement Protocol</a>というHTTPリクエストのプロトコルを設計しています。このプロトコルをつかえばHTTP/1.1でGoogle Analyticsへログが送信できます。ライブラリはMeasurement Protocolに準拠して開発を行いました。</p>
+
+<p>2019/2時点で公開されているパラメータとヒットタイプの全てをサポートしています。また１件ずつ送信するのではなくバッチリクエストにも対応していて２０件までは一度に送信できます。</p>
+
+<p>今のところJVMとAndroidをサポートしていてiOSとJSは順次対応していく予定です。</p>
+
+<h2 id="使い方">使い方</h2>
+
+<p>Readmeに記載しているので簡単に使い方を紹介します。</p>
+
+<p>Measurerをプロジェクトに依存させたらcommon moduleに送信部分を実装します。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">object</span> <span class="nc">GoogleAnalytics</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">httpClient</span> <span class="p">=</span> <span class="n">SampleHttpClient</span><span class="p">(</span><span class="n">SampleHttpClientConfig</span><span class="p">.</span><span class="n">httpClient</span><span class="p">,</span> <span class="n">SampleNapierLogger</span><span class="p">())</span>
+
+    <span class="k">suspend</span> <span class="k">fun</span> <span class="nf">pageTracking</span><span class="p">(</span><span class="n">ua</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">val</span> <span class="py">mp</span> <span class="p">=</span> <span class="n">MeasurementProtocol</span>
+            <span class="p">.</span><span class="n">Builder</span><span class="p">(</span>
+                <span class="n">trackingId</span> <span class="p">=</span> <span class="n">ua</span><span class="p">,</span>
+                <span class="n">httpClient</span> <span class="p">=</span> <span class="n">httpClient</span>
+            <span class="p">).</span><span class="n">build</span><span class="p">()</span>
+
+        <span class="n">mp</span><span class="p">.</span><span class="n">also</span> <span class="p">{</span> <span class="n">ga</span> <span class="p">-&gt;</span>
+            <span class="n">ga</span><span class="p">.</span><span class="n">pageView</span><span class="p">(</span><span class="s">&#34;mydemo.com&#34;</span><span class="p">,</span> <span class="s">&#34;/home&#34;</span><span class="p">).</span><span class="n">apply</span> <span class="p">{</span>
+                <span class="n">clientId</span> <span class="p">=</span> <span class="s">&#34;555&#34;</span>
+                <span class="n">documentTitle</span> <span class="p">=</span> <span class="s">&#34;homgepage&#34;</span>
+
+                <span class="n">contentGroup</span> <span class="p">=</span> <span class="n">ContentGroup</span><span class="p">(</span><span class="n">index</span> <span class="p">=</span> <span class="m">1</span><span class="p">).</span><span class="n">apply</span> <span class="p">{</span>
+                    <span class="n">value</span> <span class="p">=</span> <span class="s">&#34;news/sports&#34;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="n">ga</span><span class="p">.</span><span class="n">pageView</span><span class="p">(</span><span class="s">&#34;mydemo.com&#34;</span><span class="p">,</span> <span class="s">&#34;/home&#34;</span><span class="p">).</span><span class="n">apply</span> <span class="p">{</span>
+                <span class="n">clientId</span> <span class="p">=</span> <span class="s">&#34;555&#34;</span>
+                <span class="n">documentTitle</span> <span class="p">=</span> <span class="s">&#34;homgepage&#34;</span>
+
+                <span class="n">contentGroup</span> <span class="p">=</span> <span class="n">ContentGroup</span><span class="p">(</span><span class="n">index</span> <span class="p">=</span> <span class="m">2</span><span class="p">).</span><span class="n">apply</span> <span class="p">{</span>
+                    <span class="n">value</span> <span class="p">=</span> <span class="s">&#34;news/finance&#34;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}.</span><span class="n">send</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のGoogleAnalyticsをJVMとAndroidのプラットフォームから呼び出すだけです。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">GoogleAnalytics</span><span class="p">.</span><span class="n">pageTracking</span><span class="p">(</span><span class="n">trackingId</span><span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Google Analyticsの送信部分がワンソースで管理され各プラットフォームでマルチユースできています。</p>
+
+<p>ライブラリ標準でHTTPクライアントは<a href="https://ktor.io/clients/http-client.html">Ktor</a>、ログ出力は<a href="https://github.com/AAkira/Napier">Napier</a>を使っています。この部分はプロジェクトで使いたいライブラリに置き換えられるようにしています。</p>
+
+<p>「ライブラリに置き換えられるようにしている」としましたが、HTTPクライアントやログのライブラリは2019/2時点ではKtorとNapierの選択肢しかないです。Kotlin Multiplatform界隈のライブラリはそこまで出てきてない状況をお分かりいただけると思います。</p>
+
+<h2 id="まとめ">まとめ</h2>
+
+<ul>
+<li>Kotlin MultiplatformサポートのGoogle AnalyticsライブラリであるMeasurerの紹介でした。</li>
+<li>まだiOS、JSのサポートが残っているので引き続きやっていきなモチベーションです。</li>
+<li>Kotlin Multiplatformは楽しい。Kotlin言語を軸にしたAndroid, iOSの両方ができるエンジニアは楽しめる領域です。</li>
+<li>私はiOS, JS頑張らないとなーと伸ばすべき領域を感じました。足りないスキルセットを見つめ直す機会が体験できるのもKotlin Multiplatformの良きポイントですね。</li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">Kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/native/">Kotlin/Native</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin-multiplatform/">Kotlin Multiplatform</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/google-analytics/">Google Analytics</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/measurement-protocol/">Measurement Protocol</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Terraform 0.9がリリース。0.8.xから0.9.xのStateマイグレーション手順をまとめました。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="HashiCorpからTerraform 0.9がリリースされました。「よし、最新バージョンにあげよう。」と作業をはじめましたがremoteコ">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Terraform 0.9がリリース。0.8.xから0.9.xのStateマイグレーション手順をまとめました。</h1>
+    <div class="post-meta">2017.3.24</div>
+  </header>
+  <div class="post-content">
+
+<p>HashiCorpから<a href="https://www.hashicorp.com/blog/terraform-0-9/">Terraform 0.9がリリースされました</a>。「よし、最新バージョンにあげよう。」と作業をはじめましたが<code>remote</code>コマンドが使えない。どうやら0.9からは<code>remote</code>コマンドが廃止されたようです。このエントリではTerraform 0.9にバージョンアップをして0.8以前のterraform stateをマイグレーションする方法をまとめます。</p>
+
+<h3 id="remoteコマンドの廃止">remoteコマンドの廃止</h3>
+
+<p><code>remote</code>コマンドが廃止になりました。代わりに<code>backends</code>を利用してS3などのremoteにあるtfstateファイルの管理を行います。</p>
+
+<p>remote stateがbackendsに置き換わる過程は次のPull Requestから確認できます。</p>
+
+<p><div class="github-card" data-user="hashicorp/terraform/pull" data-repo="11286" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>0.8以前を利用している場合はbackendを有効にしたtfstateファイルを用意する必要があります。次からは0.8.xまでのリソース状態を保持したまま新機能のbackendを有効にしたtfstateファイルへのマイグレーション手順についてまとめていきます。</p>
+
+<h3 id="マイグレーション手順">マイグレーション手順</h3>
+
+<p>次の環境のマイグレーション手順になります。</p>
+
+<ul>
+<li><code>0.8.8</code>から<code>0.9.1</code>へのバージョンアップする</li>
+<li>これまではremoteに<code>S3</code>をつかっていて、これからも<code>S3</code>を利用する</li>
+<li>ロールバックできるように、これまでのtfstateファイルは保持して新しいtfstateファイルを用意する</li>
+<li><code>0.8.8</code>と<code>0.9.1</code>のterraformを使うので<a href="https://github.com/kamatama41/tfenv">tfenv</a>を使ってterraformを切り替えながらマイグレーションを行う</li>
+</ul>
+
+<h4 id="１-tfファイルにterraformセクションを追加してbackends-を設定する">１：tfファイルにterraformセクションを追加してbackends を設定する</h4>
+
+<p>次のように設定しました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">terraform</span> <span class="p">{</span>
+  <span class="err">backend</span> <span class="nt">&#34;s3&#34;</span> <span class="p">{</span>
+    <span class="err">bucket</span> <span class="err">=</span> <span class="nt">&#34;tfstate-bucket&#34;</span> <span class="err">//</span> <span class="err">自身のbucket名を設定します</span>
+  <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>AWSの<code>access_key</code>, <code>secret_key</code>, <code>region</code>はそれぞれ環境変数の<code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>AWS_DEFAULT_REGION</code>を設定しているため省略しています。</li>
+<li>S3の<code>key</code>は必須ですが省略しています。後述する<code>init</code>コマンドの<code>-backend-config</code> オプションで開発環境や本番環境ごとにS3の<code>key</code>を分けているためterraformセクションでは省略します。</li>
+</ul>
+
+<p>※ その他<code>bucket</code>などのS3の変数は<a href="https://www.terraform.io/docs/backends/types/s3.html">こちら</a>にまとまっています。</p>
+
+<h4 id="２-0-8-8のterraformをつかいremote-configをしてtfstateファイルをローカルに同期する">２：0.8.8のterraformをつかいremote configをしてtfstateファイルをローカルに同期する</h4>
+
+<p>tfenvでインストールしたバージョンリスト</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">terraform/dev ➤ tfenv list
+0.9.1
+0.8.8</pre></td></tr></table>
+</div>
+</div>
+<p>0.8.8を使いremote configする</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">terraform/dev ➤ tfenv use 0.8.8
+Terraform v0.8.8
+
+terraform/dev ➤ terraform remote config -backend=S3 -backend-config=&#34;bucket=tfstate-bucket&#34; -backend-config=&#34;key=dev&#34;
+Initialized blank state with remote state enabled!
+Remote state configured and pulled.</pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>S3のkeyは開発環境の<code>dev</code>としています</li>
+</ul>
+
+<h4 id="３-0-9-1のterraformをつかいinitをしてtfstateファイルをマイグレーションする">３：0.9.1のterraformをつかいinitをしてtfstateファイルをマイグレーションする</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">terraform/dev ➤ tfenv use 0.9.1
+Terraform v0.9.1
+
+terraform/dev ➤ terraform init -backend-config &#34;key=dev&#34;
+Initializing the backend...
+New backend configuration detected with legacy remote state!
+・・・省略・・・</pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>最初のaskで<code>remote state</code>から変更するか？と聞かれるので <code>yes</code>を入力します。これをすることでtfstateファイル内の<code>remote</code>が<code>backend</code>に置き換わります。</li>
+<li>次のaskでremoteのstateをローカルのstateにコピーする？と聞かれるのでローカルのstateを保持したければ<code>no</code>を入力、コピーするのであれば<code>yes</code>を入力します。すでにローカルにstateがあるので<code>no</code>と入力。</li>
+</ul>
+
+<h4 id="４-マイグレーションしたtfstateファイルをs3にアップロードする">４：マイグレーションしたtfstateファイルをS3にアップロードする</h4>
+
+<p>マイグレーション後に0.8.8にロールバックするかもしれないので、0.8.8で運用したtfstateファイルを残したいです。そのため新しいS3のkeyを<code>dev0.9</code>と決めマイグレーションしたtfstateファイルをS3にアップロードします。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">terraform/dev ➤ aws s3 cp ./.terraform/terraform.tfstate s3://tfstate-bucket/dev0.9</pre></td></tr></table>
+</div>
+</div>
+<p>こうすることで開発中のtfstateファイルに影響が及ぶことはなくマイグレーションのロールバックができる状態にします。</p>
+
+<h4 id="４-最後にplanを実行して新しいtfstateファイルにリソースの差分がないか確認する">４：最後にplanを実行して新しいtfstateファイルにリソースの差分がないか確認する</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">terraform/dev ➤ rm -rf ./.terraform
+
+terraform/dev ➤ tfenv use 0.9.1
+Terraform v0.9.1
+
+terraform/dev ➤ terraform init -backend-config &#34;key=dev0.9&#34;
+Initializing the backend...
+・・・省略・・・
+
+terraform/dev ➤ terraform plan --refresh=false
+No changes. Infrastructure is up-to-date.
+
+This means that Terraform did not detect any differences between your
+configuration and real physical resources that exist. As a result, Terraform
+doesn&#39;t need to do anything.</pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>0.9.1からは<code>remote config</code>を使わず<code>init</code>を使いtfstateファイルをローカルに同期します</li>
+</ul>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>0.9.1へtfstateファイルのマイグレーション手順をまとめました。</li>
+<li>0.8.xまでは<code>remote config</code>を利用していましたが、0.9.1からは<code>init</code>を利用します。</li>
+<li>backendではtfstateのリソース情報がメモリ上に管理されます。0.8.xまではリソース状態がtfstateファイルを開けば確認できましたがbackendでは確認できません。リソース状態の管理がセキュアになりました。</li>
+<li>backendは<code>STATE LOCKING</code>を機能が有効になります。複数人でapplyを実行した場合にstateをロックし競合を防ぎます。CIなどで<code>apply</code>が同時に稼働しても安心です。</li>
+<li>もし0.7.xからのマイグレーションの場合はリソース状態に差分が生まれているのでリソース状態を0.8系に合わせる必要があります。</li>
+</ul>
+
+<h3 id="参考url">参考URL</h3>
+
+<ul>
+<li><a href="https://www.hashicorp.com/blog/terraform-0-9/">Terraform 0.9 | HashiCorp</a></li>
+<li><a href="https://github.com/hashicorp/terraform/pull/11286">core: introduce "backends" to replace "remote state" (superset) and fix UX by mitchellh · Pull Request #11286 · hashicorp/terraform · GitHub</a></li>
+<li><a href="https://www.terraform.io/docs/backends/legacy-0-8.html">Backends: Migrating From 0.8.x and Earlier - Terraform by HashiCorp</a></li>
+<li><a href="https://www.terraform.io/docs/backends/index.html">Backends - Terraform by HashiCorp</a></li>
+<li><a href="https://www.terraform.io/docs/state/locking.html">State: Locking - Terraform by HashiCorp</a></li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/terraform/">Terraform</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

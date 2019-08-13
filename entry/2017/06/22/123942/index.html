@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Spring5.0 &#43; KotlinのRouterFunctionのテストはどうすればよいか？ 試してみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="引き続きSpring5.0（Spring Boot 2.0） &#43; KotlinのWebアプリケーションを試している。今回はRouterFunctionをつ">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Spring5.0 &#43; KotlinのRouterFunctionのテストはどうすればよいか？ 試してみた</h1>
+    <div class="post-meta">2017.6.22</div>
+  </header>
+  <div class="post-content">
+
+<p>引き続きSpring5.0（Spring Boot 2.0） + KotlinのWebアプリケーションを試している。今回は<code>RouterFunction</code>をつかってHTTPルーティングを定義したときにテストコードはどう書くのか？気になったのでまとめてみた。</p>
+
+<h3 id="router-function">Router Function</h3>
+
+<p>Router FunctionはSpring5.0から導入されるものでアノテーションベースのHTTPサービスの定義ではなく <code>RouterFunctionDsl</code>クラスを実装していくことになる。エンドポイントのURLとHTTP Handlerをマッピングを行うことでルーティングが定義できる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Configuration</span>
+<span class="k">class</span> <span class="nc">TaskRoutes</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">taskHandler</span><span class="p">:</span> <span class="n">TaskHandler</span><span class="p">,</span> <span class="k">private</span> <span class="k">val</span> <span class="py">exceptionFilter</span><span class="p">:</span> <span class="n">ExceptionFilter</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">@Bean</span>
+    <span class="k">fun</span> <span class="nf">taskRouter</span><span class="p">()</span> <span class="p">=</span> <span class="n">router</span> <span class="p">{</span>
+        <span class="p">(</span><span class="n">accept</span><span class="p">(</span><span class="n">APPLICATION_JSON</span><span class="p">)</span> <span class="n">and</span> <span class="s">&#34;/api&#34;</span><span class="p">).</span><span class="n">nest</span> <span class="p">{</span>
+            <span class="s">&#34;/task&#34;</span><span class="p">.</span><span class="n">nest</span> <span class="p">{</span>
+                <span class="n">POST</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">create</span><span class="p">)</span>
+                <span class="n">GET</span><span class="p">(</span><span class="s">&#34;/{id}&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">fetchByTaskId</span><span class="p">)</span>
+                <span class="n">PUT</span><span class="p">(</span><span class="s">&#34;/{id}&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">updateByTaskId</span><span class="p">)</span>
+                <span class="n">DELETE</span><span class="p">(</span><span class="s">&#34;/{id}&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">deleteByTaskId</span><span class="p">)</span>
+                <span class="n">PUT</span><span class="p">(</span><span class="s">&#34;/{id}/finish&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">finishByTaskId</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="s">&#34;/tasks&#34;</span><span class="p">.</span><span class="n">nest</span> <span class="p">{</span>
+                <span class="n">GET</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">fetchAll</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}.</span><span class="n">filter</span><span class="p">(</span><span class="n">exceptionFilter</span><span class="p">())</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>次からはRouter Functionで定義されたHTTPサービスのテストコードを書いていきたい。</p>
+
+<h3 id="mockmvcではなくwebtestclient-をつかう">MockMvcではなくWebTestClient をつかう</h3>
+
+<p>SpringのコントローラテストコードはMockMvcを用いて書くことが多かったがRouter Functionでは <code>WebTestClient</code>をつかう。<br/>
+上記の <code>taskRouter</code>はタスクエンティティを扱うコントローラでありルーティングも固有のBeanで定義している。また <code>TaskHandler</code>はDBアクセスやgRPC サーバなどロジックが絡むのでモック化していきたい。そのような場合にはWebTestClientに用意されている <code>bindToRouterFunction</code>を定義する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@RunWith</span><span class="p">(</span><span class="n">SpringRunner</span><span class="o">::</span><span class="k">class</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">TaskRoutesTest</span> <span class="p">{</span>
+    <span class="k">lateinit</span> <span class="k">var</span> <span class="py">client</span> <span class="p">:</span> <span class="n">WebTestClient</span>
+    <span class="k">lateinit</span> <span class="k">var</span> <span class="py">taskHandler</span><span class="p">:</span> <span class="n">TaskHandler</span>
+    <span class="k">lateinit</span> <span class="k">var</span> <span class="py">exceptionFilter</span><span class="p">:</span> <span class="n">ExceptionFilter</span>
+
+    <span class="k">val</span> <span class="py">mapper</span> <span class="p">=</span> <span class="n">ObjectMapper</span><span class="p">().</span><span class="n">registerModule</span><span class="p">(</span><span class="n">KotlinModule</span><span class="p">())</span>
+
+    <span class="n">@Before</span>
+    <span class="k">fun</span> <span class="nf">before</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">taskHandler</span> <span class="p">=</span> <span class="n">mock</span><span class="p">(</span><span class="n">TaskHandler</span><span class="o">::</span><span class="k">class</span><span class="p">)</span>
+        <span class="n">exceptionFilter</span> <span class="p">=</span> <span class="n">ExceptionFilter</span><span class="p">()</span>
+
+        <span class="k">val</span> <span class="py">taskRoutes</span> <span class="p">=</span> <span class="n">TaskRoutes</span><span class="p">(</span><span class="n">taskHandler</span><span class="p">,</span> <span class="n">exceptionFilter</span><span class="p">)</span>
+
+        <span class="n">client</span> <span class="p">=</span> <span class="n">WebTestClient</span><span class="p">.</span><span class="n">bindToRouterFunction</span><span class="p">(</span><span class="n">taskRoutes</span><span class="p">.</span><span class="n">taskRouter</span><span class="p">()).</span><span class="n">build</span><span class="p">()</span>
+    <span class="p">}</span>
+
+<span class="err">・・・</span>
+
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li><code>TaskHandler</code>をモック化する（taskHandler変数を定義）</li>
+<li>taskHandler変数とexceptionFilter変数から <code>TaskRoutes</code>のコンストラクタを呼び出しRoutesオブジェクトを生成する（taskRoutes変数を定義）</li>
+<li>taskRoutes変数を <code>bindToRouterFunction</code>に渡しWebTestClientオブジェクトを生成する</li>
+</ul>
+
+<p>以上をbeforeに定義してテスト実行の準備を整える</p>
+
+<h3 id="testを定義する">@Testを定義する</h3>
+
+<p>タスクを１件取得するエンドポイントURLのテストコードは次のようになった。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Test</span>
+<span class="k">fun</span> <span class="nf">`GET Task`</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="c1">// mock
+</span><span class="c1"></span>    <span class="n">`when`</span><span class="p">(</span><span class="n">taskHandler</span><span class="p">.</span><span class="n">fetchByTaskId</span><span class="p">(</span><span class="n">any</span><span class="p">())).</span><span class="n">thenReturn</span><span class="p">(</span><span class="n">ok</span><span class="p">().</span><span class="n">json</span><span class="p">().</span><span class="n">body</span><span class="p">(</span><span class="n">Mono</span><span class="p">.</span><span class="n">just</span><span class="p">(</span><span class="n">mockModel</span><span class="p">)))</span>
+
+    <span class="n">client</span><span class="p">.</span><span class="k">get</span><span class="p">().</span><span class="n">uri</span><span class="p">(</span><span class="s">&#34;/api/task/1&#34;</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">accept</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="n">APPLICATION_JSON_UTF8</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">exchange</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">expectStatus</span><span class="p">().</span><span class="n">isOk</span>
+            <span class="p">.</span><span class="n">expectBody</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">consumeAsStringWith</span> <span class="p">{</span>
+                <span class="k">val</span> <span class="py">actual</span> <span class="p">=</span> <span class="n">mapper</span><span class="p">.</span><span class="n">readValue</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">TaskModel</span><span class="p">&gt;(</span><span class="n">it</span><span class="p">,</span> <span class="n">TaskModel</span><span class="o">::</span><span class="k">class</span><span class="p">)</span>
+                <span class="k">actual</span><span class="p">.</span><span class="n">id</span> <span class="n">shouldBe</span> <span class="m">1L</span>
+                <span class="k">actual</span><span class="p">.</span><span class="n">title</span> <span class="n">shouldBe</span> <span class="s">&#34;task title&#34;</span>
+                <span class="k">actual</span><span class="p">.</span><span class="n">createdAt</span> <span class="n">shouldBe</span> <span class="s">&#34;2017-06-13T16:22:52Z&#34;</span>
+                <span class="k">actual</span><span class="p">.</span><span class="n">updatedAt</span> <span class="n">shouldBe</span> <span class="s">&#34;2017-06-13T16:22:52Z&#34;</span>
+            <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li><code>taskHandler.fetchByTaskId</code>をモック化して返すオブジェクトを定義している</li>
+<li><code>exchange()</code> で<code>ResponseSpec</code>オブジェクトが返ってくるのでHTTPステータスやレスポンスボディを取得しアサーションする</li>
+</ul>
+
+<h3 id="spring-rest-docsは使えるの">Spring REST Docsは使えるの？</h3>
+
+<p>Test DrivenにAPIドキュメントを生成する<code>Spring Rest Docs</code>はMockMVCベースなので今のところは対応していない。</p>
+
+<p><div class="github-card" data-user="spring-projects" data-repo="spring-restdocs" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>対応はしていないが対応はする予定である。issueから確認できるがREST Docs 2.0で対応予定のようなので期待したい。</p>
+
+<p><a href="https://github.com/spring-projects/spring-restdocs/issues/384">Add support for using WebTestClient to document an API · Issue #384 · spring-projects/spring-restdocs · GitHub</a></p>
+
+<p>同じくAPIドキュメントをアノテーションベースで生成できる便利な<a href="http://springfox.github.io/springfox/">Spring Fox</a>もサポート予定であることをissueから観測した。</p>
+
+<p><a href="https://github.com/springfox/springfox/issues/1773">Spring 5 support · Issue #1773 · springfox/springfox · GitHub</a></p>
+
+<p>個人的にはエンドポイント設計時からアノテーションを付与すればAPI仕様書がつくれるSpring Foxのほうが好みである。だがアノテーションベースで定義する手法が、HTTPルーティングをアノテーションベースで定義しないRouter Functionにどのようにマッピングされるのだろうか。サポート結果が楽しみである。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>RouterFunctionをつかった場合でもテストコードはモックも交えることができるし問題無さそうで導入に前向きになれた。</li>
+<li>APIドキュメントのライブラリのサポート体制状況も観測できたので、Spring5.0のリリースが待ち遠しい。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>コードを書きながら調べたのでgithubと合わせて確認いただけます。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>テストコードはこちらです。
+<a href="https://github.com/nsoushi/spring5-kotlin-application/blob/master/api/src/test/kotlin/app/web/routes/TaskRoutesTest.kt">spring5-kotlin-application/TaskRoutesTest.kt at master · nsoushi/spring5-kotlin-application · GitHub</a></p>
+
+<h3 id="参考にしたエントリ">参考にしたエントリ</h3>
+
+<ul>
+<li><a href="https://spring.io/blog/2017/03/15/spring-tips-the-spring-web-flux-reactive-client">Spring Tips: the Spring Web Flux Reactive Client</a></li>
+<li><a href="https://bclozel.github.io/webflux-workshop/">Spring WebFlux Workshop</a></li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/spring-boot/">Spring Boot</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/test/">Test</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/router-function/">Router Function</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

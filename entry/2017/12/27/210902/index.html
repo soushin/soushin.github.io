@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>SpringBoot 2.0.0でRouterFunctionのエラーハンドリングをWebExceptionHandlerで行う - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="SpringBoot 2.0.0からサポートされるRouterFunctionのエラーハンドリングをまとめていきたい。 RouterFunctionは従来のアノテ">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">SpringBoot 2.0.0でRouterFunctionのエラーハンドリングをWebExceptionHandlerで行う</h1>
+    <div class="post-meta">2017.12.27</div>
+  </header>
+  <div class="post-content">
+
+<p>SpringBoot 2.0.0からサポートされるRouterFunctionのエラーハンドリングをまとめていきたい。</p>
+
+<p>RouterFunctionは従来のアノテーションベースでAPIを作る形ではなくDSLベースでルーティングを定義していく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Configuration</span>
+<span class="k">class</span> <span class="nc">TaskRoutes</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">taskHandler</span><span class="p">:</span> <span class="n">TaskHandler</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">@Bean</span>
+    <span class="k">fun</span> <span class="nf">taskRouter</span><span class="p">()</span> <span class="p">=</span> <span class="n">router</span> <span class="p">{</span>
+        <span class="p">(</span><span class="n">accept</span><span class="p">(</span><span class="n">APPLICATION_JSON</span><span class="p">)</span> <span class="n">and</span> <span class="s">&#34;/api&#34;</span><span class="p">).</span><span class="n">nest</span> <span class="p">{</span>
+            <span class="s">&#34;/task&#34;</span><span class="p">.</span><span class="n">nest</span> <span class="p">{</span>
+                <span class="n">POST</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">create</span><span class="p">)</span>
+                <span class="n">GET</span><span class="p">(</span><span class="s">&#34;/{id}&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">fetchByTaskId</span><span class="p">)</span>
+                <span class="n">PUT</span><span class="p">(</span><span class="s">&#34;/{id}&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">updateByTaskId</span><span class="p">)</span>
+                <span class="n">DELETE</span><span class="p">(</span><span class="s">&#34;/{id}&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">deleteByTaskId</span><span class="p">)</span>
+                <span class="n">PUT</span><span class="p">(</span><span class="s">&#34;/{id}/finish&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">finishByTaskId</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="s">&#34;/tasks&#34;</span><span class="p">.</span><span class="n">nest</span> <span class="p">{</span>
+                <span class="n">GET</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="n">taskHandler</span><span class="o">::</span><span class="n">fetchAll</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>TaskHandlerクラスは各エンドポイントを処理するが処理中に発生したエラーを共通的にハンドリングする場合にはどうすればよいか？
+そんなときは <code>WebExceptionHandler</code>を実装すれば良い。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Component</span>
+<span class="k">class</span> <span class="nc">ApiErrorHandler</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">objectMapper</span><span class="p">:</span> <span class="n">ObjectMapper</span><span class="p">)</span> <span class="p">:</span> <span class="n">WebExceptionHandler</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">logger</span> <span class="p">=</span> <span class="n">KotlinLogging</span><span class="p">.</span><span class="n">logger</span> <span class="p">{}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">handle</span><span class="p">(</span><span class="n">exchange</span><span class="p">:</span> <span class="n">ServerWebExchange</span><span class="p">,</span> <span class="n">ex</span><span class="p">:</span> <span class="n">Throwable</span><span class="p">):</span> <span class="n">Mono</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Void</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">handle</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span>
+                <span class="p">.</span><span class="n">flatMap</span> <span class="p">{</span>
+                    <span class="n">it</span><span class="p">.</span><span class="n">writeTo</span><span class="p">(</span><span class="n">exchange</span><span class="p">,</span> <span class="n">HandlerStrategiesResponseContext</span><span class="p">(</span><span class="n">HandlerStrategies</span><span class="p">.</span><span class="n">withDefaults</span><span class="p">()))</span>
+                <span class="p">}</span>
+                <span class="p">.</span><span class="n">flatMap</span> <span class="p">{</span>
+                    <span class="n">Mono</span><span class="p">.</span><span class="n">empty</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Void</span><span class="p">&gt;()</span>
+                <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">fun</span> <span class="nf">handle</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">Throwable</span><span class="p">):</span> <span class="n">Mono</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ServerResponse</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">when</span> <span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">is</span> <span class="n">SystemException</span> <span class="p">-&gt;</span> <span class="p">{</span>
+                <span class="s">&#34;api error&#34;</span><span class="p">.</span><span class="n">let</span> <span class="p">{</span>
+                    <span class="n">logger</span><span class="p">.</span><span class="n">error</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="p">{</span> <span class="n">t</span><span class="p">.</span><span class="n">message</span> <span class="o">?:</span> <span class="n">it</span> <span class="p">}</span>
+                    <span class="n">createResponse</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">status</span><span class="p">,</span> <span class="n">t</span><span class="p">.</span><span class="n">message</span> <span class="o">?:</span> <span class="n">it</span><span class="p">)</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="k">is</span> <span class="n">DecodingException</span> <span class="p">-&gt;</span> <span class="p">{</span>
+                <span class="s">&#34;invalid request&#34;</span><span class="p">.</span><span class="n">let</span> <span class="p">{</span>
+                    <span class="n">logger</span><span class="p">.</span><span class="n">warn</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="p">{</span> <span class="n">t</span><span class="p">.</span><span class="n">message</span> <span class="o">?:</span> <span class="n">it</span> <span class="p">}</span>
+                    <span class="n">createResponse</span><span class="p">(</span><span class="n">HttpStatus</span><span class="p">.</span><span class="n">BAD_REQUEST</span><span class="p">,</span> <span class="n">it</span><span class="p">)</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="k">else</span> <span class="p">-&gt;</span> <span class="p">{</span>
+                <span class="n">logger</span><span class="p">.</span><span class="n">error</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="p">{</span> <span class="s">&#34;Unknown Exception: %s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">message</span> <span class="o">?:</span> <span class="s">&#34;unknown error&#34;</span><span class="p">)</span> <span class="p">}</span>
+                <span class="n">createResponse</span><span class="p">(</span><span class="n">HttpStatus</span><span class="p">.</span><span class="n">INTERNAL_SERVER_ERROR</span><span class="p">,</span> <span class="n">t</span><span class="p">.</span><span class="n">message</span> <span class="o">?:</span> <span class="s">&#34;internal server error&#34;</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">private</span> <span class="k">fun</span> <span class="nf">createResponse</span><span class="p">(</span><span class="n">httpStatus</span><span class="p">:</span> <span class="n">HttpStatus</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">code</span><span class="p">:</span> <span class="n">String</span><span class="p">?</span> <span class="p">=</span> <span class="k">null</span><span class="p">):</span> <span class="n">Mono</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ServerResponse</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">Error</span><span class="p">(</span><span class="n">objectMapper</span><span class="p">.</span><span class="n">writeValueAsString</span><span class="p">(</span><span class="n">listOf</span><span class="p">(</span><span class="n">ErrorItem</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="k">null</span><span class="p">)))).</span><span class="n">let</span> <span class="p">{</span>
+            <span class="n">ServerResponse</span><span class="p">.</span><span class="n">status</span><span class="p">(</span><span class="n">httpStatus</span><span class="p">).</span><span class="n">syncBody</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">private</span> <span class="k">class</span> <span class="nc">HandlerStrategiesResponseContext</span><span class="p">(</span><span class="k">val</span> <span class="py">strategies</span><span class="p">:</span> <span class="n">HandlerStrategies</span><span class="p">)</span> <span class="p">:</span> <span class="n">ServerResponse</span><span class="p">.</span><span class="n">Context</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">messageWriters</span><span class="p">():</span> <span class="n">List</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">HttpMessageWriter</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;*&gt;&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="n">strategies</span><span class="p">.</span><span class="n">messageWriters</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">viewResolvers</span><span class="p">():</span> <span class="n">List</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ViewResolver</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="n">strategies</span><span class="p">.</span><span class="n">viewResolvers</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>[WebExceptionHandler.handle]</code>の引数<code>ex</code>に例外クラスが渡ってくるので、メッセージとHTTPレスポンスを組み立てレスポンスBodyにセットしている。</p>
+
+<p>404エラーの場合のエラーハンドリングが正しくできていることを確認。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">curl -v -XGET http://localhost:8080/api/task/2
+Note: Unnecessary use of -X or --request, GET is already inferred.
+*   Trying ::1...
+* TCP_NODELAY set
+* Connected to localhost (::1) port 8080 (#0)
+&gt; GET /api/task/2 HTTP/1.1
+&gt; Host: localhost:8080
+&gt; User-Agent: curl/7.56.0
+&gt; Accept: */*
+&gt;
+&amp;lt; HTTP/1.1 404 Not Found
+&amp;lt; transfer-encoding: chunked
+&amp;lt; Content-Type: application/json;charset=UTF-8
+&amp;lt;
+* Connection #0 to host localhost left intact
+{&#34;message&#34;:&#34;task not found&#34;,&#34;errorCode&#34;:&#34;404&#34;,&#34;field&#34;:null}</pre></td></tr></table>
+</div>
+</div>
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>これまで<code>FilterFunction</code>でエラーハンドリングを行っていたが開発をする過程で間違っていることに気づいた。ただしくWebExceptionHandlerを利用する方法をアウトプットした。合わせて <a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/web-reactive.html#webflux-web-handler-api">Web on Reactive Stack</a> を参照してほしい。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>コードはgithubにあります。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>詳細なコードは次のリンクからどうぞ。
+ <a href="https://github.com/soushin/spring5-kotlin-application/blob/master/api/src/main/kotlin/app/web/handler/ApiErrorHandler.kt">spring5-kotlin-application/ApiErrorHandler.kt at master · soushin/spring5-kotlin-application · GitHub</a></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/spring-boot/">Spring Boot</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

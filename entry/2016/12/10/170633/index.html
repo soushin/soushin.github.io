@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>fluentd &#43; logstash_formatの難点をrecord_reformerで解決した話 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="「アプリケーションで出力したログをelasticsearchにインデックスするときにログ時間のフィールド名を@timestampにしたい。」">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">fluentd &#43; logstash_formatの難点をrecord_reformerで解決した話</h1>
+    <div class="post-meta">2016.12.10</div>
+  </header>
+  <div class="post-content">
+
+<p>「アプリケーションで出力したログをelasticsearchにインデックスするときにログ時間のフィールド名を@timestampにしたい。」<br/>
+こんなときにfluentdのlogstash_formatを使うと少々はまります。<br/>
+今回はそのハマりポイントと解決についてのお話です。</p>
+
+<h3 id="なぜログ時間のフィールド名を-timestampにしたいか">なぜログ時間のフィールド名を@timestampにしたいか</h3>
+
+<p>先々にkibanaでもログを取り込むことを考えていました。（kibanaではログ時間のTime Fieldの扱いが@timestampとなっています。）<br/>
+アプリケーションから出力されるフィールドはtimeのままで@timestampにしたくありません。<br/>
+logstash_formatを使えばtimeフィールドを@timestampに変換してくれますが難点があります。</p>
+
+<h3 id="logstash-formatを使わない理由">logstash_formatを使わない理由</h3>
+
+<p>logstash_formatはfluentdでsource化したログをlogstashのログ形式にフォーマットしてくれるプラグインです。例えば以下のログをfluentdでsource化してelasticsearchにインデックスするとインデックスは以下のようになります。</p>
+
+<h4 id="ログ">ログ</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span><span class="nt">&#34;time&#34;</span><span class="p">:</span><span class="s2">&#34;2016-12-06T10:43:10Z&#34;</span><span class="p">,</span><span class="nt">&#34;post_id&#34;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&#34;category_id&#34;</span><span class="p">:</span><span class="mi">200</span><span class="p">,</span><span class="nt">&#34;user_id&#34;</span><span class="p">:</span><span class="mi">123</span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="elasticsearchでindex確認">elasticsearchでindex確認</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">$</span> <span class="err">curl</span> <span class="err">-XGET</span> <span class="s2">&#34;http://localhost:9200/localhost.api-2016.12.06/logstash_action_log/AVjnaIabuvtAHVSVViec?pretty&#34;</span>
+<span class="p">{</span>
+  <span class="nt">&#34;_index&#34;</span> <span class="p">:</span> <span class="s2">&#34;localhost.api-2016.12.06&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;_type&#34;</span> <span class="p">:</span> <span class="s2">&#34;logstash_action_log&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;_id&#34;</span> <span class="p">:</span> <span class="s2">&#34;AVjnaIabuvtAHVSVViec&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;_version&#34;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">&#34;found&#34;</span> <span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+  <span class="nt">&#34;_source&#34;</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;post_id&#34;</span> <span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+    <span class="nt">&#34;category_id&#34;</span> <span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
+    <span class="nt">&#34;user_id&#34;</span> <span class="p">:</span> <span class="mi">123</span><span class="p">,</span>
+    <span class="nt">&#34;@timestamp&#34;</span> <span class="p">:</span> <span class="s2">&#34;2016-12-06T10:43:10+00:00&#34;</span>
+  <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>ここに１つの難点があります。logstash_formatを使うとアプリケーションログのtimeは@timestampに変換してくれます。（便利）<br/>
+だけど、インデックス名がlocalhost.api-yyyyMMddとなってしまいます。<br/>
+fluentdの設定からはインデックス名のprefixは指定できますが、時刻部分はコントロールできません。（type名は指定できます）fluentdの設定でいうと以下の部分です。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml">api.logstash_action_log&gt;
+  type copy
+  <span class="nt">&lt;store&gt;&lt;/store&gt;</span>
+〜〜省略〜〜
+    type_name logstash_action_log ← indexのtype名
+
+    logstash_format true ←ココでフォーマットを有効化
+    logstash_prefix &#34;localhost.api&#34; ←ココでindex名のprefixを指定</code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>インデックス名はコントロールしたいけど、timeフィールドは@timestampに変換してほしい。</strong>
+logstash_formatだとインデックス名はコントロールできない。そこで<strong>record_reformer</strong>の出番です。</p>
+
+<div class="github-card" data-user="sonots" data-repo="fluent-plugin-record-reformer" data-width="400" data-height="" data-theme="default"></div>
+
+<h3 id="record-reformer">record_reformer</h3>
+
+<p>record_reformerはfluentdでsource化したログのフィールド名を新しいフィールド名に書き換えることができます。<br/>
+ログ値も同様に書き換えられます。以下、利用例です。</p>
+
+<h4 id="fluentdの設定">fluentdの設定</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml">foo.**&gt;
+  type record_reformer
+  remove_keys remove_me
+  renew_record false
+  enable_ruby false
+
+  tag reformed.${tag_prefix[-2]}
+  <span class="nt">&lt;record&gt;&lt;/record&gt;</span>
+    hostname ${hostname}
+    input_tag ${tag}
+    last_tag ${tag_parts[-1]}
+    message ${message}, yay!
+  </code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="書き換え前のログ">書き換え前のログ</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">foo.bar</span> <span class="p">{</span>
+  <span class="nt">&#34;remove_me&#34;</span><span class="p">:</span><span class="s2">&#34;bar&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;not_remove_me&#34;</span><span class="p">:</span><span class="s2">&#34;bar&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;message&#34;</span><span class="p">:</span><span class="s2">&#34;Hello world!&#34;</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="record-reformerが書き換え後のログ">record_reformerが書き換え後のログ</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">reformed.foo</span> <span class="p">{</span>
+  <span class="nt">&#34;not_remove_me&#34;</span><span class="p">:</span><span class="s2">&#34;bar&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;hostname&#34;</span><span class="p">:</span><span class="s2">&#34;YOUR_HOSTNAME&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;input_tag&#34;</span><span class="p">:</span><span class="s2">&#34;foo.bar&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;last_tag&#34;</span><span class="p">:</span><span class="s2">&#34;bar&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;message&#34;</span><span class="p">:</span><span class="s2">&#34;Hello world!, yay!&#34;</span><span class="p">,</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="record-reformerが解決してくれる">record_reformerが解決してくれる</h3>
+
+<p>見事に今回の課題をrecord_reformerが解決してくれました。<br/>
+record_reformerで書き換えたmatch節からelaseticsearchにcopyするmatch節に繋げるのがコツです。<br/>
+最終的な設定は以下のようになりました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="nt">&lt;source/&gt;</span>
+# 省略
+
+
+api.reformer_action_log&gt;
+  type record_reformer
+  enable_ruby true
+  tag api.action_log.reformer
+  <span class="nt">&lt;record&gt;&lt;/record&gt;</span>
+  @timestamp ${time.strftime(&#39;%Y-%m-%dT%H:%M:%S%z&#39;)}
+  
+
+
+api.action_log.reformer&gt;
+  type copy
+  <span class="nt">&lt;store&gt;&lt;/store&gt;</span>
+    @type elasticsearch
+    host &#34;#{ENV[&#39;ELASTICSEARCH_HOST&#39;]}&#34;
+    port &#34;#{ENV[&#39;ELASTICSEARCH_PORT&#39;]}&#34;
+
+    index_name api
+    type_name reformer_action_log
+
+    include_time_key true
+    flush_interval 1s</code></pre></td></tr></table>
+</div>
+</div>
+<p><ul>
+<li><strong>match api.reformer_action_log</strong>でtimeフィールドを@timestampのフィールド名に再フォーマット</li>
+<li><strong>match api.reformer_action_log</strong>の<strong>tag api.action_log.reformer</strong>でelasticsearchへ転送するmatch定義へフォワード</li>
+<li><strong>match api.action_log.reformer</strong>ではlogstash_formatは使わずにindex名が指定できています</li>
+</ul></p>
+
+<h4 id="elasticsearchでindex確認-1">elasticsearchでindex確認</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="err">$</span> <span class="err">curl</span> <span class="err">-XGET</span> <span class="s2">&#34;http://localhost:9200/api/reformer_action_log/AVjnaJoIuvtAHVSVVied?pretty&#34;</span>
+<span class="p">{</span>
+  <span class="nt">&#34;_index&#34;</span> <span class="p">:</span> <span class="s2">&#34;api&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;_type&#34;</span> <span class="p">:</span> <span class="s2">&#34;reformer_action_log&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;_id&#34;</span> <span class="p">:</span> <span class="s2">&#34;AVjnaJoIuvtAHVSVVied&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;_version&#34;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">&#34;found&#34;</span> <span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+  <span class="nt">&#34;_source&#34;</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;post_id&#34;</span> <span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+    <span class="nt">&#34;category_id&#34;</span> <span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
+    <span class="nt">&#34;user_id&#34;</span> <span class="p">:</span> <span class="mi">123</span><span class="p">,</span>
+    <span class="nt">&#34;@timestamp&#34;</span> <span class="p">:</span> <span class="s2">&#34;2016-12-06T10:43:10+0000&#34;</span>
+  <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>インデックスが定義で指定したreformer_action_logに、timeフィールドは@timestampのフィールド名になりました！</p>
+
+<h3 id="ソースを公開しています">ソースを公開しています</h3>
+
+<p>今回のソースはgithubに公開しています。logstashの設定も入れているので合わせて確認できます。</p>
+
+<p><a href="https://github.com/soushin/fluentd-record-reformer">https://github.com/soushin/fluentd-record-reformer</a></p>
+
+<p><br/>
+同じ課題にぶち当たっている人の手助けになれば嬉しいです。</p>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/elasticsearch/">elasticsearch</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/fluentd/">fluentd</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/logstash/">logstash</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

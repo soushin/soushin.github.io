@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>モダンな負荷テストツールのk6を試してみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="負荷テストツールのk6を試す機会があったのでアウトプットしていく。 k6 k6は負荷テストサービスを提供するloadimpact社が開発する負荷テ">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">モダンな負荷テストツールのk6を試してみた</h1>
+    <div class="post-meta">2017.11.11</div>
+  </header>
+  <div class="post-content">
+
+<p>負荷テストツールのk6を試す機会があったのでアウトプットしていく。</p>
+
+<p><a href="https://k6.io/">k6</a></p>
+
+<p>k6は負荷テストサービスを提供するloadimpact社が開発する負荷テストツールでツール自体はgoでテストケースはES6で書く。</p>
+
+<p>レポート出力はInfluxDB+Grafanaまたはloadimpact Insightsと連携する。連携方法はテスト実行時のコマンドにDB URLやTokenを加えるだけのシンプルな設計。</p>
+
+<p>最近はgRPC通信の採用も増えているが今のところk6ではサポートされていない。ただ負荷テストサービスを提供するloadimpact社なので今後のサポートに期待できる。オープンソースだしgoだし自分で作りたい欲も出てくるのがモダンなk6の良いところ。</p>
+
+<p>今回のエントリは簡易的なAPIサーバに負荷テストを実行するまでの流れをコードを交えてまとめていく。</p>
+
+<h3 id="k6をdockerで動かす">k6をdockerで動かす</h3>
+
+<p>サクッと試せる環境を作りたかったのでAPIサーバとk6のコンテナをdocker-composeで構成管理した。k6はイメージが提供されているので簡単に動かせる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">docker pull loadimpact/k6</pre></td></tr></table>
+</div>
+</div>
+<h3 id="テストシナリオを書く">テストシナリオを書く</h3>
+
+<p>テストシナリオはEC6で書く。馴染みがあるJavascriptでシナリオを書けるのが良い。</p>
+
+<p>テストシナリオの書き方で理解したかったのが次の２点。</p>
+
+<ul>
+<li>HTTP Headerに <code>Authorization</code>を加える方法
+
+<ul>
+<li><a href="https://github.com/soushin/sandbox-k6/blob/3443eb97f340597428547e47237ee69ca395e31a/k6/scripts/localhost.js#L37-L43">sandbox-k6/localhost.js at 3443eb97f340597428547e47237ee69ca395e31a · soushin/sandbox-k6 · GitHub</a></li>
+</ul>
+</li>
+<li>前のリクエストのレスポンスボディ（JSON）から値を取り出し次のリクエストにつなげる方法。
+
+<ul>
+<li><a href="https://github.com/soushin/sandbox-k6/blob/master/k6/scripts/localhost.js#L57-L60">sandbox-k6/localhost.js at master · soushin/sandbox-k6 · GitHub</a></li>
+</ul>
+</li>
+</ul>
+
+<p>上記、githubのリンクにあるとおり難しくなくドキュメントやサンプルも豊富ですぐに理解できた。</p>
+
+<p>また、<code>check</code>や<code>group</code>や<code>thresholds</code>はテストシナリオを書く上で重要な要素となる。勿論、その他にも理解すべき要素はある。ドキュメントが豊富なので触っていきながら理解を深めていきたい。</p>
+
+<p><a href="https://docs.k6.io/docs/http-requests">HTTP requests</a></p>
+
+<h3 id="k6-runオプションを理解する">k6 runオプションを理解する</h3>
+
+<p>テストの実行は<code>k6 run</code>のコマンドを実行する。どれくらいのユーザをアクセスさせるか、どれくらいテストを続けるかのオプションを理解する必要がある。今回使ったオプションは次の通り。</p>
+
+<ul>
+<li><code>vus</code>　同時接続ユーザ数の理解で良さそう。</li>
+<li><code>iterations</code>　テストの実行回数。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">k6 run --vus 5 --iterations 5 ./scripts/localhost.js</pre></td></tr></table>
+</div>
+</div>
+<p>上記のコマンドだと5ユーザがアクセスしてテスト回数が５回行われる。<code>iterations</code>は5ユーザが5回テストを実行するのではなく、全体のテスト回数が5回となる。そのため5ユーザが1回テストを実行するコマンドとなる。</p>
+
+<p>また<code>duration</code>や<code>stage</code>も利用頻度が高いオプションになる。durationはテスト実行期間を指定できる、stageはJmeterのramp upのようなオプションである。</p>
+
+<p><a href="https://docs.k6.io/docs/options#section-available-options">Options</a></p>
+
+<h3 id="テスト結果をグラフに出力してみた">テスト結果をグラフに出力してみた</h3>
+
+<p>loadimpact Insightsにテスト結果を出力してみた。</p>
+
+<p><a href="https://docs.k6.io/docs/load-impact-insights">Load Impact Insights</a></p>
+
+<p>連携方法もシンプル。loadimpact.comのアカウントをつくりダッシュボードからCLOUDトークンを発行してrunオプションに加えるだけである。連携した結果のイメージは次のとおり。</p>
+
+<figure>
+    <img src="/images/20171111221320.png"/> 
+</figure>
+
+
+<p>vusの数やテストシナリオの数でアカウントのグレードが異なり有料オプションとなる。継続的に負荷テストを実行するのであれば有料オプションを選択することを検討するのもありだし、InfluxDB+Grafanaの連携方法もある。標準のstdoutからもテスト結果は確認できるので、どのように負荷テストを運用するかでレポート運用方法の選択肢はこちらに委ねられている印象。</p>
+
+<p><a href="https://docs.k6.io/docs/results-output">Results output</a></p>
+
+<h3 id="サクッと動かせるコードあります">サクッと動かせるコードあります</h3>
+
+<p>githubに動かせるコードを置いたので興味ある人は参照ください。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="sandbox-k6" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/k6/">k6</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/loadtest/">loadtest</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

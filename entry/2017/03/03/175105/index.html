@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Page Object PatternをベースにTestCafeでE2Eテストを作ってみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="以前のエントリでKotlinでSelenideを使ったE2Eテストを作ったときもPage Object Patternを利用して見通しの良いテストコードが">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Page Object PatternをベースにTestCafeでE2Eテストを作ってみた</h1>
+    <div class="post-meta">2017.3.3</div>
+  </header>
+  <div class="post-content">
+
+<p><br/>
+<a href="https://blog.soushi.me/entry/2017/01/15/205751">以前のエントリ</a>でKotlinでSelenideを使ったE2Eテストを作ったときもPage Object Patternを利用して見通しの良いテストコードが書けました。TestCafeでも同様にPage Object Patternを利用することが<a href="http://devexpress.github.io/testcafe/documentation/recipes/using-page-model.html">推奨されています</a>。今回はTestCafeでもPage Object Patternを利用してテストを書いてみました。</p>
+
+<h2 id="何をテストするか">何をテストするか</h2>
+
+<p>次のサイトのログイン認証をテストします。<a href="https://freshlive.tv/">FRESH!（フレッシュ） - 生放送がログイン不要・高画質で見放題</a>テスト内容としては次のとおりです。</p>
+
+<ul>
+<li>認証画面のURLを開く</li>
+<li>IDとパスワードを入力する</li>
+<li>ログインボタンをクリックする</li>
+<li>ログインが完了するとHome画面にリダイレクトされるので正しくリダイレクトされているか</li>
+<li>ログインが完了するとヘッダーモジュールにアカウント名が表示されてるので正しく表示されているか</li>
+</ul>
+
+<h2 id="テストコードのフォルダ構成">テストコードのフォルダ構成</h2>
+
+<p>プロジェクトのフォルダ構成は次のように役割ごとに整理しました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh">tests
+├── features
+├── operators
+├── pages
+└── support</code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>**features**にはスペックコードをまとめます。</li>
+<li>**operators**にはPageオブジェクトから画面要素を参照して**ログインボタンをクリックする**などのオペレーションをまとめます。</li>
+<li>**pages**には画面の要素を参照できるようなPageオブジェクトを画面ごとにまとめます。今回は認証画面とHome画面をPageクラスにしました。</li>
+<li>**support**にはスペックコードでテストを進めるときに画面キャプチャを撮るなどのユーティリティ機能をまとめます。</li>
+</ul>
+
+<p>次からはTestCafeのAPIを利用して記述したコード例を紹介します。</p>
+
+<h3 id="pageクラス">Pageクラス</h3>
+
+<p>TestCafeのAPIを利用して認証画面のPageクラスを作ります。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="k">import</span> <span class="p">{</span> <span class="nx">Selector</span> <span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;testcafe&#39;</span><span class="p">;</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="k">class</span> <span class="nx">AuthPage</span> <span class="p">{</span>
+    <span class="nx">constructor</span> <span class="p">()</span> <span class="p">{</span>
+
+        <span class="k">this</span><span class="p">.</span><span class="nx">url</span> <span class="o">=</span> <span class="s1">&#39;https://freshlive.tv/auth/fresh_id&#39;</span><span class="p">;</span>
+
+        <span class="k">this</span><span class="p">.</span><span class="nx">idInput</span> <span class="o">=</span> <span class="nx">Selector</span><span class="p">(</span><span class="s1">&#39;#user_id&#39;</span><span class="p">);</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">pwInput</span> <span class="o">=</span> <span class="nx">Selector</span><span class="p">(</span><span class="s1">&#39;#password&#39;</span><span class="p">);</span>
+
+        <span class="k">this</span><span class="p">.</span><span class="nx">submitBtn</span> <span class="o">=</span> <span class="nx">Selector</span><span class="p">(</span><span class="s1">&#39;button[type=submit]&#39;</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>認証画面のURLを変数に定義する。</li>
+<li>テストに必要な画面要素は**Selector**を利用して定義する。</li>
+<li>_idInput_はログインID、_pwInput_はパスワードの入力フィールドです。</li>
+<li>_submitBtn_はログインボタンです。</li>
+</ul>
+
+<p>これで認証画面の要素をまとめたAuthPageクラスができあがりました。</p>
+
+<h3 id="operatorクラス">Operatorクラス</h3>
+
+<p>TestCafeのAPIを利用してOperatorクラスを作ります。<br/>
+今回は認証画面でログイン認証する必要があるのでログイン操作をまとめます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="k">import</span> <span class="p">{</span><span class="nx">t</span><span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;testcafe&#39;</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">AuthPage</span> <span class="nx">from</span> <span class="s1">&#39;../../pages/auth/auth-page.js&#39;</span><span class="p">;</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="k">class</span> <span class="nx">AuthOperator</span> <span class="p">{</span>
+    <span class="nx">constructor</span> <span class="p">()</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">page</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">AuthPage</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="kr">async</span> <span class="nx">open</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kr">await</span> <span class="nx">t</span>
+            <span class="p">.</span><span class="nx">navigateTo</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">url</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kr">async</span> <span class="nx">authorize</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">password</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kr">await</span> <span class="k">this</span><span class="p">.</span><span class="nx">open</span><span class="p">();</span>
+
+        <span class="kr">await</span> <span class="nx">t</span>
+            <span class="p">.</span><span class="nx">typeText</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">idInput</span><span class="p">,</span> <span class="nx">id</span><span class="p">)</span>
+            <span class="p">.</span><span class="nx">typeText</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pwInput</span><span class="p">,</span> <span class="nx">password</span><span class="p">)</span>
+            <span class="p">.</span><span class="nx">click</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">submitBtn</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>_constructor ()_でAuthPageクラスからPageオブジェクトを生成します。</li>
+<li>_authorize(id, password)_では認証画面を開きIDの入力とパスワードの入力を行い最後にログインボタンをクリックしています。_typeText_と_click_で入力とクリックの操作ができます。</li>
+<li>_t_はTestCafeの<a href="http://devexpress.github.io/testcafe/documentation/test-api/test-code-structure.html#test-controller">TestConrollerオブジェクト</a>です。async-awaitとimportをすることでテスト実行時のTestConrollerオブジェクトと同期できます。<a href="https://changelogs.md/github/devexpress/testcafe/">0.13.0のリリース</a>（Using test controller outside of test code (#1166)）でTestConrollerをテストコード外でも参照することができるようになりました。（いいね！）</li>
+</ul>
+
+<h3 id="supportクラス">Supportクラス</h3>
+
+<p>TestCafeのAPIを利用してのSupportクラスを作ります。<br/>
+今回は画面キャプチャを撮るユーティリティクラスを作りました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="k">import</span> <span class="p">{</span><span class="nx">t</span><span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;testcafe&#39;</span><span class="p">;</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="k">class</span> <span class="nx">ScreenshotSupport</span> <span class="p">{</span>
+    <span class="nx">constructor</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="p">}</span>
+
+    <span class="kr">async</span> <span class="nx">take</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kr">await</span> <span class="nx">t</span>
+            <span class="p">.</span><span class="nx">takeScreenshot</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>TestControllerには画面キャプチャを撮る<a href="http://devexpress.github.io/testcafe/documentation/test-api/actions/take-screenshot.html">メソッド</a>が用意されています。</li>
+<li>取った画像を配置するフォルダもテスト実行時の<a href="http://devexpress.github.io/testcafe/documentation/test-api/actions/take-screenshot.html">オプションで指定</a>できます。</li>
+<li>保存される画像のサイズは表示したブラウザのサイズになり縦長の画面の場合には画面全体を撮ることはできないようです。</li>
+</ul>
+
+<h3 id="specクラス">Specクラス</h3>
+
+<p>TestCafeのAPIを利用してのSpecクラスを作ります。<br/>
+このクラスでテスト内容をまとめていきます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="k">import</span> <span class="p">{</span> <span class="nx">expect</span> <span class="p">}</span> <span class="nx">from</span> <span class="s1">&#39;chai&#39;</span><span class="p">;</span>
+
+<span class="k">import</span> <span class="nx">HomePage</span> <span class="nx">from</span> <span class="s1">&#39;../../pages/home/home-page.js&#39;</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">AuthOperator</span> <span class="nx">from</span> <span class="s1">&#39;../../operators/auth/auth-operator.js&#39;</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">ScreenshotSupport</span> <span class="nx">from</span> <span class="s1">&#39;../../support/screenshot-support.js&#39;</span><span class="p">;</span>
+
+<span class="k">const</span> <span class="nx">homePage</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">HomePage</span><span class="p">();</span>
+<span class="k">const</span> <span class="nx">authOperator</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">AuthOperator</span><span class="p">();</span>
+<span class="k">const</span> <span class="nx">screenshot</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ScreenshotSupport</span><span class="p">();</span>
+
+<span class="k">const</span> <span class="nx">userId</span> <span class="o">=</span> <span class="s1">&#39; xxxxxxxx&#39;</span><span class="p">;</span>
+<span class="k">const</span> <span class="nx">password</span> <span class="o">=</span> <span class="s1">&#39;xxxxxxxx&#39;</span><span class="p">;</span>
+<span class="k">const</span> <span class="nx">accountId</span> <span class="o">=</span> <span class="s1">&#39;My Account&#39;</span><span class="p">;</span>
+
+<span class="nx">fixture</span> <span class="sb">`auth fixtures`</span><span class="p">;</span>
+
+<span class="nx">test</span><span class="p">(</span><span class="s1">&#39;authorized at page then is appeared your account name on element of header.&#39;</span><span class="p">,</span> <span class="kr">async</span> <span class="nx">t</span> <span class="p">=&gt;</span> <span class="p">{</span>
+
+    <span class="c1">// ログインする
+</span><span class="c1"></span>    <span class="kr">await</span> <span class="nx">authOperator</span><span class="p">.</span><span class="nx">authorize</span><span class="p">(</span><span class="nx">userId</span><span class="p">,</span> <span class="nx">password</span><span class="p">);</span>
+
+    <span class="c1">// スクリーンショット撮る
+</span><span class="c1"></span>    <span class="kr">await</span> <span class="nx">screenshot</span><span class="p">.</span><span class="nx">take</span><span class="p">();</span>
+
+    <span class="c1">// ログイン後にHomeにリダイレクトをするのでURLが正しく切り替わっているか
+</span><span class="c1"></span>    <span class="k">const</span> <span class="nx">docURI</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">t</span><span class="p">.</span><span class="nb">eval</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="nb">document</span><span class="p">.</span><span class="nx">documentURI</span><span class="p">);</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">docURI</span><span class="p">).</span><span class="nx">eql</span><span class="p">(</span><span class="sb">`</span><span class="si">${</span><span class="nx">homePage</span><span class="p">.</span><span class="nx">url</span><span class="si">}</span><span class="sb">?&amp;login_succeeded=true`</span><span class="p">);</span>
+
+    <span class="c1">// ヘッダーメニューにログインしたアカウント名が表示されているか
+</span><span class="c1"></span>    <span class="kr">await</span> <span class="nx">t</span>
+        <span class="p">.</span><span class="nx">expect</span><span class="p">(</span><span class="nx">homePage</span><span class="p">.</span><span class="nx">accountMenuDropdown</span><span class="p">.</span><span class="nx">exists</span><span class="p">).</span><span class="nx">eql</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">expect</span><span class="p">(</span><span class="nx">homePage</span><span class="p">.</span><span class="nx">accountName</span><span class="p">.</span><span class="nx">exists</span><span class="p">).</span><span class="nx">eql</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">expect</span><span class="p">(</span><span class="nx">homePage</span><span class="p">.</span><span class="nx">accountName</span><span class="p">.</span><span class="nx">innerText</span><span class="p">).</span><span class="nx">eql</span><span class="p">(</span><span class="nx">accountId</span><span class="p">);</span>
+<span class="p">});</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>_fixture_はテストをカテゴライズする機能でテスト実行時にfixtures単位でテストを<a href="http://devexpress.github.io/testcafe/documentation/using-testcafe/command-line-interface.html#-f-name---fixture-name">実行するオプション</a>があります。</li>
+<li>_test_ではテストのタイトルとテストコードを記述していきます。</li>
+<li>Operatorクラスでまとめた認証画面でログインする_authorize(userId, password)_を呼びだしてログインを実行しています。</li>
+<li>ログイン後にURLが切り替わっているかdocURI変数にURLを入れてチェックしています。</li>
+<li>最後にexpectを利用してヘッダーモジュールにアカウント名が表示されているかをチェックしています。</li>
+</ul>
+
+<h2 id="まとめ">まとめ</h2>
+
+<ul>
+<li>Page Object Design PatternベースにTestCafeでテストを書いてみました。新しいAPIということもあり画面をオブジェクト化しやすい機能が揃っている印象です。</li>
+<li>テストコードから画面要素と画面操作を分離してコード化することができました。</li>
+<li><a href="https://blog.soushi.me/entry/2017/02/24/165107">以前のエントリ</a>ではChatOpsとの連携も試してみました。E2Eテストを快適に実施と運用していくことを考えるとTestCafeの採用を検討していきたい☕️</li>
+</ul>
+
+<h2 id="ソースを公開しています">ソースを公開しています</h2>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="testcafe-chatops" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h2 id="関連エントリ">関連エントリ</h2>
+
+<p><a href="https://blog.soushi.me/entry/2017/02/24/165107">WebDriver不要のTestCafeを使ったE2EテストをChatOpsに導入してみた - 平日インプット週末アウトプットぶろぐ</a></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/e2e/">E2E</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/testcafe/">TestCafe</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

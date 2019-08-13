@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>SwipeRefreshLayoutとRecycleViewをListViewに導入してみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="ブログエントリで試しているアプリにSwipeRefreshLayoutとRecycleViewをListViewに導入してみたのでまとめてい">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">SwipeRefreshLayoutとRecycleViewをListViewに導入してみた</h1>
+    <div class="post-meta">2018.5.2</div>
+  </header>
+  <div class="post-content">
+
+<p>ブログエントリで試しているアプリにSwipeRefreshLayoutとRecycleViewをListViewに導入してみたのでまとめていく。</p>
+
+<h3 id="swiperefreshlayout">SwipeRefreshLayout</h3>
+
+<p>SwipeRefreshLayoutはViewGroupの１つで引っ張って更新する機能を導入することができる。</p>
+
+<p>まずはレイアウトからまとめていく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml">    .support.v4.widget.SwipeRefreshLayout
+        android:id=&#34;@+id/swipeRefreshLayout&#34;
+        android:layout_width=&#34;match_parent&#34;
+        android:layout_height=&#34;match_parent&#34;&gt;
+
+        
+            android:layout_width=&#34;match_parent&#34;
+            android:layout_height=&#34;match_parent&#34;
+            android:orientation=&#34;vertical&#34;&gt;
+
+        // 更新する要素
+
+        
+    .support.v4.widget.SwipeRefreshLayout&gt;
+.support.constraint.ConstraintLayout&gt;</code></pre></td></tr></table>
+</div>
+</div>
+<p>SwipeRefreshLayoutの子要素は必ず１つになるようにレイアウトを組む必要がある。</p>
+
+<hr/>
+
+<p>次にコードをまとめていく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">swipeRefreshLayout</span><span class="p">.</span><span class="n">setOnRefreshListener</span> <span class="p">{</span> <span class="n">request</span><span class="p">()</span> <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>setOnRefreshListener</code>で更新処理をリスナーに登録する。</p>
+
+<p>更新処理が完了したところで<code>isRefreshing</code>をfalseにすることでインジケータを停止することができる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">swipeRefreshLayout.isRefreshing = false</pre></td></tr></table>
+</div>
+</div>
+<h3 id="recycleview">RecycleView</h3>
+
+<p>次にRecycleViewをまとめていく。RecycleViewは大量なリスト表示が必要や頻繁にデータが変わるような場面で限られたViewを効率的に維持してくれる。</p>
+
+<h4 id="recyclerview-adapterを実装する">RecyclerView.Adapterを実装する</h4>
+
+<p>１行のデータをViewとして生成するAdapterを実装する。FragmentからはRecyclerAdapterのreplaceAllを呼び出しRecyclerViewを更新する。</p>
+
+<p>BaseRecyclerAdapterは<code>RecyclerView.Adapter</code>を継承してonCreateViewHolder, onBindViewHolder, getItemCountを実装している。onCreateViewHolder, onBindViewHolderはそれぞれViewHolderが生成に合わせてviewTypeやpositionに応じたオブジェクトをリストから取得して返している。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">RecyclerAdapter</span> <span class="p">:</span> <span class="n">BaseRecyclerAdapter</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span><span class="p">&gt;()</span> <span class="p">{</span>
+
+    <span class="k">fun</span> <span class="err">&amp;</span><span class="nf">lt</span><span class="p">;</span><span class="n">B</span> <span class="p">:</span> <span class="n">Binder</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span><span class="p">&gt;&gt;</span> <span class="n">replaceAll</span><span class="p">(</span><span class="n">objects</span><span class="p">:</span> <span class="n">List</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">B</span><span class="p">&gt;)</span> <span class="p">{</span>
+        <span class="n">clear</span><span class="p">()</span>
+        <span class="n">objects</span><span class="p">.</span><span class="n">withIndex</span><span class="p">().</span><span class="n">forEach</span> <span class="p">{</span>
+            <span class="n">insert</span><span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="n">index</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">notifyDataSetChanged</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">open</span> <span class="k">class</span> <span class="nc">BaseRecyclerAdapter</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">VH</span> <span class="p">:</span> <span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span><span class="p">&gt;</span> <span class="p">:</span> <span class="n">RecyclerView</span><span class="p">.</span><span class="n">Adapter</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">VH</span><span class="p">&gt;()</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">mObjects</span><span class="p">:</span> <span class="n">MutableList</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Binder</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">VH</span><span class="p">&gt;&gt;</span> <span class="p">=</span> <span class="n">mutableListOf</span><span class="p">()</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreateViewHolder</span><span class="p">(</span><span class="n">parent</span><span class="p">:</span> <span class="n">ViewGroup</span><span class="p">,</span>
+                                    <span class="n">viewType</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span> <span class="n">VH</span> <span class="p">=</span> <span class="n">getItemByViewType</span><span class="p">(</span><span class="n">viewType</span><span class="p">).</span><span class="n">onCreateViewHolder</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onBindViewHolder</span><span class="p">(</span><span class="n">holder</span><span class="p">:</span> <span class="n">VH</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="p">=</span> <span class="n">getItem</span><span class="p">(</span><span class="n">position</span><span class="p">).</span><span class="n">onBindViewHolder</span><span class="p">(</span><span class="n">holder</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">getItemCount</span><span class="p">():</span> <span class="n">Int</span> <span class="p">=</span> <span class="n">mObjects</span><span class="p">.</span><span class="n">size</span>
+
+
+    <span class="k">fun</span> <span class="nf">getItem</span><span class="p">(</span><span class="n">position</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span> <span class="n">Binder</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">VH</span><span class="p">&gt;</span> <span class="p">=</span>
+            <span class="n">mObjects</span><span class="p">.</span><span class="n">withIndex</span><span class="p">().</span><span class="n">filter</span> <span class="p">{</span> <span class="n">it</span><span class="p">.</span><span class="n">index</span> <span class="p">==</span> <span class="n">position</span> <span class="p">}</span>
+                    <span class="p">.</span><span class="n">takeIf</span> <span class="p">{</span> <span class="n">it</span><span class="p">.</span><span class="n">isNotEmpty</span><span class="p">()</span> <span class="p">}</span><span class="o">?.</span><span class="n">let</span> <span class="p">{</span> <span class="n">it</span><span class="p">[</span><span class="m">0</span><span class="p">].</span><span class="n">value</span> <span class="p">}</span>
+                    <span class="o">?:</span> <span class="k">throw</span> <span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">&#34;invalid position=${position}&#34;</span><span class="p">)</span>
+
+    <span class="k">private</span> <span class="k">fun</span> <span class="nf">getItemByViewType</span><span class="p">(</span><span class="n">viewType</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span> <span class="n">Binder</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">VH</span><span class="p">&gt;</span> <span class="p">=</span>
+            <span class="n">mObjects</span><span class="p">.</span><span class="n">filter</span> <span class="p">{</span> <span class="n">it</span><span class="p">.</span><span class="n">getViewType</span><span class="p">()</span> <span class="p">==</span> <span class="n">viewType</span> <span class="p">}</span>
+                    <span class="p">.</span><span class="n">takeIf</span> <span class="p">{</span> <span class="n">it</span><span class="p">.</span><span class="n">isNotEmpty</span><span class="p">()</span> <span class="p">}</span><span class="o">?.</span><span class="n">let</span> <span class="p">{</span> <span class="n">it</span><span class="p">[</span><span class="m">0</span><span class="p">]</span> <span class="p">}</span>
+                    <span class="o">?:</span> <span class="k">throw</span> <span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">&#34;invalid viewType=${viewType}&#34;</span><span class="p">)</span>
+
+    <span class="k">fun</span> <span class="nf">insert</span><span class="p">(</span><span class="n">index</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Binder</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">VH</span><span class="p">&gt;)</span> <span class="p">{</span>
+        <span class="n">mObjects</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">fun</span> <span class="nf">clear</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">mObjects</span><span class="p">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">interface</span> <span class="nc">Binder</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">VH</span><span class="p">&gt;</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">onCreateViewHolder</span><span class="p">(</span><span class="n">parent</span><span class="p">:</span> <span class="n">ViewGroup</span><span class="p">):</span> <span class="n">VH</span>
+    <span class="k">fun</span> <span class="nf">onBindViewHolder</span><span class="p">(</span><span class="n">viewHolder</span><span class="p">:</span> <span class="n">VH</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span>
+    <span class="k">fun</span> <span class="nf">getViewType</span><span class="p">():</span> <span class="n">Int</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="recyclerview-viewholderを保持するbinderクラスを実装する">RecyclerView.ViewHolderを保持するBinderクラスを実装する</h4>
+
+<p>RecyclerView.ViewHolderは１行分のView参照を保持するクラス。このRecyclerView.ViewHolderを自作のBinderクラスで包みAdapterに応じたメソッドを提供する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">interface</span> <span class="nc">Binder</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">VH</span><span class="p">&gt;</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">onCreateViewHolder</span><span class="p">(</span><span class="n">parent</span><span class="p">:</span> <span class="n">ViewGroup</span><span class="p">):</span> <span class="n">VH</span>
+    <span class="k">fun</span> <span class="nf">onBindViewHolder</span><span class="p">(</span><span class="n">viewHolder</span><span class="p">:</span> <span class="n">VH</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span>
+    <span class="k">fun</span> <span class="nf">getViewType</span><span class="p">():</span> <span class="n">Int</span>
+<span class="p">}</span>
+
+<span class="k">interface</span> <span class="nc">ViewType</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">viewType</span><span class="p">():</span> <span class="n">Int</span>
+<span class="p">}</span>
+
+<span class="k">abstract</span> <span class="k">class</span> <span class="nc">RecycleBinder</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">context</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="k">private</span> <span class="k">val</span> <span class="py">viewType</span><span class="p">:</span> <span class="n">ViewType</span><span class="p">)</span> <span class="p">:</span> <span class="n">Binder</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span><span class="p">&gt;</span> <span class="p">{</span>
+
+    <span class="n">@LayoutRes</span>
+    <span class="k">abstract</span> <span class="k">fun</span> <span class="nf">layoutResId</span><span class="p">():</span> <span class="n">Int</span>
+
+    <span class="k">abstract</span> <span class="k">fun</span> <span class="nf">onCreateViewHolder</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n">View</span><span class="p">):</span> <span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreateViewHolder</span><span class="p">(</span><span class="n">parent</span><span class="p">:</span> <span class="n">ViewGroup</span><span class="p">):</span> <span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">onCreateViewHolder</span><span class="p">(</span><span class="n">LayoutInflater</span><span class="p">.</span><span class="n">from</span><span class="p">(</span><span class="n">context</span><span class="p">).</span><span class="n">inflate</span><span class="p">(</span><span class="n">layoutResId</span><span class="p">(),</span> <span class="n">parent</span><span class="p">,</span> <span class="k">false</span><span class="p">))</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">getViewType</span><span class="p">():</span> <span class="n">Int</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">viewType</span><span class="p">.</span><span class="n">viewType</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上述したRecycleBinderを継承したForecastViewBinderクラスでViewHolderを引数に取りViewにデータをセットしていく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">ForecastViewBinder</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">context</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span>
+                         <span class="k">private</span> <span class="k">val</span> <span class="py">forecast</span><span class="p">:</span> <span class="n">Forecast</span><span class="p">)</span> <span class="p">:</span> <span class="n">RecycleBinder</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">ForecastViewType</span><span class="p">.</span><span class="n">FORECAST</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">layoutResId</span><span class="p">()</span> <span class="p">=</span> <span class="n">R</span><span class="p">.</span><span class="n">layout</span><span class="p">.</span><span class="n">forcast_binder</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreateViewHolder</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n">View</span><span class="p">):</span> <span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">ViewHolder</span><span class="p">(</span><span class="n">view</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onBindViewHolder</span><span class="p">(</span><span class="n">viewHolder</span><span class="p">:</span> <span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">viewHolder</span> <span class="k">as</span> <span class="n">ViewHolder</span>
+
+        <span class="n">viewHolder</span><span class="p">.</span><span class="n">date</span><span class="p">.</span><span class="n">text</span> <span class="p">=</span> <span class="n">DateUtils</span><span class="p">.</span><span class="n">formatDateTime</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">forecast</span><span class="p">.</span><span class="n">dt</span> <span class="p">*</span> <span class="m">1000L</span><span class="p">,</span> <span class="n">FORMAT_NO_YEAR</span><span class="p">)</span>
+        <span class="n">viewHolder</span><span class="p">.</span><span class="n">main</span><span class="p">.</span><span class="n">text</span> <span class="p">=</span> <span class="n">forecast</span><span class="p">.</span><span class="n">weather</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="m">0</span><span class="p">).</span><span class="n">main</span>
+        <span class="n">viewHolder</span><span class="p">.</span><span class="n">max</span><span class="p">.</span><span class="n">text</span> <span class="p">=</span> <span class="n">forecast</span><span class="p">.</span><span class="n">temp</span><span class="p">.</span><span class="n">max</span><span class="p">.</span><span class="n">toString</span><span class="p">()</span>
+        <span class="n">viewHolder</span><span class="p">.</span><span class="n">min</span><span class="p">.</span><span class="n">text</span> <span class="p">=</span> <span class="n">forecast</span><span class="p">.</span><span class="n">temp</span><span class="p">.</span><span class="n">min</span><span class="p">.</span><span class="n">toString</span><span class="p">()</span>
+
+        <span class="n">forecast</span><span class="p">.</span><span class="n">weather</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="m">0</span><span class="p">).</span><span class="n">main</span><span class="p">.</span><span class="n">let</span> <span class="p">{</span>
+            <span class="n">viewHolder</span><span class="p">.</span><span class="n">main</span><span class="p">.</span><span class="n">text</span> <span class="p">=</span> <span class="n">it</span>
+            <span class="k">when</span> <span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="n">toLowerCase</span><span class="p">())</span> <span class="p">{</span>
+                <span class="s">&#34;clear&#34;</span> <span class="p">-&gt;</span> <span class="n">R</span><span class="p">.</span><span class="n">drawable</span><span class="p">.</span><span class="n">ic_sun</span>
+                <span class="s">&#34;clouds&#34;</span> <span class="p">-&gt;</span> <span class="n">R</span><span class="p">.</span><span class="n">drawable</span><span class="p">.</span><span class="n">ic_cloud</span>
+                <span class="s">&#34;fog&#34;</span> <span class="p">-&gt;</span> <span class="n">R</span><span class="p">.</span><span class="n">drawable</span><span class="p">.</span><span class="n">ic_haze</span>
+                <span class="s">&#34;light_clouds&#34;</span> <span class="p">-&gt;</span> <span class="n">R</span><span class="p">.</span><span class="n">drawable</span><span class="p">.</span><span class="n">ic_cloudy</span>
+                <span class="s">&#34;light_rain&#34;</span> <span class="p">-&gt;</span> <span class="n">R</span><span class="p">.</span><span class="n">drawable</span><span class="p">.</span><span class="n">ic_rain</span>
+                <span class="s">&#34;rain&#34;</span> <span class="p">-&gt;</span> <span class="n">R</span><span class="p">.</span><span class="n">drawable</span><span class="p">.</span><span class="n">ic_rain</span>
+                <span class="s">&#34;snow&#34;</span> <span class="p">-&gt;</span> <span class="n">R</span><span class="p">.</span><span class="n">drawable</span><span class="p">.</span><span class="n">ic_snowing</span>
+                <span class="s">&#34;storm&#34;</span> <span class="p">-&gt;</span> <span class="n">R</span><span class="p">.</span><span class="n">drawable</span><span class="p">.</span><span class="n">ic_storm</span>
+                <span class="k">else</span> <span class="p">-&gt;</span> <span class="n">R</span><span class="p">.</span><span class="n">drawable</span><span class="p">.</span><span class="n">ic_sun</span> <span class="c1">// fix me
+</span><span class="c1"></span>            <span class="p">}.</span><span class="n">let</span> <span class="p">{</span>
+                <span class="n">viewHolder</span><span class="p">.</span><span class="n">image</span><span class="p">.</span><span class="n">setBackgroundResource</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">ViewHolder</span><span class="p">(</span><span class="n">view</span><span class="p">:</span> <span class="n">View</span><span class="p">)</span> <span class="p">:</span> <span class="n">RecyclerView</span><span class="p">.</span><span class="n">ViewHolder</span><span class="p">(</span><span class="n">view</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">date</span><span class="p">:</span> <span class="n">TextView</span> <span class="p">=</span> <span class="n">view</span><span class="p">.</span><span class="n">findViewById</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">forecast_date</span><span class="p">)</span>
+    <span class="k">val</span> <span class="py">main</span><span class="p">:</span> <span class="n">TextView</span> <span class="p">=</span> <span class="n">view</span><span class="p">.</span><span class="n">findViewById</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">forecast_weather</span><span class="p">)</span>
+    <span class="k">val</span> <span class="py">max</span><span class="p">:</span> <span class="n">TextView</span> <span class="p">=</span> <span class="n">view</span><span class="p">.</span><span class="n">findViewById</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">forecast_temp_max</span><span class="p">)</span>
+    <span class="k">val</span> <span class="py">min</span><span class="p">:</span> <span class="n">TextView</span> <span class="p">=</span> <span class="n">view</span><span class="p">.</span><span class="n">findViewById</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">forecast_temp_min</span><span class="p">)</span>
+    <span class="k">val</span> <span class="py">image</span><span class="p">:</span> <span class="n">AppCompatImageView</span> <span class="p">=</span> <span class="n">view</span><span class="p">.</span><span class="n">findViewById</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">forecast_ic</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="fragmentからadapterのreplaceallを呼び出す">FragmentからadapterのreplaceAllを呼び出す</h4>
+
+<p>Fragmentでadapterを生成してリスト取得したデータをreplaceAllに渡しViewを更新する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val context = context ?: return
+
+        forecastsStore.forecasts()
+                .observeOn(AndroidSchedulers.mainThread())
+                .`as`(autoDisposable(this))
+                .subscribe { forecasts -&gt;
+
+                    swipeRefreshLayout.isRefreshing = false
+
+                    cityView.text = &#34;%s/%s&#34;.format(forecasts.city.name, forecasts.city.country)
+                    adapter.replaceAll(forecasts.list.map {
+                        ForecastViewBinder(context, it)
+                    })
+                }
+
+        savedInstanceState ?: request()
+
+        swipeRefreshLayout.setOnRefreshListener { request() }
+    }</pre></td></tr></table>
+</div>
+</div>
+<h3 id="コード">コード</h3>
+
+<p>SwipeRefreshLayoutとRecycleViewを追加したプルリクエストがあるので参考にしてほしい。</p>
+
+<p><a href="https://github.com/soushin/sunshine-app/pull/5">Feature/improve list view by soushin · Pull Request #5 · soushin/sunshine-app · GitHub</a></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/android/">android</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/swiperefreshlayout/">SwipeRefreshLayout</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/recycleview/">RecycleView</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

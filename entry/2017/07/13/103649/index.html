@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Kotlin &#43; gRPCでdropwizard/metricsをつかってメトリクスを取得してみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="今回のエントリはKotlin &#43; gRPC（FWはSpringBoot 2.0.0.M1）のアプリケーションでgRPCのリクエストタイムやエラー回">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Kotlin &#43; gRPCでdropwizard/metricsをつかってメトリクスを取得してみた</h1>
+    <div class="post-meta">2017.7.13</div>
+  </header>
+  <div class="post-content">
+
+<p>今回のエントリはKotlin + gRPC（FWはSpringBoot 2.0.0.M1）のアプリケーションでgRPCのリクエストタイムやエラー回数などのメトリクスを計測する方法をまとめていく。</p>
+
+<h3 id="dropwizard-metrics">dropwizard/metrics</h3>
+
+<p>メトリクス計測のライブラリには <code>dropwizard/metrics</code>をつかってみた。</p>
+
+<p><div class="github-card" data-user="dropwizard" data-repo="metrics" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p><a href="http://metrics.dropwizard.io/3.2.3/getting-started.html">Getting Started | Metrics</a></p>
+
+<p>gRPCリクエストのメトリクスを計測していきたいので<code>Meters</code>と<code>Timers</code>を使い、gRPCリクエストのエラー回数とgRPCリクエストのレスポンスタイムをそれぞれ計測していく。</p>
+
+<p>ログの出力形式には<a href="http://metrics.dropwizard.io/3.2.3/manual/core.html#man-core-reporters-slf4j">Slf4jReporter</a>を使って、メトリクスをログファイルへ出力していく。</p>
+
+<h3 id="grpc-severにインタセプターを追加する">gRPC Severにインタセプターを追加する</h3>
+
+<p>メトリクスの計測ポイントをつくるためにgRPC Serverのリクエストをインターセプトしたい。<br/>
+<code>io.grpc.ServerInterceptor</code>を実装した <code>MetricsInterceptor</code>を準備してServerBuilderにgRPC Serverに追加するときにServerInterceptorも添えてあげるとよい。<br/>
+コードとしては次のようになる。</p>
+
+<p><strong>MetricsInterceptor</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">override</span> <span class="k">fun</span> <span class="err">&amp;</span><span class="nf">lt</span><span class="p">;</span><span class="n">ReqT</span> <span class="p">:</span> <span class="n">Any</span><span class="p">?,</span> <span class="n">RespT</span> <span class="p">:</span> <span class="n">Any</span><span class="p">?&gt;</span> <span class="n">interceptCall</span><span class="p">(</span><span class="n">call</span><span class="p">:</span> <span class="n">ServerCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Metadata</span><span class="p">?,</span> <span class="n">next</span><span class="p">:</span> <span class="n">ServerCallHandler</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?):</span> <span class="n">ServerCall</span><span class="p">.</span><span class="n">Listener</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">&gt;</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">timer</span> <span class="p">=</span> <span class="n">metricRegistry</span><span class="p">.</span><span class="n">timer</span><span class="p">(</span><span class="n">metricName</span><span class="p">(</span><span class="n">REQUEST_TIME</span><span class="p">,</span> <span class="n">call</span><span class="o">?.</span><span class="n">methodDescriptor</span><span class="o">?.</span><span class="n">fullMethodName</span><span class="o">!!</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="s">&#34;.&#34;</span><span class="p">))).</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="k">val</span> <span class="py">serverCall</span> <span class="p">=</span> <span class="k">object</span> <span class="err">: </span><span class="nc">ForwardingServerCall</span><span class="p">.</span><span class="n">SimpleForwardingServerCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;(</span><span class="n">call</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="k">override</span> <span class="k">fun</span> <span class="nf">close</span><span class="p">(</span><span class="n">status</span><span class="p">:</span> <span class="n">Status</span><span class="p">?,</span> <span class="n">trailers</span><span class="p">:</span> <span class="n">Metadata</span><span class="p">?)</span> <span class="p">{</span>
+            <span class="k">val</span> <span class="py">errorMeter</span> <span class="p">=</span> <span class="n">metricRegistry</span><span class="p">.</span><span class="n">meter</span><span class="p">(</span><span class="n">metricName</span><span class="p">(</span><span class="n">ERROR_METRIC</span><span class="p">,</span> <span class="n">methodDescriptor</span><span class="p">.</span><span class="n">fullMethodName</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="s">&#34;.&#34;</span><span class="p">)))</span>
+            <span class="k">if</span> <span class="p">(!</span><span class="n">status</span><span class="o">!!</span><span class="p">.</span><span class="n">isOk</span><span class="p">())</span> <span class="p">{</span>
+                <span class="n">errorMeter</span><span class="p">.</span><span class="n">mark</span><span class="p">()</span>
+                <span class="n">logger</span><span class="p">.</span><span class="n">error</span> <span class="p">{</span> <span class="s">&#34;An error occured with %s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">call</span><span class="p">.</span><span class="n">methodDescriptor</span><span class="p">)</span> <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="n">timer</span><span class="p">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="k">super</span><span class="p">.</span><span class="n">close</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">trailers</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">next</span><span class="o">?.</span><span class="n">startCall</span><span class="p">(</span><span class="n">serverCall</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span><span class="o">!!</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>SimpleForwardingServerCallクラスを実装し、 <code>close</code>をoverrideしている。<br/>
+ここで<code>Meters</code>と<code>Timers</code>のメトリクス計測ポイントを追加している。</p>
+
+<p><strong>ServerBuilderにgRPC Serverに追加するときにServerInterceptorも添えてあげる</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">getBeanNamesByTypeWithAnnotation</span><span class="p">(</span><span class="n">GRpcService</span><span class="o">::</span><span class="k">class</span><span class="p">).</span><span class="n">subscribe</span> <span class="p">{</span>
+    <span class="n">name</span> <span class="p">-&gt;</span>
+    <span class="k">val</span> <span class="py">server</span> <span class="p">=</span> <span class="n">applicationContext</span><span class="p">.</span><span class="n">beanFactory</span><span class="p">.</span><span class="n">getBean</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">BindableService</span><span class="o">::</span><span class="k">class</span><span class="p">)</span> <span class="k">as</span> <span class="n">BindableService</span>
+    <span class="k">val</span> <span class="py">service</span> <span class="p">=</span> <span class="n">server</span><span class="p">.</span><span class="n">bindService</span><span class="p">()</span>
+    <span class="n">serverBuilder</span><span class="p">.</span><span class="n">addService</span><span class="p">(</span><span class="n">ServerInterceptors</span><span class="p">.</span><span class="n">intercept</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="n">metricsInterceptor</span><span class="p">))</span>
+    <span class="n">logger</span><span class="p">.</span><span class="n">info</span> <span class="p">{</span> <span class="s">&#34;$name service has been registered.&#34;</span> <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>余談だが、１つのjarにHTTP ServerとgRPC Serverを載せられる便利な<a href="http://metrics.dropwizard.io/3.2.3/manual/core.html#man-core-reporters-slf4j">LogNet/grpc-spring-boot-starter</a>というライブラリがある。<br/>
+このライブラリはjava版でありSpringBoot 2.0.0.M1のバージョンでは動作保証されていないので、今回のエントリを期に参考にしながらKotlinで書き換えてみた。</p>
+
+<h3 id="メトリクスを見てみよう">メトリクスを見てみよう</h3>
+
+<p>ログの出力形式には[Slf4jReporter]をつかったので指定したログファイルにメトリクスが出力されていることが確認できた。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">[2017-07-12 03:06:00.881] type=METER, name=server.error.messages.TaskService.GetTaskListService, count=0, mean_rate=0.0, m1=0.0, m5=0.0, m15=0.0, rate_unit=events/second
+[2017-07-12 03:06:00.887] type=TIMER, name=server.request.time.messages.TaskService.GetTaskListService, count=5, min=9.169273, max=226.930993, mean=53.95158430282904, stddev=84.29036619882183, median=12.679804, p75=17.87868, p95=226.930993, p98=226.930993, p99=226.930993, p999=226.930993, mean_rate=0.008607979785884044, m1=5.629057078531829E-5, m5=0.11817160428031309, m15=0.4228910681867675, rate_unit=events/second, duration_unit=milliseconds</pre></td></tr></table>
+</div>
+</div>
+<p>ログ出力は10分ごとに繰り返し行われるように設定した。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li><code>dropwizard/metrics</code>を使いgRPC Serverに計測ポイントをついかしてメトリクスを計測することができた。</li>
+<li><code>io.grpc.ServerInterceptor</code>を実装したので全てのgRPC Serverに導入すればメトリクスを横断して計測することができる。</li>
+<li>ログ出力形式にはCSV形式も選択できる。fluentdでCSV形式のログを収集してelasticsearchへ流しkibanaでモニタリングやその他のグラフツールへの連携も容易に行えるので試してみたい。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>動くコードをgithubに置いているので参照してください。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>今回の導入の差分もあります。他の修正内容も入っていて分かりづらいですが、よければどうぞ。</p>
+
+<p><a href="https://github.com/nsoushi/spring5-kotlin-application/pull/7/files">ADD grpc-metrics by nsoushi · Pull Request #7 · nsoushi/spring5-kotlin-application · GitHub</a></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/spring-boot/">Spring Boot</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/metrics/">Metrics</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

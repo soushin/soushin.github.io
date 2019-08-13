@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>BazelでビルドするマルチプロジェクトとCircleCIを連携する - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="今回のエントリではBazelでビルドしたマルチプロジェクトとCircleCIの連携をまとめていく。マルチプロジェクトとCIを連携する際の実運">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">BazelでビルドするマルチプロジェクトとCircleCIを連携する</h1>
+    <div class="post-meta">2018.11.22</div>
+  </header>
+  <div class="post-content">
+
+<p>今回のエントリではBazelでビルドしたマルチプロジェクトとCircleCIの連携をまとめていく。マルチプロジェクトとCIを連携する際の実運用の課題を洗い出して解決方法を考えた。</p>
+
+<h3 id="プロジェクト構成">プロジェクト構成</h3>
+
+<p>CIと連携させるマルチプロジェクトは次のような構成である。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ tree -I &#39;bazel-*|common_kt*|public_kt*|script&#39;
+.
+├── BUILD
+├── Makefile
+├── README.md
+├── WORKSPACE
+├── pkg
+│   ├── common_go
+│   │   └── util
+│   │       ├── BUILD.bazel
+│   │       ├── string.go
+│   │       └── string_test.go
+│   └── public_go
+│       ├── BUILD.bazel
+│       ├── injector.go
+│       ├── main.go
+│       ├── main_test.go
+│       ├── usecase
+│       │   ├── BUILD.bazel
+│       │   └── greet_usecase.go
+│       └── wire_gen.go
+└── proto
+    ├── echo
+    │   ├── BUILD.bazel
+    │   ├── echo.pb.go
+    │   └── echo.proto
+    └── greet
+        ├── BUILD.bazel
+        ├── greet.pb.go
+        └── greet.proto</pre></td></tr></table>
+</div>
+</div>
+<h3 id="ciと連携する上で実現したいこと">CIと連携する上で実現したいこと</h3>
+
+<p>pkg以下には<code>common_go</code>と<code>public_go</code>のパッケージが配置されている。<br/>
+public_goはcommon_goに依存している。</p>
+
+<p>CIと連携する上で実現したいことを一覧にする。</p>
+
+<ul>
+<li>パッケージ内のコードに修正が入ればパッケージのテストを実行したい</li>
+<li>パッケージ内のコードに修正が入ればパッケージのバイナリビルドを実行したい</li>
+<li>パッケージ内のコードに修正が入りコンテナビルドのタスクがあればレジストリへプッシュを行いたい</li>
+<li>common_goに修正が入れば依存している全てのパッケージのテストからバイナリビルド、コンテナビルドとレジストリへのプッシュを行いたい</li>
+</ul>
+
+<p>ここから１つずつ実現方法をまとめていく。</p>
+
+<h3 id="circleciのdockerイメージにbazelをインストールする">CircleCIのDockerイメージにbazelをインストールする</h3>
+
+<p>CircleCIのDockerイメージにはbazelは標準でセットアップされていないのでインストールする必要がある。</p>
+
+<p>Bazelをインストールするジョブは次のようになった。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="c"># .circleci/config.yml</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span>jobs<span class="p">:</span><span class="w">
+</span><span class="w">  </span>preparetool<span class="p">:</span><span class="w">
+</span><span class="w">    </span>docker<span class="p">:</span><span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>image<span class="p">:</span><span class="w"> </span>circleci/golang<span class="p">:</span><span class="m">1.10.3</span><span class="w">
+</span><span class="w">    </span>steps<span class="p">:</span><span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>restore_cache<span class="p">:</span><span class="w">
+</span><span class="w">        </span>keys<span class="p">:</span><span class="w">
+</span><span class="w">        </span>-<span class="w"> </span>v1-build-bazel-cache-{{<span class="w"> </span>.Branch<span class="w"> </span>}}-<span class="sd">-
+</span><span class="sd">        - v1-build-bazel-cache-master--</span><span class="w">
+</span><span class="w">        </span>-<span class="w"> </span>v1-build-bazel-cache<span class="sd">-
+</span><span class="sd">    - run:</span><span class="w">
+</span><span class="w">        </span>name<span class="p">:</span><span class="w"> </span>setup<span class="w">
+</span><span class="w">        </span>command<span class="p">:</span><span class="w"> </span><span class="sd">|
+</span><span class="sd">          if ! type ./bin/bazel &gt;/dev/null 2&gt;&amp;1; then</span><span class="w">
+</span><span class="w">            </span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>pkg-config<span class="w"> </span>zip<span class="w"> </span>g++<span class="w"> </span>zlib1g-dev<span class="w"> </span>unzip<span class="w"> </span>python<span class="w">
+</span><span class="w">            </span>wget<span class="w"> </span>-q<span class="w"> </span>-O<span class="w"> </span>bazel-installer.sh<span class="w"> </span>https<span class="p">:</span>//github.com/bazelbuild/bazel/releases/download/<span class="m">0.19.2</span>/bazel<span class="m">-0.19.2</span>-installer-linux-x86_64.sh<span class="w">
+</span><span class="w">            </span>chmod<span class="w"> </span>+x<span class="w"> </span>./bazel-installer.sh<span class="w">
+</span><span class="w">            </span>./bazel-installer.sh<span class="w"> </span>--user<span class="w">
+</span><span class="w">            </span>mkdir<span class="w"> </span>-p<span class="w"> </span>./bin<span class="w">
+</span><span class="w">            </span>cp<span class="w"> </span>/home/circleci/.bazel/bin/*<span class="w"> </span>./bin/<span class="w">
+</span><span class="w">          </span>fi<span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>run<span class="p">:</span><span class="w">
+</span><span class="w">        </span>name<span class="p">:</span><span class="w"> </span>version<span class="w">
+</span><span class="w">        </span>command<span class="p">:</span><span class="w"> </span>./bin/bazel<span class="w"> </span>version<span class="w">
+</span><span class="w">    </span>-<span class="w"> </span>save_cache<span class="p">:</span><span class="w">
+</span><span class="w">        </span>key<span class="p">:</span><span class="w"> </span>v1-build-bazel-cache-{{<span class="w"> </span>.Branch<span class="w"> </span>}}--{{<span class="w"> </span>.Revision<span class="w"> </span>}}<span class="w">
+</span><span class="w">        </span>paths<span class="p">:</span><span class="w">
+</span><span class="w">        </span>-<span class="w"> </span>./bin</code></pre></td></tr></table>
+</div>
+</div>
+<p><a href="https://docs.bazel.build/versions/master/install-ubuntu.html">Installing Bazel on Ubuntu - Bazel</a></p>
+
+<p>公式ドキュメントに載っているとおりのインストール手順をCI上で実行する。</p>
+
+<h3 id="パッケージ内のコードに修正が入ればパッケージのテストとバイナリビルドを実行したい">パッケージ内のコードに修正が入ればパッケージのテストとバイナリビルドを実行したい</h3>
+
+<p>テストとバイナリビルドの方法をまとめていく。</p>
+
+<p>方法としてはCI上にチェックアウトされたコードとmasterまたはHEADとの差分をとり修正されたコードのパスを取得する。そのパスからbazelコマンドに必要な文字列を抜き出せば良い。<br/>
+先人の知恵を借りてBazel連携を実現した。</p>
+
+<p><a href="https://blog.stormcat.io/post/entry/2015/12/10/160000/">CircleCIで変更があった箇所だけに限定してビルドするテクニック · tehepero note(・ω&lt;) 2.0</a></p>
+
+<p>完成したシェルスクリプトは次のようになった。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="cp">#!/usr/bin/env bash
+</span><span class="cp"></span><span class="nv">PROJECT_DIR</span><span class="o">=</span><span class="nv">$1</span>
+<span class="nv">COMMAND</span><span class="o">=</span><span class="nv">$2</span>
+
+<span class="k">if</span> <span class="o">[[</span> <span class="si">${</span><span class="nv">COMMAND</span><span class="si">}</span> !<span class="o">=</span> <span class="s2">&#34;build&#34;</span> <span class="o">&amp;&amp;</span> <span class="si">${</span><span class="nv">COMMAND</span><span class="si">}</span> !<span class="o">=</span> <span class="s2">&#34;push&#34;</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+  <span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$COMMAND</span><span class="s2"> is invalid command. (Required build or push).&#34;</span> <span class="m">1</span>&gt;<span class="p">&amp;</span><span class="m">2</span>
+  <span class="nb">exit</span> <span class="m">1</span>
+<span class="k">fi</span>
+
+<span class="nv">CURRENT_BRANCH</span><span class="o">=</span><span class="sb">`</span>git rev-parse --abbrev-ref @<span class="sb">`</span>
+<span class="nv">IMAGE_TAG</span><span class="o">=</span><span class="si">${</span><span class="nv">CURRENT_BRANCH</span><span class="p">/</span><span class="se">\/</span><span class="p">/_</span><span class="si">}</span>
+
+<span class="c1"># 変更があったdockerイメージを取得</span>
+<span class="k">if</span> <span class="o">[</span> <span class="si">${</span><span class="nv">CURRENT_BRANCH</span><span class="si">}</span> <span class="o">=</span> <span class="s2">&#34;master&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+  <span class="c1"># 現在がmasterであれば、直前のコミットと比較</span>
+  <span class="nv">TARGET</span><span class="o">=</span><span class="s2">&#34;HEAD^ HEAD&#34;</span>
+<span class="k">else</span>
+  <span class="c1"># masterブランチ以外であれば、origin/masterの最新と比較</span>
+  <span class="nv">TARGET</span><span class="o">=</span><span class="s2">&#34;origin/master&#34;</span>
+<span class="k">fi</span>
+git diff <span class="si">${</span><span class="nv">TARGET</span><span class="si">}</span> --name-only  <span class="p">|</span> awk <span class="s1">&#39;/^pkg/&#39;</span> <span class="p">|</span> awk <span class="s1">&#39;{sub(&#34;pkg/&#34;, &#34;&#34;, $0); print $0}&#39;</span> <span class="p">|</span> awk <span class="s1">&#39;{print substr($0, 0, index($0, &#34;/&#34;) -1)}&#39;</span> <span class="p">|</span> awk  <span class="s1">&#39;!a[$0]++&#39;</span> &gt; check.tmp
+
+<span class="k">for</span> pkgname in <span class="sb">`</span>cat check.tmp<span class="sb">`</span><span class="p">;</span> <span class="k">do</span>
+  <span class="k">if</span> <span class="o">[[</span> <span class="si">${</span><span class="nv">COMMAND</span><span class="si">}</span> <span class="o">==</span> <span class="s2">&#34;build&#34;</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="c1"># test</span>
+    <span class="si">${</span><span class="nv">PROJECT_DIR</span><span class="si">}</span>/bin/bazel query //... <span class="p">|</span> grep <span class="s2">&#34;//pkg/</span><span class="nv">$pkgname</span><span class="s2">&#34;</span> <span class="p">|</span> xargs <span class="si">${</span><span class="nv">PROJECT_DIR</span><span class="si">}</span>/bin/bazel <span class="nb">test</span> --define <span class="nv">IMAGE_TAG</span><span class="o">=</span><span class="si">${</span><span class="nv">IMAGE_TAG</span><span class="si">}</span> --local_resources<span class="o">=</span><span class="m">4096</span>,2.0,1.0
+    <span class="c1"># build</span>
+    <span class="si">${</span><span class="nv">PROJECT_DIR</span><span class="si">}</span>/bin/bazel query //... <span class="p">|</span> awk <span class="s2">&#34;/^\/\/pkg\/</span><span class="nv">$pkgname</span><span class="s2">:</span><span class="nv">$pkgname</span>$<span class="s2">/&#34;</span> <span class="p">|</span> xargs <span class="si">${</span><span class="nv">PROJECT_DIR</span><span class="si">}</span>/bin/bazel build --define <span class="nv">IMAGE_TAG</span><span class="o">=</span><span class="si">${</span><span class="nv">IMAGE_TAG</span><span class="si">}</span> --local_resources<span class="o">=</span><span class="m">4096</span>,2.0,1.0
+  <span class="k">elif</span> <span class="o">[[</span> <span class="si">${</span><span class="nv">COMMAND</span><span class="si">}</span> <span class="o">==</span> <span class="s2">&#34;push&#34;</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="c1"># docker login // should login to docker</span>
+    <span class="si">${</span><span class="nv">PROJECT_DIR</span><span class="si">}</span>/bin/bazel query //... <span class="p">|</span> awk <span class="s2">&#34;/^\/\/pkg\/</span><span class="nv">$pkgname</span><span class="s2">:container_push</span>$<span class="s2">/&#34;</span>  <span class="p">|</span> xargs <span class="si">${</span><span class="nv">PROJECT_DIR</span><span class="si">}</span>/bin/bazel run --define <span class="nv">IMAGE_TAG</span><span class="o">=</span><span class="si">${</span><span class="nv">IMAGE_TAG</span><span class="si">}</span>
+  <span class="k">fi</span>
+<span class="k">done</span>
+
+rm check.tmp</code></pre></td></tr></table>
+</div>
+</div>
+<p>common_goとpublic_goに修正が入れば<code>check.tmp</code>には次のような文字列が格納される。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">common_go
+public_go</pre></td></tr></table>
+</div>
+</div>
+<p>check.tmpの1行ずつを抜き出してbazel queryを使いテストとバイナリビルドに合致するビルドタスクを抽出して実行している。<br/>
+<code>bazel build //pkg/&hellip;</code>のようにして全体をビルドせずに更新のあったパッケージのみビルドすることができた。</p>
+
+<h4 id="local-resourcesのフラッグを指定する">local_resourcesのフラッグを指定する</h4>
+
+<p>protobufが含まれるプロジェクトのためビルドに必要なメモリを確保する必要がある。Dockerイメージ内でBazelを動かしているのでlocal_resourcesのフラッグを指定してメモリ調整をしている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">--local_resources=4096,2.0,1.0</pre></td></tr></table>
+</div>
+</div>
+<p>これを指定しないとOOMが発生してしまうので注意が必要である。</p>
+
+<h3 id="パッケージ内のコードに修正が入りコンテナビルドのタスクがあればレジストリへプッシュを行いたい">パッケージ内のコードに修正が入りコンテナビルドのタスクがあればレジストリへプッシュを行いたい</h3>
+
+<p>Dockerイメージをビルドするタスクを <code>container_push</code>のnameに統一してbazel queryで抽出することで更新のあったパッケージのみがレジストリにプッシュされるようにした。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">for pkgname in `cat check.tmp`; do
+  ${PROJECT_DIR}/bin/bazel query //... | awk &#34;/^\/\/pkg\/$pkgname:container_push$/&#34;  | xargs ${PROJECT_DIR}/bin/bazel run --define IMAGE_TAG=${IMAGE_TAG}
+done</pre></td></tr></table>
+</div>
+</div>
+<p>また<code>container_push</code>のタスクは次のように定義してある。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="n">container_push</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;container_push&#34;</span><span class="p">,</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="s2">&#34;:public_go_image&#34;</span><span class="p">,</span>
+    <span class="n">format</span> <span class="o">=</span> <span class="s2">&#34;Docker&#34;</span><span class="p">,</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="s2">&#34;index.docker.io&#34;</span><span class="p">,</span>
+    <span class="n">repository</span> <span class="o">=</span> <span class="s2">&#34;soushin/bazel-multiprojects-go&#34;</span><span class="p">,</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="s2">&#34;$(IMAGE_TAG)&#34;</span><span class="p">,</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>tagに<code>&rdquo;$(IMAGE_TAG)&rdquo;</code>を指定することでビルド時のオプションを参照できるようにした。ビルドのオプションに<code>&ndash;define IMAGE_TAG=${IMAGE_TAG}</code>を加えることでブランチごとのDockerイメージがプッシュできる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">CURRENT_BRANCH=`git rev-parse --abbrev-ref @`
+IMAGE_TAG=${CURRENT_BRANCH/\//_}
+
+${PROJECT_DIR}/bin/bazel query //... | awk &#34;/^\/\/pkg\/$pkgname:container_push$/&#34;  | xargs ${PROJECT_DIR}/bin/bazel run --define IMAGE_TAG=${IMAGE_TAG}</pre></td></tr></table>
+</div>
+</div>
+<p>rule内のIMAGE_TAGを変数化する方法は他にもあり<code>workspace_status_command</code> を使えば変数をファイルで管理できる。</p>
+
+<p><a href="https://github.com/bazelbuild/rules_docker#varying-image-names">GitHub - bazelbuild/rules_docker: Rules for building and handling Docker images with Bazel</a></p>
+
+<h3 id="common-goに修正が入れば依存している全てのパッケージのテストからバイナリビルド-コンテナビルドとレジストリへのプッシュを行いたい">common_goに修正が入れば依存している全てのパッケージのテストからバイナリビルド、コンテナビルドとレジストリへのプッシュを行いたい</h3>
+
+<p>最後に共通パッケージに修正が入れば依存するパッケージすべてにビルドタスクを実行するための実現方法をまとめる。</p>
+
+<p>方法は２つある。</p>
+
+<p>１つ目は<code>rdep</code>を使って依存するパッケージをqueryで抽出する方法である。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">bazel query &#39;rdeps(pkg/..., pkg/common_go/...)&#39; --output package
+pkg/common_go/util
+pkg/public_go</pre></td></tr></table>
+</div>
+</div>
+<p>pkg以下で<code>pkg/common_go</code>が利用されているパッケージが抽出できる。</p>
+
+<p>２つ目はシンプルに<code>bazel build //pkg/&hellip;</code>を実行してしまう方法である。</p>
+
+<p>共通パッケージに依存が多ければビルド時間が長くなっていくのでCIで自動化するべきかはプロジェクト規模による。自動化せずにChatOpsなどで特定のパッケージをビルドするインターフェースを用意したほうが効率が良いかもしれない。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>BazelでビルドするマルチプロジェクトとCircleCIを連携する方法をまとめた。</li>
+<li>CIのDockerイメージ内のメモリ調整にlocal_resourcesのフラッグを指定する知見が溜まった。</li>
+<li>bazel queryを駆使して実行したいタスクを抽出すればCI連携も見通しよく整理できそうな感触を得た。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p><div class="github-card" data-user="soushin" data-repo="bazel-multiprojects" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/bazel/">Bazel</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/ci/">CI</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/circleci/">CircleCI</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

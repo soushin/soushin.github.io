@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>gRPCサーバを含むGoプロジェクトをBazelでビルドする - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="前回までのエントリに引き続きBazelのビルドをまとめていく。 GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">gRPCサーバを含むGoプロジェクトをBazelでビルドする</h1>
+    <div class="post-meta">2018.11.20</div>
+  </header>
+  <div class="post-content">
+
+<p>前回までのエントリに引き続きBazelのビルドをまとめていく。</p>
+
+<p><a href="https://blog.soushi.me/entry/2018/11/14/145038">GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p><a href="https://blog.soushi.me/entry/2018/11/16/132000">BazelでGoプロジェクトのビルド。Gazelleのgo_repositoryで外部ライブラリの依存とBazelのgo_testでテスト。 - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p>今回のエントリではgRPCサーバを含むGoプロジェクトをBazelでビルドする方法をまとめる。</p>
+
+<h3 id="protocol-bufferとgrpcサーバのinterfaceの生成をbazelで行う">Protocol BufferとgRPCサーバのInterfaceの生成をBazelで行う</h3>
+
+<p>これまではprotocをつかって.protoファイルからProtocol BufferとgRPCサーバのInterfaceの生成を行っていたがBazelのruleを使えば簡単にビルドタスクに追加することができる。</p>
+
+<p>利用するruleは<code>rules_proto</code>。</p>
+
+<p><div class="github-card" data-user="stackb" data-repo="rules_proto" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>このruleに辿り着く前に<a href="https://github.com/pubref/rules_protobuf">pubref/rules_protobuf</a>を見つけたがpubrefのほうは周辺のruleのアップデートに追いついておらずstackbのほうがメンテナンスが活発である。</p>
+
+<h4 id="workspaceにruleの追加と-protoファイルの追加">WORKSPACEにruleの追加と.protoファイルの追加</h4>
+
+<p>WORKSPACEにruleを追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># WORKSPACE</span>
+
+<span class="n">http_archive</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;build_stack_rules_proto&#34;</span><span class="p">,</span>
+    <span class="n">urls</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;https://github.com/stackb/rules_proto/archive/1d6550fc2e62.tar.gz&#34;</span><span class="p">],</span>
+    <span class="n">sha256</span> <span class="o">=</span> <span class="s2">&#34;113e6792f5b20679285c86d91c163cc8c4d2b4d24d7a087ae4f233b5d9311012&#34;</span><span class="p">,</span>
+    <span class="n">strip_prefix</span> <span class="o">=</span> <span class="s2">&#34;rules_proto-1d6550fc2e625d47dc4faadac92d7cb20e3ba5c5&#34;</span><span class="p">,</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>シンプルなecho.protoを<code>proto/echo</code>ディレクトリ以下に追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="err">#</span> <span class="n">proto</span><span class="o">/</span><span class="n">echo</span><span class="o">/</span><span class="n">echo.proto</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="n">syntax</span> <span class="o">=</span> <span class="s">&#34;proto3&#34;</span><span class="p">;</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="kn">package</span> <span class="nn">echo</span><span class="p">;</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="kd">service</span> <span class="n">Echo</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>    <span class="k">rpc</span> <span class="n">Echo</span> <span class="p">(</span><span class="n">EchoInbound</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">EchoOutbound</span><span class="p">);</span><span class="err">
+</span><span class="err"></span><span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="kd">message</span> <span class="nc">EchoInbound</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>    <span class="kt">string</span> <span class="kd">message</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="kd">message</span> <span class="nc">EchoOutbound</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>    <span class="kt">string</span> <span class="kd">message</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>この状態で<code>gazelle</code>を実行すると<code>proto/echo</code>以下に<code>BUILD.bazel</code>が追加されている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ bazel run //:gazelle</pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># proto/echo/BUILD.bazel</span>
+
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_go//go:def.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;go_library&#34;</span><span class="p">)</span>
+<span class="n">load</span><span class="p">(</span><span class="s2">&#34;@io_bazel_rules_go//proto:def.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;go_proto_library&#34;</span><span class="p">)</span>
+
+<span class="n">proto_library</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;echo_proto&#34;</span><span class="p">,</span>
+    <span class="n">srcs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;echo.proto&#34;</span><span class="p">],</span>
+    <span class="n">visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//visibility:public&#34;</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">go_proto_library</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;echo_go_proto&#34;</span><span class="p">,</span>
+    <span class="n">compilers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;@io_bazel_rules_go//proto:go_grpc&#34;</span><span class="p">],</span>
+    <span class="n">importpath</span> <span class="o">=</span> <span class="s2">&#34;github.com/soushin/bazel-multiprojects/proto/echo&#34;</span><span class="p">,</span>
+    <span class="n">proto</span> <span class="o">=</span> <span class="s2">&#34;:echo_proto&#34;</span><span class="p">,</span>
+    <span class="n">visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//visibility:public&#34;</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">go_library</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;go_default_library&#34;</span><span class="p">,</span>
+    <span class="n">embed</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;:echo_go_proto&#34;</span><span class="p">],</span>
+    <span class="n">importpath</span> <span class="o">=</span> <span class="s2">&#34;github.com/soushin/bazel-multiprojects/proto/echo&#34;</span><span class="p">,</span>
+    <span class="n">visibility</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;//visibility:public&#34;</span><span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>ここで生成されたgo_libraryの<code>go_default_library</code>を後でgRPCサーバ側のソースに依存させる。</p>
+
+<h4 id="go-grpc-compileをつかってprotocol-bufferを生成するタスクを追加する">go_grpc_compileをつかってProtocol Bufferを生成するタスクを追加する</h4>
+
+<p><code>go_default_library</code>のビルドタスクのみだと<code>echo.pb.go</code>ファイルが生成されない。ここで<code>stackb/rules_proto</code>のruleを追加する。<code>proto/echo/BUILD.bazel</code>に以下を追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="n">load</span><span class="p">(</span><span class="s2">&#34;@build_stack_rules_proto//go:go_grpc_compile.bzl&#34;</span><span class="p">,</span> <span class="s2">&#34;go_grpc_compile&#34;</span><span class="p">)</span>
+
+<span class="n">go_grpc_compile</span><span class="p">(</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&#34;proto_buf&#34;</span><span class="p">,</span>
+    <span class="n">deps</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;:echo_proto&#34;</span><span class="p">],</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>この<code>proto_buf</code>のタスクを実行すると<code>bazel-genfiles/proto/echo/proto_buf/proto/echo/</code>以下に<code>echo.pb.go</code>ファイルが生成される。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">(bazel-multiprojects) $ bazel build //proto/echo:proto_buf
+INFO: Analysed target //proto/echo:proto_buf (0 packages loaded).
+INFO: Found 1 target...
+Target //proto/echo:proto_buf up-to-date:
+  bazel-genfiles/proto/echo/proto_buf/proto/echo/echo.pb.go
+INFO: Elapsed time: 0.261s, Critical Path: 0.08s
+INFO: 1 process: 1 darwin-sandbox.
+INFO: Build completed successfully, 2 total actions</pre></td></tr></table>
+</div>
+</div>
+<p>生成された<code>echo.pb.go</code>ファイルをプロジェクトの<code>/proto/echo</code>に配置することでgRPCサーバ側のコードにimportすることができる。</p>
+
+<h4 id="grpcサーバを実装する">gRPCサーバを実装する</h4>
+
+<p>gRPCサーバのコードでは<code>google.golang.org/grpc</code>のライブラリを利用するのでWORKSPACEに外部ライブラリの依存を追加しておく。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">go_repository(
+    name = &#34;org_golang_google_grpc&#34;,
+    importpath = &#34;github.com/grpc/grpc-go&#34;,
+    tag = &#34;v1.16.0&#34;,
+)</pre></td></tr></table>
+</div>
+</div>
+<p>main.goのコードは次のような差分になった。シンプルにechoServerを実装しているコードである。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="err">#</span> <span class="nx">pkg</span><span class="o">/</span><span class="nx">public_go</span><span class="o">/</span><span class="nx">main</span><span class="p">.</span><span class="k">go</span>
+
+<span class="nx">diff</span> <span class="o">--</span><span class="nx">git</span> <span class="nx">a</span><span class="o">/</span><span class="nx">pkg</span><span class="o">/</span><span class="nx">public_go</span><span class="o">/</span><span class="nx">main</span><span class="p">.</span><span class="k">go</span> <span class="nx">b</span><span class="o">/</span><span class="nx">pkg</span><span class="o">/</span><span class="nx">public_go</span><span class="o">/</span><span class="nx">main</span><span class="p">.</span><span class="k">go</span>
+<span class="nx">index</span> <span class="mi">73</span><span class="nx">c925b</span><span class="p">.</span><span class="mf">.34</span><span class="nx">bddcc</span> <span class="mi">100644</span>
+<span class="o">---</span> <span class="nx">a</span><span class="o">/</span><span class="nx">pkg</span><span class="o">/</span><span class="nx">public_go</span><span class="o">/</span><span class="nx">main</span><span class="p">.</span><span class="k">go</span>
+<span class="o">+++</span> <span class="nx">b</span><span class="o">/</span><span class="nx">pkg</span><span class="o">/</span><span class="nx">public_go</span><span class="o">/</span><span class="nx">main</span><span class="p">.</span><span class="k">go</span>
+<span class="err">@@</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">17</span> <span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">29</span> <span class="err">@@</span>
+ <span class="kn">package</span> <span class="nx">main</span>
+
+ <span class="kn">import</span> <span class="p">(</span>
+<span class="o">+</span>       <span class="s">&#34;context&#34;</span>
+        <span class="s">&#34;flag&#34;</span>
+        <span class="s">&#34;fmt&#34;</span>
+<span class="o">-</span>       <span class="s">&#34;context&#34;</span>
+        <span class="s">&#34;log&#34;</span>
+<span class="o">+</span>       <span class="s">&#34;net&#34;</span>
+        <span class="s">&#34;net/http&#34;</span>
+
+<span class="o">+</span>       <span class="s">&#34;google.golang.org/grpc&#34;</span>
+<span class="o">+</span>       <span class="s">&#34;google.golang.org/grpc/reflection&#34;</span>
+<span class="o">+</span>
+        <span class="s">&#34;github.com/soushin/bazel-multiprojects/pkg/common_go/util&#34;</span>
+<span class="o">+</span>       <span class="s">&#34;github.com/soushin/bazel-multiprojects/proto/echo&#34;</span>
+ <span class="p">)</span>
+
+ <span class="kd">var</span> <span class="nx">msg</span> <span class="kt">string</span>
+
+<span class="o">+</span><span class="kd">type</span> <span class="nx">server</span> <span class="kd">struct</span><span class="p">{}</span>
+<span class="o">+</span>
+<span class="o">+</span><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">server</span><span class="p">)</span> <span class="nf">Echo</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">in</span> <span class="o">*</span><span class="nx">echo</span><span class="p">.</span><span class="nx">EchoInbound</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">echo</span><span class="p">.</span><span class="nx">EchoOutbound</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+<span class="o">+</span>       <span class="k">return</span> <span class="o">&amp;</span><span class="nx">echo</span><span class="p">.</span><span class="nx">EchoOutbound</span><span class="p">{</span>
+<span class="o">+</span>               <span class="nx">Message</span><span class="p">:</span> <span class="nx">in</span><span class="p">.</span><span class="nx">Message</span><span class="p">},</span> <span class="kc">nil</span>
+<span class="o">+</span><span class="p">}</span>
+<span class="o">+</span>
+ <span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nx">greet</span> <span class="o">:=</span> <span class="nx">flag</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;greet&#34;</span><span class="p">,</span> <span class="s">&#34;Hello&#34;</span><span class="p">,</span> <span class="s">&#34;greet message&#34;</span><span class="p">)</span>
+        <span class="nx">flag</span><span class="p">.</span><span class="nf">Parse</span><span class="p">()</span>
+<span class="err">@@</span> <span class="o">-</span><span class="mi">21</span><span class="p">,</span><span class="mi">6</span> <span class="o">+</span><span class="mi">33</span><span class="p">,</span><span class="mi">22</span> <span class="err">@@</span> <span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+        <span class="p">}</span>
+        <span class="nx">msg</span> <span class="p">=</span> <span class="nx">greetUsecase</span><span class="p">.</span><span class="nx">Msg</span>
+
+<span class="o">+</span>       <span class="c1">// serve gRPC server
+</span><span class="c1"></span><span class="o">+</span>       <span class="nx">lis</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">net</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="s">&#34;tcp&#34;</span><span class="p">,</span> <span class="s">&#34;:50051&#34;</span><span class="p">)</span>
+<span class="o">+</span>       <span class="k">defer</span> <span class="nx">lis</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+<span class="o">+</span>       <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+<span class="o">+</span>               <span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;failed to listen: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+<span class="o">+</span>       <span class="p">}</span>
+<span class="o">+</span>       <span class="nx">grpcServer</span> <span class="o">:=</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">NewServer</span><span class="p">()</span>
+<span class="o">+</span>       <span class="nx">server</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">server</span><span class="p">{}</span>
+<span class="o">+</span>       <span class="nx">echo</span><span class="p">.</span><span class="nf">RegisterEchoServer</span><span class="p">(</span><span class="nx">grpcServer</span><span class="p">,</span> <span class="nx">server</span><span class="p">)</span>
+<span class="o">+</span>       <span class="nx">reflection</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="nx">grpcServer</span><span class="p">)</span>
+<span class="o">+</span>       <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+<span class="o">+</span>               <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">grpcServer</span><span class="p">.</span><span class="nf">Serve</span><span class="p">(</span><span class="nx">lis</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+<span class="o">+</span>                       <span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;failed to serve grpc server&#34;</span><span class="p">)</span>
+<span class="o">+</span>               <span class="p">}</span>
+<span class="o">+</span>       <span class="p">}()</span>
+<span class="o">+</span>
+        <span class="nx">http</span><span class="p">.</span><span class="nf">HandleFunc</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="nx">handler</span><span class="p">)</span>
+        <span class="nx">http</span><span class="p">.</span><span class="nf">ListenAndServe</span><span class="p">(</span><span class="s">&#34;:8080&#34;</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+ <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のコードの状態で<code>gazelle</code>を実行すると<code>pkg/public_go/BUILD.bazel</code>に依存が追加される。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="n">diff</span> <span class="o">--</span><span class="n">git</span> <span class="n">a</span><span class="o">/</span><span class="n">pkg</span><span class="o">/</span><span class="n">public_go</span><span class="o">/</span><span class="n">BUILD</span><span class="o">.</span><span class="n">bazel</span> <span class="n">b</span><span class="o">/</span><span class="n">pkg</span><span class="o">/</span><span class="n">public_go</span><span class="o">/</span><span class="n">BUILD</span><span class="o">.</span><span class="n">bazel</span>
+<span class="n">index</span> <span class="mi">0</span><span class="n">c4c20d</span><span class="o">..</span><span class="mi">24250</span><span class="n">db</span> <span class="mi">100644</span>
+<span class="o">---</span> <span class="n">a</span><span class="o">/</span><span class="n">pkg</span><span class="o">/</span><span class="n">public_go</span><span class="o">/</span><span class="n">BUILD</span><span class="o">.</span><span class="n">bazel</span>
+<span class="o">+++</span> <span class="n">b</span><span class="o">/</span><span class="n">pkg</span><span class="o">/</span><span class="n">public_go</span><span class="o">/</span><span class="n">BUILD</span><span class="o">.</span><span class="n">bazel</span>
+<span class="err">@@</span> <span class="o">-</span><span class="mi">11</span><span class="p">,</span><span class="mi">6</span> <span class="o">+</span><span class="mi">11</span><span class="p">,</span><span class="mi">9</span> <span class="err">@@</span> <span class="n">go_library</span><span class="p">(</span>
+     <span class="n">deps</span> <span class="o">=</span> <span class="p">[</span>
+         <span class="s2">&#34;//pkg/common_go/util:go_default_library&#34;</span><span class="p">,</span>
+         <span class="s2">&#34;//pkg/public_go/usecase:go_default_library&#34;</span><span class="p">,</span>
+<span class="o">+</span>        <span class="s2">&#34;//proto/echo:go_default_library&#34;</span><span class="p">,</span>
+<span class="o">+</span>        <span class="s2">&#34;@org_golang_google_grpc//:go_default_library&#34;</span><span class="p">,</span>
+<span class="o">+</span>        <span class="s2">&#34;@org_golang_google_grpc//reflection:go_default_library&#34;</span><span class="p">,</span>
+     <span class="p">],</span>
+ <span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>gazelleがWORKSPACEの外部ライブラリ依存の定義とmain.goのコードを解析して依存関係をBUILD定義に反映してくれている。</p>
+
+<p>ここまでくればgRPCサーバを起動することができる。</p>
+
+<h4 id="grpcサーバの起動">gRPCサーバの起動</h4>
+
+<p><code>pkg/public_go/BUILD.bazel</code>に定義されているgo_binaryのタスクのrunコマンドを実行してサーバを起動させる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">$ (bazel-multiprojects) $ bazel run //pkg/public_go:public_go</pre></td></tr></table>
+</div>
+</div>
+<p>gRPCのデバッグに最適なevansで起動したgRPCサーバにリクエストを送り確認する。</p>
+
+<p><div class="github-card" data-user="ktr0731" data-repo="evans" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma"><span class="nx">evans</span> <span class="o">--</span><span class="nx">port</span> <span class="mi">50051</span> <span class="nx">proto</span><span class="o">/</span><span class="nx">echo</span><span class="o">/</span><span class="nx">echo</span><span class="p">.</span><span class="nx">proto</span>
+
+  <span class="nx">______</span>
+ <span class="p">|</span>  <span class="nx">____</span><span class="p">|</span>
+ <span class="p">|</span> <span class="p">|</span><span class="nx">__</span>    <span class="nx">__</span>   <span class="nx">__</span>   <span class="nx">__</span> <span class="nx">_</span>   <span class="nx">_</span> <span class="nx">__</span>    <span class="nx">___</span>
+ <span class="p">|</span>  <span class="nx">__</span><span class="p">|</span>   <span class="err">\</span> <span class="err">\</span> <span class="o">/</span> <span class="o">/</span>  <span class="o">/</span> <span class="nx">_</span><span class="p">.</span> <span class="p">|</span> <span class="p">|</span> <span class="err">&#39;</span><span class="nx">_</span> <span class="err">\</span>  <span class="o">/</span> <span class="nx">__</span><span class="p">|</span>
+ <span class="p">|</span> <span class="p">|</span><span class="nx">____</span>   <span class="err">\</span> <span class="nx">V</span> <span class="o">/</span>  <span class="p">|</span> <span class="p">(</span><span class="nx">_</span><span class="p">|</span> <span class="p">|</span> <span class="p">|</span> <span class="p">|</span> <span class="p">|</span> <span class="p">|</span> <span class="err">\</span><span class="nx">__</span> \
+ <span class="p">|</span><span class="nx">______</span><span class="p">|</span>   <span class="err">\</span><span class="nx">_</span><span class="o">/</span>    <span class="err">\</span><span class="nx">__</span><span class="p">,</span><span class="nx">_</span><span class="p">|</span> <span class="p">|</span><span class="nx">_</span><span class="p">|</span> <span class="p">|</span><span class="nx">_</span><span class="p">|</span> <span class="p">|</span><span class="nx">___</span><span class="o">/</span>
+
+ <span class="nx">more</span> <span class="nx">expressive</span> <span class="nx">universal</span> <span class="nx">gRPC</span> <span class="nx">client</span>
+
+
+<span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">50051</span><span class="p">&gt;</span> <span class="nx">show</span> <span class="kn">package</span>
+<span class="o">+---------+</span>
+<span class="p">|</span> <span class="nx">PACKAGE</span> <span class="p">|</span>
+<span class="o">+---------+</span>
+<span class="p">|</span> <span class="nx">echo</span>    <span class="p">|</span>
+<span class="o">+---------+</span>
+
+<span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">50051</span><span class="p">&gt;</span> <span class="kn">package</span> <span class="nx">echo</span>
+
+<span class="nx">echo</span><span class="err">@</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">50051</span><span class="p">&gt;</span> <span class="nx">show</span> <span class="nx">service</span>
+<span class="o">+---------+------+-------------+--------------+</span>
+<span class="p">|</span> <span class="nx">SERVICE</span> <span class="p">|</span> <span class="nx">RPC</span>  <span class="p">|</span> <span class="nx">REQUESTTYPE</span> <span class="p">|</span> <span class="nx">RESPONSETYPE</span> <span class="p">|</span>
+<span class="o">+---------+------+-------------+--------------+</span>
+<span class="p">|</span> <span class="nx">Echo</span>    <span class="p">|</span> <span class="nx">Echo</span> <span class="p">|</span> <span class="nx">EchoInbound</span> <span class="p">|</span> <span class="nx">EchoOutbound</span> <span class="p">|</span>
+<span class="o">+---------+------+-------------+--------------+</span>
+
+<span class="nx">echo</span><span class="err">@</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">50051</span><span class="p">&gt;</span> <span class="nx">service</span> <span class="nx">Echo</span>
+
+<span class="nx">echo</span><span class="p">.</span><span class="nx">Echo</span><span class="err">@</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">50051</span><span class="p">&gt;</span> <span class="nx">call</span> <span class="nx">Echo</span>
+<span class="nf">message</span> <span class="p">(</span><span class="nx">TYPE_STRING</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="nx">Awesome</span> <span class="nx">Bazel</span><span class="p">!</span>
+<span class="p">{</span>
+  <span class="s">&#34;message&#34;</span><span class="p">:</span> <span class="s">&#34;Awesome Bazel!&#34;</span>
+<span class="p">}</span></pre></td></tr></table>
+</div>
+</div>
+<p>EchoSeverが正常に起動していることを確認できた。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>gRPCサーバを含むGoプロジェクトをBazelでビルドする方法をまとめた</li>
+<li>Protocol Bufferを生成するruleもありGoプロジェクト周辺のビルドユースケースが整っている</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p><div class="github-card" data-user="soushin" data-repo="bazel-multiprojects" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/bazel/">Bazel</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/go/">Go</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

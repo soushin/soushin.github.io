@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>FCMでWeb Push。Firebase Javascript SDKを使ったプッシュ通知とトピック送信を試した。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="FirebaseのFirebase Cloud Messaging（FCM）を試している。今回のエントリではFCMのJavaScriptライブラリを使っ">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">FCMでWeb Push。Firebase Javascript SDKを使ったプッシュ通知とトピック送信を試した。</h1>
+    <div class="post-meta">2017.5.23</div>
+  </header>
+  <div class="post-content">
+
+<p>FirebaseのFirebase Cloud Messaging（FCM）を試している。今回のエントリではFCMのJavaScriptライブラリを使ってブラウザにプッシュ通知やトピックにメッセージを送信する方法をまとめていく。</p>
+
+<p>FCMでは<a href="https://firebase.google.com/docs/cloud-messaging/send-message#send_messages_to_topics">トピック</a>や<a href="https://firebase.google.com/docs/cloud-messaging/send-message#send_messages_to_device_groups">端末グループへのメッセージング</a>などの機能が利用できる。これらの機能をPush APIをサポートしているブラウザにも同様に利用することができる。</p>
+
+<p><a href="https://developers-jp.googleblog.com/2016/10/announcing-firebase-cloud-messaging-for.html">ウェブ用 Firebase Cloud Messaging が利用可能になりました</a></p>
+
+<p>ここからはFCMのJavaScriptライブラリの使い方とサーバからメッセージを送信する方法などクライアントとサーバに分けてまとめていく。</p>
+
+<h3 id="クライアント">クライアント</h3>
+
+<p>クライアントではJasvaScript SDKを通してトークンを取得する。そのトークンをサーバに送りストレージに保持させる。<br/>
+サーバではトークンを用いてFCMと連携を行い通知リクエストを送信することになる。</p>
+
+<h4 id="必要なsdk">必要なSDK</h4>
+
+<p>必要なJavaScript SDKは次の２つである。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">&amp;lt;script src=&#34;https://www.gstatic.com/firebasejs/4.0.0/firebase-app.js&#34;&gt;&amp;lt;/script&gt;
+&amp;lt;script src=&#34;https://www.gstatic.com/firebasejs/4.0.0/firebase-messaging.js&#34;&gt;&amp;lt;/script&gt;</pre></td></tr></table>
+</div>
+</div>
+<p>またfirebaseアプリを定義するために次のコードで初期設定を完了させる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">messagingSenderId</span><span class="o">:</span> <span class="nx">fcmSenderId</span> <span class="c1">// Firebaseのコンソールで確認できる送信者IDを設定する
+</span><span class="c1"></span><span class="p">};</span>
+<span class="nx">firebase</span><span class="p">.</span><span class="nx">initializeApp</span><span class="p">(</span><span class="nx">config</span><span class="p">);</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="manifest-json">manifest.json</h4>
+
+<p>manifest.jsonに<code>gcm_sender_id</code>を定義する。このIDは固定で<code>103953800507</code>とする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;gcm_sender_id&#34;</span><span class="p">:</span> <span class="s2">&#34;103953800507&#34;</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="serviceworker-js">serviceworker.js</h4>
+
+<p>ブラウザに通知を表示させるために<code>serviceworker.js</code>で表示処理を行うがSDKを読み込んだ場合は<code>serviceworker.js</code>のファイル名が固定となる。<br/>
+ファイル名は<code>firebase-messaging-sw.js</code>とする。<code>firebase-messaging-sw.js</code>に通知表示処理のコードを記述する。</p>
+
+<h4 id="トークンの取得">トークンの取得</h4>
+
+<p>SDKを使いプッシュ通知に必要なトークンを取得する。<br/>
+取得したトークンを用いて特定の端末へのメッセージ送信やトピック送信を行う。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">let</span> <span class="nx">messaging</span> <span class="o">=</span> <span class="nx">firebase</span><span class="p">.</span><span class="nx">messaging</span><span class="p">();</span>
+
+<span class="nx">messaging</span><span class="p">.</span><span class="nx">getToken</span><span class="p">()</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">currentToken</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 取得したトークンをサーバへ送る。サーバ側でユーザIDとトークンを連携させDBなどのストレージに保持する。
+</span><span class="c1"></span>    <span class="p">})</span>
+    <span class="p">.</span><span class="k">catch</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;An error occurred while retrieving token. &#39;</span><span class="p">,</span> <span class="nx">err</span><span class="p">);</span>
+    <span class="p">});</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<p>トークンの取得の前にブラウザで通知を購読させたい場合は次のように処理をする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="nx">messaging</span><span class="p">.</span><span class="nx">requestPermission</span><span class="p">()</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="c1">// 通知購読が成功した場合、`messaging.getToken()` でトークンを取得しサーバAPIと連携させる。
+</span><span class="c1"></span>    <span class="p">})</span>
+    <span class="p">.</span><span class="k">catch</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Unable to get permission to notify.&#39;</span><span class="p">,</span> <span class="nx">err</span><span class="p">);</span>
+    <span class="p">});</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="サーバ">サーバ</h3>
+
+<p>サーバではクライアントから送信されたトークンをストレージに保持したりFCMと連携して通知リクエストを送信する。</p>
+
+<h4 id="特定の端末へのメッセージ送信">特定の端末へのメッセージ送信</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">send</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">to</span> <span class="p">=</span> <span class="s">&#34;token&#34;</span>
+    <span class="k">val</span> <span class="py">payload</span> <span class="p">=</span> <span class="n">Payload</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">icon</span><span class="p">,</span> <span class="n">clickaction</span><span class="p">)</span>
+    <span class="k">val</span> <span class="py">content</span> <span class="p">=</span> <span class="n">objectMapper</span><span class="p">().</span><span class="n">writeValueAsString</span><span class="p">(</span><span class="n">FcmRequest</span><span class="p">(</span><span class="n">to</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">CustomPayload</span><span class="p">(</span><span class="s">&#34;custom&#34;</span><span class="p">)))</span>
+    <span class="k">val</span> <span class="py">body</span> <span class="p">=</span> <span class="n">okhttp3</span><span class="p">.</span><span class="n">RequestBody</span><span class="p">.</span><span class="n">create</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="n">parse</span><span class="p">(</span><span class="s">&#34;application/json&#34;</span><span class="p">),</span> <span class="n">content</span><span class="p">)</span>
+
+    <span class="k">val</span> <span class="py">request</span> <span class="p">=</span> <span class="n">okhttp3</span><span class="p">.</span><span class="n">Request</span><span class="p">.</span><span class="n">Builder</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">url</span><span class="p">(</span><span class="s">&#34;https://fcm.googleapis.com/fcm/send&#34;</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">header</span><span class="p">(</span><span class="s">&#34;Authorization&#34;</span><span class="p">,</span> <span class="s">&#34;key=%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">appProperties</span><span class="p">.</span><span class="n">serverKey</span><span class="p">))</span>
+            <span class="p">.</span><span class="n">header</span><span class="p">(</span><span class="s">&#34;Content-Type&#34;</span><span class="p">,</span> <span class="s">&#34;application/json&#34;</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">post</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">build</span><span class="p">()</span>
+    <span class="k">val</span> <span class="py">client</span> <span class="p">=</span> <span class="n">OkHttpClient</span><span class="p">.</span><span class="n">Builder</span><span class="p">().</span><span class="n">build</span><span class="p">()</span>
+    <span class="k">val</span> <span class="py">response</span> <span class="p">=</span> <span class="n">client</span><span class="p">.</span><span class="n">newCall</span><span class="p">(</span><span class="n">request</span><span class="p">).</span><span class="n">execute</span><span class="p">()</span>
+
+    <span class="n">response</span><span class="p">.</span><span class="n">body</span><span class="p">().</span><span class="n">use</span> <span class="p">{</span> <span class="n">body</span> <span class="p">-&gt;</span>
+        <span class="k">val</span> <span class="py">responseBody</span> <span class="p">=</span> <span class="n">body</span><span class="p">.</span><span class="n">string</span><span class="p">()</span>
+        <span class="n">log</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#34;body:%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">content</span><span class="p">))</span>
+        <span class="n">log</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#34;response:%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">responseBody</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+ 
+ <span class="k">data</span> <span class="k">class</span> <span class="nc">FcmRequest</span><span class="p">(</span>
+            <span class="k">val</span> <span class="py">to</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+            <span class="k">val</span> <span class="py">notification</span><span class="p">:</span> <span class="n">Payload</span><span class="p">,</span>
+            <span class="k">val</span> <span class="py">data</span><span class="p">:</span> <span class="n">CustomPayload</span><span class="p">)</span>
+
+<span class="k">data</span> <span class="k">class</span> <span class="nc">CustomPayload</span><span class="p">(</span>
+            <span class="k">val</span> <span class="py">topic</span><span class="p">:</span> <span class="n">String</span><span class="p">?)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>curlで表すと次のようになる</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">curl -X POST \
+-H &#34;Authorization: key={Firebaseのコンソールで確認できるサーバーキー}&#34; \
+-H &#34;Content-Type: application/json&#34; \
+-d &#39;{
+  &#34;notification&#34;: {
+    &#34;title&#34;: &#34;Portugal vs. Denmark&#34;,
+    &#34;body&#34;: &#34;5 to 1&#34;,
+    &#34;icon&#34;: &#34;/image/ic_alarm_black_48dp_2x.png&#34;,
+    &#34;click_action&#34;: &#34;http://localhost&#34;
+  },
+  &#34;data&#34;: {
+    &#34;score&#34;: &#34;3x1&#34;
+  },
+  &#34;to&#34;: &#34;{クライアントで取得したトークン}&#34;
+}&#39;  \
+&#34;https://fcm.googleapis.com/fcm/send&#34;</pre></td></tr></table>
+</div>
+</div>
+<p><strong>HTTP メッセージ（JSON）の詳細</strong></p>
+
+<p>FCMへ通知をリクエストするHTTP メッセージ（JSON）の詳細は次のページから参照できる。</p>
+
+<ul>
+<li><a href="https://firebase.google.com/docs/cloud-messaging/http-server-ref?hl=ja#send-downstream">Firebase Cloud Messaging の HTTP プロトコル  |  Firebase</a></li>
+</ul>
+
+<h4 id="トピックにメッセージを送信する">トピックにメッセージを送信する</h4>
+
+<p>トピックにメッセージを送信するには取得したトークンをトピックに登録する必要がある。</p>
+
+<p><strong>トークンをトピックに登録する</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">postTopic</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">body</span> <span class="p">=</span> <span class="n">okhttp3</span><span class="p">.</span><span class="n">RequestBody</span><span class="p">.</span><span class="n">create</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="n">parse</span><span class="p">(</span><span class="s">&#34;application/json&#34;</span><span class="p">),</span> <span class="s">&#34;{}&#34;</span><span class="p">)</span>
+    <span class="k">val</span> <span class="py">request</span> <span class="p">=</span> <span class="n">okhttp3</span><span class="p">.</span><span class="n">Request</span><span class="p">.</span><span class="n">Builder</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">url</span><span class="p">(</span><span class="s">&#34;%s/%s/rel%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#34;https://iid.googleapis.com/iid/v1&#34;</span><span class="p">,</span> <span class="s">&#34;token&#34;</span><span class="p">,</span> <span class="s">&#34;/topics/movies&#34;</span><span class="p">))</span>
+            <span class="p">.</span><span class="n">header</span><span class="p">(</span><span class="s">&#34;Authorization&#34;</span><span class="p">,</span> <span class="s">&#34;key=%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">appProperties</span><span class="p">.</span><span class="n">serverKey</span><span class="p">))</span>
+            <span class="p">.</span><span class="n">header</span><span class="p">(</span><span class="s">&#34;Content-Type&#34;</span><span class="p">,</span> <span class="s">&#34;application/json&#34;</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">header</span><span class="p">(</span><span class="s">&#34;Content-Length&#34;</span><span class="p">,</span> <span class="s">&#34;0&#34;</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">post</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">build</span><span class="p">()</span>
+        <span class="k">val</span> <span class="py">client</span> <span class="p">=</span> <span class="n">OkHttpClient</span><span class="p">.</span><span class="n">Builder</span><span class="p">().</span><span class="n">build</span><span class="p">()</span>
+        <span class="n">client</span><span class="p">.</span><span class="n">newCall</span><span class="p">(</span><span class="n">request</span><span class="p">).</span><span class="n">execute</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>curlで表すと次のようになる</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">curl -X POST \
+-H &#34;Authorization: key={Firebaseのコンソールで確認できるサーバーキー}&#34; \
+-H &#34;Content-Type: application/json&#34; \
+-H &#34;Content-Length: 0&#34; \
+&#34;https://iid.googleapis.com/iid/v1/{クライアントで取得したトークン}/rel/topics/movies&#34;</pre></td></tr></table>
+</div>
+</div>
+<p><strong>トピックにメッセージを送信</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">send</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">val</span> <span class="py">to</span> <span class="p">=</span> <span class="s">&#34;/topics/movies&#34;</span>
+    <span class="k">val</span> <span class="py">payload</span> <span class="p">=</span> <span class="n">Payload</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">icon</span><span class="p">,</span> <span class="n">clickaction</span><span class="p">)</span>
+    <span class="k">val</span> <span class="py">content</span> <span class="p">=</span> <span class="n">objectMapper</span><span class="p">().</span><span class="n">writeValueAsString</span><span class="p">(</span><span class="n">FcmRequest</span><span class="p">(</span><span class="n">to</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">CustomPayload</span><span class="p">(</span><span class="s">&#34;custom&#34;</span><span class="p">)))</span>
+    <span class="k">val</span> <span class="py">body</span> <span class="p">=</span> <span class="n">okhttp3</span><span class="p">.</span><span class="n">RequestBody</span><span class="p">.</span><span class="n">create</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="n">parse</span><span class="p">(</span><span class="s">&#34;application/json&#34;</span><span class="p">),</span> <span class="n">content</span><span class="p">)</span>
+
+    <span class="k">val</span> <span class="py">request</span> <span class="p">=</span> <span class="n">okhttp3</span><span class="p">.</span><span class="n">Request</span><span class="p">.</span><span class="n">Builder</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">url</span><span class="p">(</span><span class="s">&#34;https://fcm.googleapis.com/fcm/send&#34;</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">header</span><span class="p">(</span><span class="s">&#34;Authorization&#34;</span><span class="p">,</span> <span class="s">&#34;key=%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">appProperties</span><span class="p">.</span><span class="n">serverKey</span><span class="p">))</span>
+            <span class="p">.</span><span class="n">header</span><span class="p">(</span><span class="s">&#34;Content-Type&#34;</span><span class="p">,</span> <span class="s">&#34;application/json&#34;</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">post</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">build</span><span class="p">()</span>
+    <span class="k">val</span> <span class="py">client</span> <span class="p">=</span> <span class="n">OkHttpClient</span><span class="p">.</span><span class="n">Builder</span><span class="p">().</span><span class="n">build</span><span class="p">()</span>
+    <span class="k">val</span> <span class="py">response</span> <span class="p">=</span> <span class="n">client</span><span class="p">.</span><span class="n">newCall</span><span class="p">(</span><span class="n">request</span><span class="p">).</span><span class="n">execute</span><span class="p">()</span>
+
+    <span class="n">response</span><span class="p">.</span><span class="n">body</span><span class="p">().</span><span class="n">use</span> <span class="p">{</span> <span class="n">body</span> <span class="p">-&gt;</span>
+        <span class="k">val</span> <span class="py">responseBody</span> <span class="p">=</span> <span class="n">body</span><span class="p">.</span><span class="n">string</span><span class="p">()</span>
+        <span class="n">log</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#34;body:%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">content</span><span class="p">))</span>
+        <span class="n">log</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#34;response:%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">responseBody</span><span class="p">))</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>特定の端末へのメッセージ送信</code>のコードのうち<code>to</code>の変数が<code>/topics/movies</code>に変更されている。それ以外は変更なしである。</p>
+
+<h3 id="ペイロードの暗号化は">ペイロードの暗号化は？</h3>
+
+<p>ペイロードの暗号化は<code>FCM API</code>を使えばサポートしてくれる。クライアントでトークン取得時に<code>ブラウザの公開鍵（p256dh）</code>と<code>乱数（auth）</code>がSDKを通してfcm.googleapis.comにPostされている。トークンはkeyとauthを用いている生成されているためクライアント側もサーバ側も暗号化を意識することなくWeb Pushを利用することができる。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>FCMのJavascript SDKを使ったプッシュ通知とトピック送信を試してみた。トピック送信は非常に強力な機能である。この機能をWeb Pushでも使うことで通知運用の幅も広がる。</li>
+<li>FirebaseのFCMを使っているのでネイティブの通知も合わせて運用できる。通知運用がネイティブとウェブを一元管理できることは良いことである。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>紹介したコードは断片のためgithubを参照してほしい。動作確認ができるようにまとめてある。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="fcm-webpush-sdk-test" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/web-push/">Web Push</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/fcm/">FCM</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/sdk/">SDK</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

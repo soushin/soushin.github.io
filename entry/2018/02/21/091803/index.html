@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>Dagger2 (android support module)とretrofit2をつかってAPIレスポンスをListViewで表示する - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="掲題のとおりAndroidのListViewを表示してみる。 APIリクエストは retrofitを使い天気情報を取得できるOpenWeathe">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Dagger2 (android support module)とretrofit2をつかってAPIレスポンスをListViewで表示する</h1>
+    <div class="post-meta">2018.2.21</div>
+  </header>
+  <div class="post-content">
+
+<p>掲題のとおりAndroidのListViewを表示してみる。
+APIリクエストは <code>retrofit</code>を使い天気情報を取得できる<a href="https://openweathermap.org/">OpenWeatherMap</a>のAPIを利用する。</p>
+
+<p><div class="github-card" data-user="square" data-repo="retrofit" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>DIにはDaggerを使い、2.11から有効なandroid support moduleを利用する。</p>
+
+<p><div class="github-card" data-user="google" data-repo="dagger" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h2 id="apiをリクエストするserviceクラスをつくる">APIをリクエストするServiceクラスをつくる</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">interface</span> <span class="nc">OpenWeatherMapService</span> <span class="p">{</span>
+
+    <span class="n">@GET</span><span class="p">(</span><span class="s">&#34;/data/2.5/forecast/daily?q=94043&amp;mode=json&amp;units=metric&amp;cnt=7&amp;APPID=XXXXX&#34;</span><span class="p">)</span>
+    <span class="k">fun</span> <span class="nf">findForecastByDaily</span><span class="p">():</span> <span class="n">Observable</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Forecasts</span><span class="p">&gt;</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>レスポンスの型は<code>Observable&lt;Forecasts></code>。型パラメータのForecastsは <code>Parcelable</code>を実装したDTO。</li>
+<li><code>APPID=XXXXX</code>はopenweathermapから取得したID</li>
+</ul>
+
+<p>このServiceクラスをRepositoryクラスから呼び出し見通しの良いコードにするためにDIを利用していく。DIについては後述する。</p>
+
+<h3 id="parcelableを実装したdto-data-class">Parcelableを実装したDTO（data class）</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">data</span> <span class="k">class</span> <span class="nc">Forecasts</span><span class="p">(</span><span class="k">var</span> <span class="py">cod</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="k">var</span> <span class="py">list</span><span class="p">:</span> <span class="n">List</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Forecast</span><span class="p">&gt;)</span> <span class="p">:</span> <span class="n">Parcelable</span> <span class="p">{</span>
+
+    <span class="k">constructor</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">Parcel</span><span class="p">)</span> <span class="p">:</span> <span class="k">this</span><span class="p">(</span>
+            <span class="n">cod</span> <span class="p">=</span> <span class="n">src</span><span class="p">.</span><span class="n">readInt</span><span class="p">(),</span>
+            <span class="n">list</span> <span class="p">=</span> <span class="n">src</span><span class="p">.</span><span class="n">createTypedArrayList</span><span class="p">(</span><span class="n">Forecast</span><span class="p">.</span><span class="n">CREATOR</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1">// -
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>ActivityやFragmentにパラメータを渡すために <code>Parcelable</code>を実装したdata classを用意する。
+フィールドにプリミティブ型ではないオブジェクト型を使う場合は次のようにする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">data</span> <span class="k">class</span> <span class="nc">Forecast</span><span class="p">(</span><span class="k">var</span> <span class="py">dt</span><span class="p">:</span> <span class="n">Long</span><span class="p">,</span> <span class="k">var</span> <span class="py">temp</span><span class="p">:</span> <span class="n">Temp</span><span class="p">,</span> <span class="k">var</span> <span class="py">weather</span><span class="p">:</span> <span class="n">List</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Weather</span><span class="p">&gt;)</span> <span class="p">:</span> <span class="n">Parcelable</span> <span class="p">{</span>
+
+    <span class="k">constructor</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">Parcel</span><span class="p">)</span> <span class="p">:</span> <span class="k">this</span><span class="p">(</span>
+            <span class="n">dt</span> <span class="p">=</span> <span class="n">src</span><span class="p">.</span><span class="n">readLong</span><span class="p">(),</span>
+            <span class="n">temp</span> <span class="p">=</span> <span class="n">src</span><span class="p">.</span><span class="n">readParcelable</span><span class="p">(</span><span class="n">Temp</span><span class="o">::</span><span class="k">class</span><span class="p">.</span><span class="n">java</span><span class="p">.</span><span class="n">classLoader</span><span class="p">),</span>  <span class="c1">//  ← data class `Temp`
+</span><span class="c1"></span>            <span class="n">weather</span> <span class="p">=</span> <span class="n">src</span><span class="p">.</span><span class="n">createTypedArrayList</span><span class="p">(</span><span class="n">Weather</span><span class="p">.</span><span class="n">CREATOR</span><span class="p">)</span> <span class="c1">//  ← List型のパラメータに data class `Weather`
+</span><span class="c1"></span>    <span class="p">)</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">describeContents</span><span class="p">():</span> <span class="n">Int</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="m">0</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">writeToParcel</span><span class="p">(</span><span class="n">dest</span><span class="p">:</span> <span class="n">Parcel</span><span class="p">?,</span> <span class="n">flags</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">dest</span><span class="o">?.</span><span class="n">writeLong</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">dest</span><span class="o">?.</span><span class="n">writeParcelable</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span> <span class="c1">//  ← data class `Temp`
+</span><span class="c1"></span>        <span class="n">dest</span><span class="o">?.</span><span class="n">writeList</span><span class="p">(</span><span class="n">weather</span><span class="p">)</span> <span class="c1">//  ← List型のパラメータに data class `Weather`
+</span><span class="c1"></span>    <span class="p">}</span>
+
+    <span class="c1">// -
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<hr/>
+
+<h2 id="mainactivityでdiする">MainActivityでDIする</h2>
+
+<p>MainActivityで<code>OpenWeatherMapService</code>を提供するRepositoryクラスをInjectするまでの過程をまとてめていく。</p>
+
+<h3 id="repositorymoduleをつくる">RepositoryModuleをつくる</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">OpenWeatherMapRepository</span><span class="p">(</span><span class="k">val</span> <span class="py">openWeatherMapService</span><span class="p">:</span> <span class="n">OpenWeatherMapService</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">findForecastByDaily</span><span class="p">()</span> <span class="p">=</span> <span class="n">openWeatherMapService</span><span class="p">.</span><span class="n">findForecastByDaily</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Module</span>
+<span class="k">internal</span> <span class="k">object</span> <span class="nc">RepositoryModule</span> <span class="p">{</span>
+
+    <span class="n">@Provides</span>
+    <span class="n">@Singleton</span>
+    <span class="n">@JvmStatic</span>
+    <span class="k">fun</span> <span class="nf">provideOpenWeatherMapRepository</span><span class="p">(</span><span class="n">openWeatherMapService</span><span class="p">:</span> <span class="n">OpenWeatherMapService</span><span class="p">)</span> <span class="p">=</span>
+            <span class="n">OpenWeatherMapRepository</span><span class="p">(</span><span class="n">openWeatherMapService</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>OpenWeatherMapRepository</code>を提供するRepositoryModuleをつくった。</p>
+
+<h3 id="datamoduleをつくる">DataModuleをつくる</h3>
+
+<p>RepositoryModuleをIncludeしたDataModuleをつくる。このモジュールでRetrofitクライアントをビルドする。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Module</span><span class="p">(</span><span class="n">includes</span> <span class="p">=</span> <span class="n">arrayOf</span><span class="p">(</span><span class="n">RepositoryModule</span><span class="o">::</span><span class="k">class</span><span class="p">))</span>
+<span class="k">internal</span> <span class="k">object</span> <span class="nc">DataModule</span> <span class="p">{</span>
+
+    <span class="n">@Provides</span>
+    <span class="n">@Singleton</span>
+    <span class="n">@JvmStatic</span>
+    <span class="k">fun</span> <span class="nf">provideMoshi</span><span class="p">()</span> <span class="p">=</span> <span class="n">Moshi</span><span class="p">.</span><span class="n">Builder</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">KotlinJsonAdapterFactory</span><span class="p">())</span>
+            <span class="p">.</span><span class="n">build</span><span class="p">()</span>
+
+    <span class="n">@Provides</span>
+    <span class="n">@Singleton</span>
+    <span class="n">@JvmStatic</span>
+    <span class="k">fun</span> <span class="nf">provideOkHttp</span><span class="p">():</span> <span class="n">OkHttpClient</span> <span class="p">=</span> <span class="n">OkHttpClient</span><span class="p">.</span><span class="n">Builder</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">build</span><span class="p">()</span>
+
+    <span class="n">@Provides</span>
+    <span class="n">@Singleton</span>
+    <span class="n">@JvmStatic</span>
+    <span class="k">fun</span> <span class="nf">provideRetrofit</span><span class="p">(</span><span class="n">oktHttpClient</span><span class="p">:</span> <span class="n">OkHttpClient</span><span class="p">,</span> <span class="n">moshi</span><span class="p">:</span> <span class="n">Moshi</span><span class="p">):</span> <span class="n">Retrofit</span> <span class="p">=</span> <span class="n">Retrofit</span><span class="p">.</span><span class="n">Builder</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">client</span><span class="p">(</span><span class="n">oktHttpClient</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">baseUrl</span><span class="p">(</span><span class="s">&#34;http://api.openweathermap.org&#34;</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">addConverterFactory</span><span class="p">(</span><span class="n">MoshiConverterFactory</span><span class="p">.</span><span class="n">create</span><span class="p">(</span><span class="n">moshi</span><span class="p">))</span>
+            <span class="p">.</span><span class="n">addCallAdapterFactory</span><span class="p">(</span><span class="n">RxJava2CallAdapterFactory</span><span class="p">.</span><span class="n">create</span><span class="p">())</span>
+            <span class="p">.</span><span class="n">build</span><span class="p">()</span>
+
+    <span class="n">@Provides</span>
+    <span class="n">@Singleton</span>
+    <span class="n">@JvmStatic</span>
+    <span class="k">fun</span> <span class="nf">provideOpenWeatherMapService</span><span class="p">(</span><span class="n">retrofit</span><span class="p">:</span> <span class="n">Retrofit</span><span class="p">)</span> <span class="p">=</span> <span class="n">retrofit</span><span class="p">.</span><span class="n">create</span><span class="p">(</span><span class="n">OpenWeatherMapService</span><span class="o">::</span><span class="k">class</span><span class="p">.</span><span class="n">java</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>JSONパーサにはKotlinサポートが入っている<a href="https://github.com/square/moshi">Moshi</a>をつかう</li>
+</ul>
+
+<h3 id="contributesandroidinjectorをつかいmainactivityへのinjectを定義する">@ContributesAndroidInjectorをつかいMainActivityへのInjectを定義する</h3>
+
+<p>Dagger 2.11の重要ポイントの１つ。ActivityへのInjectは <code>@ContributesAndroidInjector</code>をつかいUiModuleをつくる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Module</span>
+<span class="k">internal</span> <span class="k">abstract</span> <span class="k">class</span> <span class="nc">UiModule</span> <span class="p">{</span>
+
+    <span class="n">@ContributesAndroidInjector</span>
+    <span class="k">internal</span> <span class="k">abstract</span> <span class="k">fun</span> <span class="nf">contributeMainActivity</span><span class="p">():</span> <span class="n">MainActivity</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Activityが増えたときには、ここにActivityへのInjectを追加する。</p>
+
+<h3 id="applicationcomponentに-androidinjector-kotlinapplication-を継承させる-kotlinapplication">ApplicationComponentに AndroidInjector<kotlinapplication> を継承させる</kotlinapplication></h3>
+
+<p>Dagger 2.11の重要ポイントの１つ。ApplicationクラスへInjectさせるためにApplicationComponentに <code>AndroidInjector&lt;KotlinApplication&gt;</code> を継承させる。後述するApplicationの親クラスに <code>dagger.android.support.DaggerApplication</code>を使うためmoduleに<code>AndroidSupportInjectionModule</code> を追加する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Singleton</span>
+<span class="n">@Component</span><span class="p">(</span><span class="n">modules</span> <span class="p">=</span> <span class="n">arrayOf</span><span class="p">(</span><span class="n">AndroidSupportInjectionModule</span><span class="o">::</span><span class="k">class</span><span class="p">,</span>
+        <span class="n">AppModule</span><span class="o">::</span><span class="k">class</span><span class="p">,</span>
+        <span class="n">DataModule</span><span class="o">::</span><span class="k">class</span><span class="p">,</span>
+        <span class="n">UiModule</span><span class="o">::</span><span class="k">class</span><span class="p">))</span>
+<span class="k">interface</span> <span class="nc">ApplicationComponent</span> <span class="p">:</span> <span class="n">AndroidInjector</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">KotlinApplication</span><span class="p">&gt;</span> <span class="p">{</span>
+
+    <span class="n">@Component</span><span class="p">.</span><span class="n">Builder</span>
+    <span class="k">interface</span> <span class="nc">Builder</span> <span class="p">{</span>
+        <span class="n">@BindsInstance</span>
+        <span class="k">fun</span> <span class="nf">application</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">KotlinApplication</span><span class="p">):</span> <span class="n">Builder</span>
+        <span class="k">fun</span> <span class="nf">build</span><span class="p">():</span> <span class="n">ApplicationComponent</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">inject</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">KotlinApplication</span><span class="p">)</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="applicationクラスに-daggerapplicationを継承させ実装する">Applicationクラスに DaggerApplicationを継承させ実装する</h3>
+
+<p><code>HasActivityInjector</code>を継承する流れを紹介するエントリもあるが <code>DaggerApplication</code>は<code>HasActivityInjector</code>の実装が含まれているのでこちらをつかう。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">KotlinApplication</span> <span class="p">:</span> <span class="n">DaggerApplication</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">applicationInjector</span><span class="p">()</span> <span class="p">=</span> <span class="n">DaggerApplicationComponent</span><span class="p">.</span><span class="n">builder</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">application</span><span class="p">(</span><span class="k">this</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">build</span><span class="p">()</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreate</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">super</span><span class="p">.</span><span class="n">onCreate</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="mainactivityにopenweathermaprepositoryをinjectする">MainActivityにOpenWeatherMapRepositoryをInjectする</h3>
+
+<p>最後にMainActivityにOpenWeatherMapRepositoryをInjectする。Dagger 2.11の重要ポイントの１つ。InjectするためにはonCreateで<code>AndroidInjection.inject(this)</code>を呼び出す。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">MainActivity</span> <span class="p">:</span> <span class="n">AppCompatActivity</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="n">@Inject</span> <span class="k">lateinit</span> <span class="k">var</span> <span class="py">openWeatherMapRepository</span><span class="p">:</span> <span class="n">OpenWeatherMapRepository</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreate</span><span class="p">(</span><span class="n">savedInstanceState</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">?)</span> <span class="p">{</span>
+        <span class="n">AndroidInjection</span><span class="p">.</span><span class="n">inject</span><span class="p">(</span><span class="k">this</span><span class="p">)</span>
+
+    <span class="c1">// -
+</span><span class="c1"></span><span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<hr/>
+
+<h2 id="apiレスポンスをlistviewに表示する">APIレスポンスをListViewに表示する</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">MainActivity</span> <span class="p">:</span> <span class="n">AppCompatActivity</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="n">@Inject</span> <span class="k">lateinit</span> <span class="k">var</span> <span class="py">openWeatherMapRepository</span><span class="p">:</span> <span class="n">OpenWeatherMapRepository</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreate</span><span class="p">(</span><span class="n">savedInstanceState</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">?)</span> <span class="p">{</span>
+        <span class="n">AndroidInjection</span><span class="p">.</span><span class="n">inject</span><span class="p">(</span><span class="k">this</span><span class="p">)</span>
+        <span class="k">super</span><span class="p">.</span><span class="n">onCreate</span><span class="p">(</span><span class="n">savedInstanceState</span><span class="p">)</span>
+        <span class="n">setContentView</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">layout</span><span class="p">.</span><span class="n">activity_main</span><span class="p">)</span>
+
+        <span class="n">openWeatherMapRepository</span><span class="p">.</span><span class="n">findForecastByDaily</span><span class="p">()</span>
+                <span class="p">.</span><span class="n">subscribeOn</span><span class="p">(</span><span class="n">Schedulers</span><span class="p">.</span><span class="n">io</span><span class="p">())</span>
+                <span class="p">.</span><span class="n">observeOn</span><span class="p">(</span><span class="n">AndroidSchedulers</span><span class="p">.</span><span class="n">mainThread</span><span class="p">())</span>
+                <span class="p">.</span><span class="n">subscribe</span> <span class="p">{</span> <span class="n">forecasts</span> <span class="p">-&gt;</span>
+                    <span class="n">findViewById</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ListView</span><span class="p">&gt;(</span><span class="n">R</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">listview</span><span class="p">).</span><span class="n">let</span> <span class="p">{</span> <span class="n">view</span> <span class="p">-&gt;</span>
+                        <span class="n">view</span><span class="p">.</span><span class="n">adapter</span> <span class="p">=</span> <span class="n">ArrayAdapter</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">String</span><span class="p">&gt;(</span><span class="k">this</span><span class="p">,</span> <span class="n">android</span><span class="p">.</span><span class="n">R</span><span class="p">.</span><span class="n">layout</span><span class="p">.</span><span class="n">simple_list_item_1</span><span class="p">,</span>
+                                <span class="n">forecasts</span><span class="p">.</span><span class="n">list</span><span class="p">.</span><span class="n">map</span> <span class="p">{</span>
+                                    <span class="s">&#34;%s - %s %s/%s&#34;</span><span class="p">.</span><span class="n">format</span><span class="p">(</span>
+                                    <span class="n">DateUtils</span><span class="p">.</span><span class="n">formatDateTime</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">dt</span> <span class="p">*</span> <span class="m">1000L</span><span class="p">,</span> <span class="n">FORMAT_NO_YEAR</span><span class="p">),</span>
+                                            <span class="n">it</span><span class="p">.</span><span class="n">weather</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="m">0</span><span class="p">).</span><span class="n">main</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">temp</span><span class="p">.</span><span class="n">min</span><span class="p">,</span> <span class="n">it</span><span class="p">.</span><span class="n">temp</span><span class="p">.</span><span class="n">max</span><span class="p">)</span>
+                                <span class="p">})</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>ListのItemViewには <code>simple_list_item_1</code>をつかって日にちと最高気温と最低気温を表示している。</p>
+
+<h2 id="まとめ">まとめ</h2>
+
+<ul>
+<li>Daggert2（android support module）のDIをまとめた。android support module以前のDI方法だとコピペコードが増える懸念があり登場した<a href="https://google.github.io/dagger/android.html">経緯</a>を知ってなるほど、と思った。</li>
+<li>retrofitはシンプルな使い方までに留まっているので引き続き触っていきながら知見をまとめていきたい。</li>
+</ul>
+
+<h2 id="コード">コード</h2>
+
+<p>このエントリまでのコードがPull Requestにまとまっていますので参考になれば嬉しいです。（初回のコミットなので不要なlayoutコードなどが散見してます。）</p>
+
+<p><div class="github-card" data-user="soushin/sunshine-app/pull" data-repo="1" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<h2 id="参考">参考</h2>
+
+<ul>
+<li><a href="https://medium.com/@malinitin/setup-dagger-2-11-on-kotlin-project-2257ad84ad7c">Setup Dagger 2.11 on Kotlin Project – Nitin Mali – Medium</a></li>
+<li><a href="https://qiita.com/satorufujiwara/items/0f95ccfc3820d3ee1370">Kotlin + Architecture Component + Dagger2によるAndroidアプリ設計 - Qiita</a></li>
+<li><a href="http://y-anz-m.blogspot.jp/2017/07/android-dagger-3-android-support.html">Y.A.M の 雑記帳: Android で Dagger を使う（その3 : Android Support）</a></li>
+</ul>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/android/">android</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/dagger/">dagger</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/retrofit/">retrofit</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

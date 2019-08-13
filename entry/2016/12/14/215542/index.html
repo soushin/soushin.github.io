@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>KotlinでtoJsonとfromJsonのJSONパース。MoshiのCustom Type Adaptersを使ってオブジェクトのテストを快適に。 - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="最近はkotlinで開発しています。これまで他の言語で出来ていたこともkotlinではどうやって出来るのか？、調査したり試したりすることは楽">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">KotlinでtoJsonとfromJsonのJSONパース。MoshiのCustom Type Adaptersを使ってオブジェクトのテストを快適に。</h1>
+    <div class="post-meta">2016.12.14</div>
+  </header>
+  <div class="post-content">
+
+<p>最近はkotlinで開発しています。これまで他の言語で出来ていたこともkotlinではどうやって出来るのか？、調査したり試したりすることは楽しいですね。新しい言語に触れる醍醐味とも言えます。<br/>
+kotlinをサーバサイドのメイン言語に使っています。数ある処理の中でもJSONの扱いは必須です。<br/>
+今のプロジェクトではMoshiライブラリをメインで使っています。今回はkotlinでMoshiライブラリを使った話です。</p>
+
+<h3 id="moshi">Moshi</h3>
+
+<p>MoshiはJavaで開発されたJSONライブラリです。</p>
+
+<div class="github-card" data-user="square" data-repo="moshi" data-width="400" data-height="" data-theme="default"></div>
+
+<p>ライブラリの特徴は公式のほうを参照いただくとして、メインの話をしたいのが「<strong>Custom Type Adapters</strong>」です。<br/>
+Moshiは自作のアダプタクラスに@ToJson と @FromJsonのアノテーションがついたメソッドを実装すればプリミティブな型以外でも追加した型をオブジェクトからjson文字列へ（toJson）、json文字列からオブジェクトへ（fromJson）の変換処理を自作することができます。</p>
+
+<h3 id="テストを書くときにcustom-type-adaptersを活用する">テストを書くときにCustom Type Adaptersを活用する</h3>
+
+<p>今のプロジェクトではelasticsearchを使っていて検索パラメータを定義するビルダークラスの整合性の検証にMoshiのCustom Type Adaptersを活用しました。<br/>
+カスタムアダプタを使いelasticsearchのAggregationBuildersクラスをkotlinのdata classへ変換し検索パラメータの検証を行いました。ビルダークラスはgetAggregationsQuery()をコールすることで取得できます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">object</span> <span class="nc">AggregationModel</span> <span class="p">{</span>
+    <span class="k">fun</span> <span class="nf">getAggregationsQuery</span><span class="p">()</span> <span class="p">=</span> <span class="n">AggregationBuilders</span><span class="p">.</span><span class="n">terms</span><span class="p">(</span><span class="s">&#34;aggs_post_id&#34;</span><span class="p">).</span><span class="n">field</span><span class="p">(</span><span class="s">&#34;post_id&#34;</span><span class="p">).</span><span class="n">size</span><span class="p">(</span><span class="m">100</span><span class="p">)</span>
+                <span class="p">.</span><span class="n">subAggregation</span><span class="p">(</span><span class="n">AggregationBuilders</span><span class="p">.</span><span class="n">terms</span><span class="p">(</span><span class="s">&#34;aggs_category_id&#34;</span><span class="p">).</span><span class="n">field</span><span class="p">(</span><span class="s">&#34;category_id&#34;</span><span class="p">).</span><span class="n">size</span><span class="p">(</span><span class="m">200</span><span class="p">)</span>
+                        <span class="p">.</span><span class="n">subAggregation</span><span class="p">(</span><span class="n">AggregationBuilders</span><span class="p">.</span><span class="n">terms</span><span class="p">(</span><span class="s">&#34;aggs_user_id&#34;</span><span class="p">).</span><span class="n">field</span><span class="p">(</span><span class="s">&#34;user_id&#34;</span><span class="p">).</span><span class="n">size</span><span class="p">(</span><span class="m">300</span><span class="p">)))</span><span class="o">!!</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>このビルダークラスをjson文字列で表すと次のような構造になります。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+    <span class="nt">&#34;aggs_post_id&#34;</span><span class="p">:</span> <span class="p">{</span>  <span class="nt">&#34;terms&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;field&#34;</span><span class="p">:</span> <span class="s2">&#34;post_id&#34;</span><span class="p">,</span> <span class="nt">&#34;size&#34;</span><span class="p">:</span> <span class="mi">100</span> <span class="p">},</span> <span class="nt">&#34;aggregations&#34;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&#34;aggs_category_id&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;terms&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;field&#34;</span><span class="p">:</span> <span class="s2">&#34;category_id&#34;</span><span class="p">,</span> <span class="nt">&#34;size&#34;</span><span class="p">:</span> <span class="mi">200</span> <span class="p">},</span> <span class="nt">&#34;aggregations&#34;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="nt">&#34;aggs_user_id&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;terms&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;field&#34;</span><span class="p">:</span> <span class="s2">&#34;user_id&#34;</span><span class="p">,</span> <span class="nt">&#34;size&#34;</span><span class="p">:</span> <span class="mi">300</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li>ネストが深い（key1.aggregations.key2.aggregations.key3.aggregations.... と幾重にも定義できる）</li>
+<li>keyの文字列はこちらで決めれる（ aggs_post_id,  aggs_category_id、aggs_user_id）</li>
+<li>key.aggregationsの指定は任意</li>
+</ul>
+
+<p>kotlinのdata classで表すと次のように定義できます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">data</span> <span class="k">class</span> <span class="nc">Aggregations</span><span class="p">(</span>
+        <span class="k">val</span> <span class="py">name</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+        <span class="k">val</span> <span class="py">terms</span><span class="p">:</span> <span class="n">Terms</span><span class="p">,</span>
+        <span class="k">val</span> <span class="py">aggregations</span><span class="p">:</span> <span class="n">Aggregations</span><span class="p">?</span>
+<span class="p">)</span>
+
+<span class="k">data</span> <span class="k">class</span> <span class="nc">Terms</span><span class="p">(</span>
+        <span class="k">val</span> <span class="py">field</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+        <span class="k">val</span> <span class="py">size</span><span class="p">:</span> <span class="n">Long</span>
+<span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="今回のやりこと">今回のやりこと</h3>
+
+<p>今回、やりたいことを明確にします。AggregationBuildersクラスを<strong>json文字列</strong>変換し、Moshiの<strong>Custom Type Adapters</strong>を使い、kotlinの<strong>data class</strong>に変換してテストを快適にしたい。です。</p>
+
+<h3 id="aggregationbuildersクラスはjson文字列に変換できる">AggregationBuildersクラスはjson文字列に変換できる</h3>
+
+<p>AggregationBuildersは<strong>XContentFactory</strong>でパラメータ構造を文字列に変換できます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">aggregations</span> <span class="p">=</span> <span class="n">AggregationModel</span><span class="p">.</span><span class="n">getAggregationsQuery</span><span class="p">()</span>
+
+<span class="k">val</span> <span class="py">builder</span> <span class="p">=</span> <span class="n">XContentFactory</span><span class="p">.</span><span class="n">jsonBuilder</span><span class="p">()</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">startObject</span><span class="p">()</span>
+<span class="n">aggregations</span><span class="p">.</span><span class="n">toXContent</span><span class="p">(</span><span class="n">builder</span><span class="p">,</span> <span class="n">org</span><span class="p">.</span><span class="n">elasticsearch</span><span class="p">.</span><span class="n">common</span><span class="p">.</span><span class="n">xcontent</span><span class="p">.</span><span class="n">ToXContent</span><span class="p">.</span><span class="n">EMPTY_PARAMS</span><span class="p">)</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">endObject</span><span class="p">()</span>
+
+<span class="k">val</span> <span class="py">json</span> <span class="p">=</span> <span class="n">builder</span><span class="p">.</span><span class="n">string</span><span class="p">()</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>val json = builder.string()</strong>ではビルドしたパラメータがjson文字列として格納されています。こちらのjson文字列を実装したカスタムアダプタでkotlinのdata classに変換します。</p>
+
+<h3 id="aggregationadapterクラスを実装する">AggregationAdapterクラスを実装する</h3>
+
+<p>次のように定義することでMoshiがサポートしている型ではないAggregations型を追加できます。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">class</span> <span class="nc">AggregationAdapter</span> <span class="p">:</span> <span class="n">JsonAdapter</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">Aggregations</span><span class="p">&gt;()</span> <span class="p">{</span>
+
+    <span class="k">companion</span> <span class="k">object</span> <span class="p">{</span>
+        <span class="k">val</span> <span class="py">FACTORY</span><span class="p">:</span> <span class="n">Factory</span> <span class="p">=</span> <span class="k">object</span> <span class="err">: </span><span class="nc">Factory</span> <span class="p">{</span>
+            <span class="k">override</span> <span class="k">fun</span> <span class="nf">create</span><span class="p">(</span><span class="n">type</span><span class="p">:</span> <span class="n">Type</span><span class="p">,</span> <span class="n">annotations</span><span class="p">:</span> <span class="n">Set</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="k">out</span> <span class="n">Annotation</span><span class="p">&gt;,</span> <span class="n">moshi</span><span class="p">:</span> <span class="n">Moshi</span><span class="p">):</span> <span class="n">JsonAdapter</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;*&gt;?</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">type</span> <span class="p">===</span> <span class="n">Aggregations</span><span class="o">::</span><span class="k">class</span><span class="p">.</span><span class="n">java</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">return</span> <span class="n">AggregationAdapter</span><span class="p">()</span>
+                <span class="p">}</span>
+                <span class="k">return</span> <span class="k">null</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>次のページを参考にさせていただきました。<br/>
+<a href="http://qiita.com/droibit/items/73fe3d0ec7b11fa982ea">Retrofit2.0に備えてKotlinで始めるMoshi(JSONパーサ） - Qiita</a>今回はJsonWriterとJsonReaderを使って@ToJson、@FromJsonを実装しました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@ToJson</span>
+<span class="k">override</span> <span class="k">fun</span> <span class="nf">toJson</span><span class="p">(</span><span class="n">writer</span><span class="p">:</span> <span class="n">JsonWriter</span><span class="p">?,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Aggregations</span><span class="p">?)</span>
+
+<span class="n">@FromJson</span>
+<span class="k">override</span> <span class="k">fun</span> <span class="nf">fromJson</span><span class="p">(</span><span class="n">reader</span><span class="p">:</span> <span class="n">JsonReader</span><span class="p">?):</span> <span class="n">Aggregations</span><span class="p">?</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>keyの値に&rdquo;aggs_post_id&rdquo;など独自定義ができたり、ネストが深かったりとJsonWriterとJsonReaderを使うことで複雑な構造であっても変換処理を実装することができます。実際のコードは省略してしまっていますが公開していますので、よろしければ参照してください。役立つと嬉しいです。<br/></p>
+
+<p><a href="https://github.com/soushin/kotlin-json-parse">https://github.com/soushin/kotlin-json-parse</a></p>
+
+<p>実装したアダプタクラスを使いdata class化することでアサーションも見通しが良くなりました。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">val</span> <span class="py">adapter</span> <span class="p">=</span> <span class="n">Moshi</span><span class="p">.</span><span class="n">Builder</span><span class="p">().</span><span class="n">add</span><span class="p">(</span><span class="n">AggregationAdapter</span><span class="p">()).</span><span class="n">build</span><span class="p">().</span><span class="n">adapter</span><span class="p">(</span><span class="n">Aggregations</span><span class="o">::</span><span class="k">class</span><span class="p">.</span><span class="n">java</span><span class="p">)</span>
+
+<span class="k">val</span> <span class="py">actual</span> <span class="p">=</span> <span class="n">adapter</span><span class="p">.</span><span class="n">fromJson</span><span class="p">(</span><span class="n">json</span><span class="p">)</span>
+
+<span class="k">actual</span><span class="p">.</span><span class="n">name</span> <span class="n">shouldBe</span> <span class="s">&#34;aggs_post_id&#34;</span>
+<span class="k">actual</span><span class="p">.</span><span class="n">terms</span><span class="p">.</span><span class="n">field</span> <span class="n">shouldBe</span> <span class="s">&#34;post_id&#34;</span>
+<span class="k">actual</span><span class="p">.</span><span class="n">terms</span><span class="p">.</span><span class="n">size</span> <span class="n">shouldBe</span> <span class="m">0L</span>
+
+<span class="k">actual</span><span class="p">.</span><span class="n">aggregations</span><span class="o">?.</span><span class="n">name</span> <span class="n">shouldBe</span> <span class="s">&#34;aggs_category_id&#34;</span>
+<span class="k">actual</span><span class="p">.</span><span class="n">aggregations</span><span class="o">?.</span><span class="n">terms</span><span class="o">?.</span><span class="n">field</span> <span class="n">shouldBe</span> <span class="s">&#34;category_id&#34;</span>
+<span class="k">actual</span><span class="p">.</span><span class="n">aggregations</span><span class="o">?.</span><span class="n">terms</span><span class="o">?.</span><span class="n">size</span> <span class="n">shouldBe</span> <span class="m">0L</span>
+
+<span class="k">actual</span><span class="p">.</span><span class="n">aggregations</span><span class="o">?.</span><span class="n">aggregations</span><span class="o">?.</span><span class="n">name</span> <span class="n">shouldBe</span> <span class="s">&#34;aggs_user_id&#34;</span>
+<span class="k">actual</span><span class="p">.</span><span class="n">aggregations</span><span class="o">?.</span><span class="n">aggregations</span><span class="o">?.</span><span class="n">terms</span><span class="o">?.</span><span class="n">field</span> <span class="n">shouldBe</span> <span class="s">&#34;user_id&#34;</span>
+<span class="k">actual</span><span class="p">.</span><span class="n">aggregations</span><span class="o">?.</span><span class="n">aggregations</span><span class="o">?.</span><span class="n">terms</span><span class="o">?.</span><span class="n">size</span> <span class="n">shouldBe</span> <span class="m">0L</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="まとめ">まとめ</h3>
+
+<p>開発においてjsonの扱いは必須です。<br/>
+kotlinでもMoshiの<strong>Custom Type Adapters</strong>を使うことで独自の型の変換を学べました。<br/>
+JsonWriterとJsonReaderのを使い変換処理をコード化することは慣れが必要で扱いにくいと感じてしまうかもしれません。APIのResponse Bodyからオブジェクトへの変換をする、よくあるパターンです。<br/>
+今回の学びでkotlinでも臆することなく向き合えるようになりました！</p>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/kotlin/">kotlin</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/json/">json</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/moshi/">moshi</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>SpringBoot 2.0とapiDocを連携させてみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="SpringFrameworkでAPIドキュメントを準備する手段としてSpringFoxやSpring REST Docsなどが候補にあがる。 SpringFox by springfox Spring">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">SpringBoot 2.0とapiDocを連携させてみた</h1>
+    <div class="post-meta">2017.9.29</div>
+  </header>
+  <div class="post-content">
+
+<p>SpringFrameworkでAPIドキュメントを準備する手段としてSpringFoxやSpring REST Docsなどが候補にあがる。</p>
+
+<p><a href="http://springfox.github.io/springfox/">SpringFox by springfox</a></p>
+
+<p><a href="https://projects.spring.io/spring-restdocs/">Spring REST Docs</a></p>
+
+<p>両者とも導入敷居が低くSpringFoxはコントローラクラスやレスポンスモデルにアノテーションをつけていきSpringを起動すればドキュメントエンドポイントが生まれる。APIの開発序盤からDocsを整理していけるスピード感がある。対してSpring REST DocsはテストコードにDocs生成手段を仕込み<code>HttpStatus:200 OK</code>や<code>HttpStatus:404 NotFound</code>などレスポンス毎にDocsを整理できるので網羅的なドキュメントを整理することができる。</p>
+
+<p>Spring Boot 2.0でも同様にSpringFoxやSpring REST Docsを使いAPIドキュメントを整理したかったが現時点では未対応な状況である。（2017/09/29）</p>
+
+<p><div class="github-card" data-user="springfox/springfox/issues" data-repo="1773" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p><div class="github-card" data-user="spring-projects/spring-restdocs/issues" data-repo="384" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<hr/>
+
+<p>何か別の手段でと思いを馳せて居たところで同僚にapiDocを教えてもらった。</p>
+
+<p><a href="http://apidocjs.com/">apiDoc - Inline Documentation for RESTful web APIs</a></p>
+
+<p>apiDocはJavadoc-Styleやコメントコードを駆使してAPIドキュメントをまとめ<code>apidoc</code>のコマンドを叩けばドキュメント一式のHTMLが生成される。詳細は公式を確認いただきたい。</p>
+
+<p><a href="http://apidocjs.com/#run">http://apidocjs.com/#run</a></p>
+
+<p>コメントコードが生成できればドキュメントHTMLが生成される仕組みなのでSpring REST DocsのようにテストコードにapiDoc-Params（コメントコード）を生成する仕組みを取り入れてみた。</p>
+
+<p>ここからは開発したテストコードを元にドキュメントHTMLが生成されるまでをまとめていきたい。</p>
+
+<h3 id="apidocのコメントコードを吐くテストコード">apiDocのコメントコードを吐くテストコード</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="cm">/**
+</span><span class="cm"> * @api {GET} /api/task/:taskId タスクの取得
+</span><span class="cm"> * @apiName GetTask
+</span><span class="cm"> * @apiGroup Task
+</span><span class="cm"> * @apiVersion 1.0.0
+</span><span class="cm"> *
+</span><span class="cm"> * @apiUse GetTaskOk
+</span><span class="cm"> * @apiUse GetTaskNotFound
+</span><span class="cm"> *
+</span><span class="cm"> */</span>
+<span class="n">@Test</span>
+<span class="k">fun</span> <span class="nf">`GET Task`</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">define</span> <span class="p">=</span> <span class="n">DefineBuilder</span><span class="p">({</span>
+        <span class="n">version</span> <span class="p">{</span> <span class="s">&#34;1.0.0&#34;</span> <span class="p">}</span>
+        <span class="n">name</span> <span class="p">{</span> <span class="s">&#34;GetTaskOk&#34;</span> <span class="p">}</span>
+    <span class="p">})</span>
+
+    <span class="c1">// @apiParamのコメントコードを吐く
+</span><span class="c1"></span>    <span class="n">define</span><span class="p">.</span><span class="n">param</span> <span class="p">{</span> <span class="n">ApiParam</span><span class="p">(</span><span class="s">&#34;taskId&#34;</span><span class="p">,</span> <span class="s">&#34;タスクID&#34;</span><span class="p">,</span> <span class="s">&#34;23445&#34;</span><span class="p">,</span> <span class="k">false</span><span class="p">,</span> <span class="s">&#34;7&#34;</span><span class="p">)</span> <span class="p">}</span>
+
+    <span class="c1">// mock
+</span><span class="c1"></span>    <span class="n">`when`</span><span class="p">(</span><span class="n">taskHandler</span><span class="p">.</span><span class="n">fetchByTaskId</span><span class="p">(</span><span class="n">any</span><span class="p">())).</span><span class="n">thenReturn</span><span class="p">(</span><span class="n">ok</span><span class="p">().</span><span class="n">json</span><span class="p">().</span><span class="n">body</span><span class="p">(</span><span class="n">Mono</span><span class="p">.</span><span class="n">just</span><span class="p">(</span><span class="n">mockModel</span><span class="p">)))</span>
+
+    <span class="n">client</span><span class="p">.</span><span class="k">get</span><span class="p">().</span><span class="n">uri</span><span class="p">(</span><span class="s">&#34;/api/task/1&#34;</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">accept</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="n">APPLICATION_JSON_UTF8</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">exchange</span><span class="p">().</span><span class="n">expectStatus</span><span class="p">().</span><span class="n">isOk</span>
+            <span class="p">.</span><span class="n">expectBody</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">consumeWith</span> <span class="p">{</span>
+                <span class="k">val</span> <span class="py">actual</span><span class="p">:</span> <span class="n">TaskModel</span> <span class="p">=</span> <span class="n">mapper</span><span class="p">.</span><span class="n">readValue</span><span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="n">responseBody</span><span class="p">)</span>
+                <span class="k">actual</span><span class="p">.</span><span class="n">id</span> <span class="n">shouldBe</span> <span class="m">1L</span>
+                <span class="k">actual</span><span class="p">.</span><span class="n">title</span> <span class="n">shouldBe</span> <span class="s">&#34;task title&#34;</span>
+                <span class="k">actual</span><span class="p">.</span><span class="n">createdAt</span> <span class="n">shouldBe</span> <span class="s">&#34;2017-06-13T16:22:52Z&#34;</span>
+                <span class="k">actual</span><span class="p">.</span><span class="n">updatedAt</span> <span class="n">shouldBe</span> <span class="s">&#34;2017-06-13T16:22:52Z&#34;</span>
+
+                <span class="c1">// @apiSuccessのコメントコードを吐く
+</span><span class="c1"></span>                <span class="n">define</span><span class="p">.</span><span class="n">success</span> <span class="p">{</span> <span class="k">actual</span> <span class="p">}</span>
+                <span class="c1">// @apiSuccessExampleのコメントコードを吐く
+</span><span class="c1"></span>                <span class="n">define</span><span class="p">.</span><span class="n">successExample</span> <span class="p">{</span> <span class="n">ApiSuccessExample</span><span class="p">(</span><span class="s">&#34;Success&#34;</span><span class="p">,</span> <span class="n">HttpStatus</span><span class="p">.</span><span class="n">OK</span><span class="p">,</span> <span class="k">actual</span><span class="p">)</span> <span class="p">}</span>
+            <span class="p">}</span>
+
+    <span class="n">define</span><span class="p">.</span><span class="n">genDoc</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>タスクを１件取得するエンドポイントのテストコードに仕込んだ。最初のコメントコードでapiDocの仕様に基づきAPIの概要をまとめている。<code>@apiUse</code>については後述する。<br/>
+テストコードのブロック内では<code>DefineBuilder</code>のインスタンスからDocをビルドアップしている。この<code>DefineBuilder</code>をお手製でつくってみた。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">define</span><span class="p">.</span><span class="n">success</span> <span class="p">{</span> <span class="k">actual</span> <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>このsuccessに渡るインスタンスクラスのプロパティに次のような<code>@ApiDocProperty</code>がついていれば<code>@apiSuccess {String} firstname Firstname of the User.</code>のようなコメントコードが吐かれるようにした。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">data</span> <span class="k">class</span> <span class="nc">TaskModel</span><span class="p">(</span>
+        <span class="n">@ApiDocProperty</span><span class="p">(</span><span class="n">value</span> <span class="p">=</span> <span class="s">&#34;タスクID&#34;</span><span class="p">,</span> <span class="n">example</span> <span class="p">=</span> <span class="s">&#34;23445&#34;</span><span class="p">)</span>
+        <span class="k">val</span> <span class="py">id</span><span class="p">:</span> <span class="n">Long</span><span class="p">,</span>
+        <span class="n">@ApiDocProperty</span><span class="p">(</span><span class="n">value</span> <span class="p">=</span> <span class="s">&#34;タイトル&#34;</span><span class="p">,</span> <span class="n">example</span> <span class="p">=</span> <span class="s">&#34;牛乳を買う&#34;</span><span class="p">)</span>
+        <span class="k">val</span> <span class="py">title</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+        <span class="n">@ApiDocProperty</span><span class="p">(</span><span class="n">value</span> <span class="p">=</span> <span class="s">&#34;完了日時&#34;</span><span class="p">,</span> <span class="n">example</span> <span class="p">=</span> <span class="s">&#34;yyyy-MM-dd&#39;T&#39;HH:mm:ss&#39;Z&#39;&#34;</span><span class="p">)</span>
+        <span class="k">val</span> <span class="py">finishedAt</span><span class="p">:</span> <span class="n">String</span><span class="p">?,</span>
+        <span class="n">@ApiDocProperty</span><span class="p">(</span><span class="n">value</span> <span class="p">=</span> <span class="s">&#34;作成日時&#34;</span><span class="p">,</span> <span class="n">example</span> <span class="p">=</span> <span class="s">&#34;yyyy-MM-dd&#39;T&#39;HH:mm:ss&#39;Z&#39;&#34;</span><span class="p">,</span> <span class="n">nullable</span> <span class="p">=</span> <span class="k">true</span><span class="p">)</span>
+        <span class="k">val</span> <span class="py">createdAt</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+        <span class="n">@ApiDocProperty</span><span class="p">(</span><span class="n">value</span> <span class="p">=</span> <span class="s">&#34;更新日時&#34;</span><span class="p">,</span> <span class="n">example</span> <span class="p">=</span> <span class="s">&#34;yyyy-MM-dd&#39;T&#39;HH:mm:ss&#39;Z&#39;&#34;</span><span class="p">)</span>
+        <span class="k">val</span> <span class="py">updatedAt</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>上記のインスタンスは次のようなコメントコードを吐く。JSONレスポンスの各項目にも名称やサンプル値などが整理できる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">@apiSuccess {String} createdAt 作成日時, Nullable:TRUE, Example:yyyy-MM-dd&#39;T&#39;HH:mm:ss&#39;Z&#39;
+@apiSuccess {String} finishedAt 完了日時, Nullable:FALSE, Example:yyyy-MM-dd&#39;T&#39;HH:mm:ss&#39;Z&#39;
+@apiSuccess {long} id タスクID, Nullable:FALSE, Example:23445
+@apiSuccess {String} title タイトル, Nullable:FALSE, Example:牛乳を買う
+@apiSuccess {String} updatedAt 更新日時, Nullable:FALSE, Example:yyyy-MM-dd&#39;T&#39;HH:mm:ss&#39;Z&#39;</pre></td></tr></table>
+</div>
+</div>
+<p>そして最後に<code>@apiUse</code>である。冒頭のコメントコードは次のようになっていた。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">@apiUse GetTaskOk
+@apiUse GetTaskNotFound</pre></td></tr></table>
+</div>
+</div>
+<p>apiDocの特徴的な機能で<code>@apiUse</code>に宣言された変数は<code>@apiDefine</code>に宣言された変数と紐づくことになる。<code>GetTaskOk</code>は正常系のテストコードに紐づき、<code>GetTaskNotFound</code>は404エラーになるテストコードに紐付いている。404エラーのテストコードは次のようになっている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">fun</span> <span class="nf">`GET Task NotFound`</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">define</span> <span class="p">=</span> <span class="n">DefineBuilder</span><span class="p">({</span>
+        <span class="n">version</span> <span class="p">{</span> <span class="s">&#34;1.0.0&#34;</span> <span class="p">}</span>
+        <span class="n">name</span> <span class="p">{</span> <span class="s">&#34;GetTaskNotFound&#34;</span> <span class="p">}</span> <span class="c1">// `@apiDefine GetTaskNotFound`を吐く
+</span><span class="c1"></span>    <span class="p">})</span>
+
+    <span class="c1">// mock
+</span><span class="c1"></span>    <span class="n">`when`</span><span class="p">(</span><span class="n">taskHandler</span><span class="p">.</span><span class="n">fetchByTaskId</span><span class="p">(</span><span class="n">any</span><span class="p">())).</span><span class="n">thenThrow</span><span class="p">(</span><span class="n">WebAppException</span><span class="p">.</span><span class="n">NotFoundException</span><span class="p">(</span><span class="s">&#34;task notfound.&#34;</span><span class="p">))</span>
+
+    <span class="n">client</span><span class="p">.</span><span class="k">get</span><span class="p">().</span><span class="n">uri</span><span class="p">(</span><span class="s">&#34;/api/task/1&#34;</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">accept</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="n">APPLICATION_JSON_UTF8</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">exchange</span><span class="p">().</span><span class="n">expectStatus</span><span class="p">().</span><span class="n">isNotFound</span>
+            <span class="p">.</span><span class="n">expectBody</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">consumeWith</span> <span class="p">{</span>
+                <span class="k">val</span> <span class="py">actual</span><span class="p">:</span> <span class="n">ErrorItem</span> <span class="p">=</span> <span class="n">mapper</span><span class="p">.</span><span class="n">readValue</span><span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="n">responseBody</span><span class="p">)</span>
+
+                <span class="n">define</span><span class="p">.</span><span class="n">error</span> <span class="p">{</span> <span class="k">actual</span> <span class="p">}</span>
+                <span class="n">define</span><span class="p">.</span><span class="n">errorExample</span> <span class="p">{</span> <span class="n">ApiErrorExample</span><span class="p">(</span><span class="s">&#34;BadRequest&#34;</span><span class="p">,</span> <span class="n">HttpStatus</span><span class="p">.</span><span class="n">BAD_REQUEST</span><span class="p">,</span> <span class="k">actual</span><span class="p">)</span> <span class="p">}</span>
+            <span class="p">}</span>
+
+    <span class="n">define</span><span class="p">.</span><span class="n">genDoc</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>@apiUse</code> と<code>@apiDefine</code>の仕組みをつかえば複数のAPIレスポンスをドキュメント化することができる。<br/>
+エンドポイントのあらゆる異常系を書き<code>@apiUse</code> と<code>@apiDefine</code>で紐付けることでドキュメントが整備されていく仕掛けとなる。<code>Spring REST Docsのエッセンス</code>を上手く取り入れられた。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<p>apiDocが生成したドキュメントの画面キャプチャは次のようになった。</p>
+
+<h4 id="正常系">正常系</h4>
+
+<figure>
+    <img src="/images/20170929214250.png"/> 
+</figure>
+
+
+<h4 id="エラー">エラー</h4>
+
+<figure>
+    <img src="/images/20170929214321.png"/> 
+</figure>
+
+
+<hr/>
+
+<p>SpringFoxやSpring REST DocのSpring Boot 2.0.0（Spring5）のサポートを待つ間の暫定対応としてapiDocを連携させてみたが、思いの外ドキュメントにする手間もなくドキュメント化が実現できた。</p>
+
+<p>サポートが完了したSpringFoxやSpring REST Docの新しい機能に期待をしながら、今回つくったDefineBuilderに対応していないapiDoc-Paramを追加していきライブラリとして成熟させていきたい。</p>
+
+<h3 id="コード">コード</h3>
+
+<p>今回紹介したコードはgithubに置いていますので良ければ参照してください。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>テストコードは<a href="https://github.com/soushin/spring5-kotlin-application/blob/master/api/src/test/kotlin/app/web/routes/TaskRoutesTest.kt#L74-L138">こちら</a>です。</p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/spring-boot/">Spring Boot</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/apidoc/">apiDoc</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

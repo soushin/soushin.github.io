@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>PagerDutyとAsanaをzapierをつかって連携させてみた - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="zapierをつかってPagerDutyとAsanaを連携させる方法をまとめます。 The best apps. Better together. - Zapier モチベーション PagerDutyのIncid">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">PagerDutyとAsanaをzapierをつかって連携させてみた</h1>
+    <div class="post-meta">2017.4.27</div>
+  </header>
+  <div class="post-content">
+
+<p>zapierをつかってPagerDutyとAsanaを連携させる方法をまとめます。</p>
+
+<p><a href="https://zapier.com/">The best apps. Better together. - Zapier</a></p>
+
+<h3 id="モチベーション">モチベーション</h3>
+
+<p>PagerDutyのIncidentをSlackに通知をして、その対応をAsanaでタスク化して運用をするうえで <code>Asanaのタスク化</code>を自動化させたい。そんなときzaiperは <code>zap</code> という単位でAサービスで発生したイベントをトリガーにBサービスにアクションを行うという一連の運用フローを自動化することができる。</p>
+
+<p><code>PagerDuty</code>でIncidentが新しく作られたら <code>Asana</code>でタスクを作成する、このような運用フローがzaiperのダッシュボードからポチポチと設定するだけで自動化できる。</p>
+
+<h3 id="連携させてみた">連携させてみた</h3>
+
+<figure>
+    <img src="/images/20170426093701.png"/> 
+</figure>
+
+
+<p>zaiperのダッシュボードは直感的で設定フローの理解もすぐにできた。<br/>
+PagerDutyをトリガーにAsanaでタスクを作るというフローだけど、他にもステップを追加することができる。例えばGoogleCalendarにイベントを追加したりgithubでissue化したり認証できるサービスであれば多様なステップを作ることができる。</p>
+
+<p>ここからはzaiperの設定フローで補足したいところをまとめていく。</p>
+
+<h4 id="設定フローの補足">設定フローの補足</h4>
+
+<p><strong>PagerDutyの設定</strong></p>
+
+<ul>
+<li>Incidentの発生条件はオプションで設定できる。
+
+<ul>
+<li>Incidentが誰にアサインされたかを指定したり、どのイベントタイプをトリガーにするか指定できる。</li>
+<li>今回は誰にアサインされたかは指定せず、イベントタイプは<code>Trigger</code>とした。つまり認知していない新規のIncidentの発生がトリガーとなる。</li>
+</ul>
+</li>
+<li>zaiperはPagerDutyのイベントを検知するためにEndpoinURLを生成するのでPagerDuty側でそのURLをWebhookに追加する必要がある。</li>
+</ul>
+
+<p><strong>Asanaの設定</strong></p>
+
+<ul>
+<li>今回はAsanaのタスクを作成するアクションにしたが、<code>Story</code>や<code>Project</code>など他のアクションも設定できる。</li>
+<li>タスクを生成するうえでタスクのタイトルやメモなどをテンプレートとして設定できる。
+
+<ul>
+<li>PagerDutyのIncidentから要素を取得することができるので、タイトルにIncidentの<code>ServiceName</code>やメモにIncidentの<code>URL</code>や<code>Status</code>などを変数としてテンプレート化できる。</li>
+<li>今回は次のように設定してみた。
+<figure>
+    <img src="/images/20170426100129.png"/> 
+</figure>
+</li>
+</ul>
+</li>
+<li>その他にもタスクを誰にアサインするかなどタスクの要素を細かく設定できる。
+<figure>
+    <img src="/images/20170426100510.png"/> 
+</figure>
+</li>
+</ul>
+
+<h4 id="動かしてみる">動かしてみる</h4>
+
+<p>あらかじめPagerDutyとAsanaはSlackと連携させているのでIncidentとタスクのイベントに応じてSlackに通知されることが確認できた。</p>
+
+<figure>
+    <img src="/images/20170426100917.png"/> 
+</figure>
+
+
+<p>実際にPagerDutyでIncidentを発生させてみて、Incidentが発生した通知の後にAsanaのタスクが作成されていることが分かる。</p>
+
+<figure>
+    <img src="/images/20170426101532.png"/> 
+</figure>
+
+
+<p>AsanaのタスクにはIncidentの情報が参照されていてzaiperで設定したAsanaのテンプレートが適応されていることが確認できる。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<p>zaiperをつかって運用フローの自動化を試してみた。zaiperのダッシュボードは使いやすい印象で<a href="https://zapier.com/about/">つくってる方たち</a>も好印象だった。<br/>
+zaiperの<a href="https://zapier.com/app/billing/plans">プラン</a>はzapとタスクの数でグレードが分かれている。あとはzapierが稼働するのがBasicだと<code>15分毎</code>でBusiness以降は<code>5分毎</code>なので運用要件に合わせたプラン選択が必要だと感じた。</p>
+
+<p>他のzapの組み合わせとしてはGoogleカレンダーにイベントが登録されたのをトリガーにSlackにイベントを通知する連携方法なども試しみたりした。</p>
+
+<figure>
+    <img src="/images/20170426161411.png"/> 
+</figure>
+
+
+<p>GoogleカレンダーのイベントをトリガーにしてSlackで告知するような運用はよくあるケースなので、まずはこういったところから導入を始めて、運用に合わせてzapを増やしていくとよさそうである。</p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/pagerduty/">PagerDuty</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/asana/">Asana</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/zapier/">zapier</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

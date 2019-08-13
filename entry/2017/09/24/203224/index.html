@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>gRPC serverのmetadataをテストする方法をまとめる - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="gRPC ServerのレスポンスにはMetadataを含めることができる。gRPCのレスポンス・ステータス（io.grpc.Status.OKやi">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">gRPC serverのmetadataをテストする方法をまとめる</h1>
+    <div class="post-meta">2017.9.24</div>
+  </header>
+  <div class="post-content">
+
+<p>gRPC ServerのレスポンスにはMetadataを含めることができる。gRPCのレスポンス・ステータス（<code>io.grpc.Status.OK</code>や<code>io.grpc.Status.INVALID_ARGUMENT</code>）やDescription（エラーメッセージ）に加え、例えば400系のエラーでも異なるエラー内容をクライアントに伝えるのに役立つ。HTTP/1.1ではHTTPステータスに加えレスポンス・ボディにJSON形式でエラーメッセージとエラーコードを含めるようなことで実現していたが、gRPCではMetadataを活用すればDescription（エラーメッセージ）をJSON形式にする必要はない。</p>
+
+<p>今回のエントリではMetadataを含むレスポンスを返すgRPC Serverのテスト方法をまとめていく。</p>
+
+<h3 id="metadataを含むレスポンスを返すgrpc-serverを準備する">Metadataを含むレスポンスを返すgRPC Serverを準備する</h3>
+
+<p>gRPC Serverで起きたエラーをインターセプトしてレスポンスを返すInterceptorを以前のエントリで紹介した。</p>
+
+<p><a href="http://blog.soushi.me/entry/2017/08/18/234615">gRPC ServerのExceptionFilterの方法をまとめた（grpc-java） - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p>このインターセプターで返すレスポンスに<code>custom_status</code>というKeyのMetadataを含めるようにした。コードとしては次のようにしている。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">private</span> <span class="k">fun</span> <span class="err">&amp;</span><span class="nf">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;</span> <span class="n">handleException</span><span class="p">(</span><span class="n">call</span><span class="p">:</span> <span class="n">ServerCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Metadata</span><span class="p">?,</span> <span class="n">ex</span><span class="p">:</span> <span class="n">Exception</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">when</span> <span class="p">(</span><span class="n">ex</span><span class="p">)</span> <span class="p">{</span>
+<span class="c1">// ・・・省略
+</span><span class="c1"></span>        <span class="k">is</span> <span class="n">WebAppException</span><span class="p">.</span><span class="n">NotFoundException</span> <span class="p">-&gt;</span> <span class="p">{</span>
+            <span class="n">Metadata</span><span class="p">.</span><span class="n">Key</span><span class="p">.</span><span class="n">of</span><span class="p">(</span><span class="s">&#34;custom_status&#34;</span><span class="p">,</span> <span class="n">Metadata</span><span class="p">.</span><span class="n">ASCII_STRING_MARSHALLER</span><span class="p">).</span><span class="n">let</span> <span class="p">{</span>
+                <span class="n">headers</span><span class="o">?.</span><span class="n">put</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">HttpStatus</span><span class="p">.</span><span class="n">NOT_FOUND</span><span class="p">.</span><span class="n">value</span><span class="p">().</span><span class="n">toString</span><span class="p">())</span>
+            <span class="p">}</span>
+            <span class="n">call</span><span class="o">?.</span><span class="n">close</span><span class="p">(</span><span class="n">Status</span><span class="p">.</span><span class="n">fromCode</span><span class="p">(</span><span class="n">Status</span><span class="p">.</span><span class="n">NOT_FOUND</span><span class="p">.</span><span class="n">code</span><span class="p">).</span><span class="n">withDescription</span><span class="p">(</span><span class="n">ex</span><span class="p">.</span><span class="n">message</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+        <span class="p">}</span>
+<span class="c1">// ・・・省略
+</span><span class="c1"></span>    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p><code>WebAppException.NotFoundException</code>のExceptionクラスであれば<code>custom_status</code>のMetadataには<code>404</code>の文字列が含まれるようにした。</p>
+
+<h3 id="metadataをテストする方法">metadataをテストする方法</h3>
+
+<p>metadataをテストするためにはテストコードで起動しているgRPC Serverのインターセプターに新しいインターセプター・クラスを加える。そのインターセプター・クラスのmetadataをキャプチャすることでmetadataが含まれているか検証する。</p>
+
+<p>コードとしては次のようになる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">private</span> <span class="k">val</span> <span class="py">metadataCaptor</span> <span class="p">=</span> <span class="n">ArgumentCaptor</span><span class="p">.</span><span class="n">forClass</span><span class="p">(</span><span class="n">io</span><span class="p">.</span><span class="n">grpc</span><span class="p">.</span><span class="n">Metadata</span><span class="o">::</span><span class="k">class</span><span class="p">.</span><span class="n">java</span><span class="p">)</span>
+<span class="k">private</span> <span class="k">val</span> <span class="py">mockServerInterceptor</span> <span class="p">=</span> <span class="n">Mockito</span><span class="p">.</span><span class="n">spy</span><span class="p">(</span><span class="n">TestInterceptor</span><span class="p">())</span>
+<span class="k">private</span> <span class="k">class</span> <span class="nc">TestInterceptor</span> <span class="p">:</span> <span class="n">ServerInterceptor</span> <span class="p">{</span>
+    <span class="k">override</span> <span class="k">fun</span> <span class="err">&amp;</span><span class="nf">lt</span><span class="p">;</span><span class="n">ReqT</span> <span class="p">:</span> <span class="n">Any</span><span class="p">?,</span> <span class="n">RespT</span> <span class="p">:</span> <span class="n">Any</span><span class="p">?&gt;</span> <span class="n">interceptCall</span><span class="p">(</span><span class="n">call</span><span class="p">:</span> <span class="n">ServerCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">io</span><span class="p">.</span><span class="n">grpc</span><span class="p">.</span><span class="n">Metadata</span><span class="p">?,</span>
+                                                           <span class="n">next</span><span class="p">:</span> <span class="n">ServerCallHandler</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?):</span> <span class="n">ServerCall</span><span class="p">.</span><span class="n">Listener</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">next</span><span class="o">!!</span><span class="p">.</span><span class="n">startCall</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">@Before</span>
+<span class="k">fun</span> <span class="nf">setUp</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">delegateTaskService</span> <span class="p">=</span> <span class="n">mock</span><span class="p">(</span><span class="n">DelegateTaskService</span><span class="o">::</span><span class="k">class</span><span class="p">)</span>
+
+    <span class="n">target</span> <span class="p">=</span> <span class="n">TaskBackendServer</span><span class="p">(</span><span class="n">delegateTaskService</span><span class="p">)</span>
+    <span class="n">inProcessServer</span> <span class="p">=</span> <span class="n">InProcessServerBuilder</span>
+            <span class="p">.</span><span class="n">forName</span><span class="p">(</span><span class="n">UNIQUE_SERVER_NAME</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">addService</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">intercept</span><span class="p">(</span><span class="n">exceptionInterceptor</span><span class="p">)</span>
+            <span class="p">.</span><span class="n">intercept</span><span class="p">(</span><span class="n">mockServerInterceptor</span><span class="p">)</span>  <span class="c1">// このインターセプター・クラスのmetadataをキャプチャする
+</span><span class="c1"></span>            <span class="p">.</span><span class="n">directExecutor</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">build</span><span class="p">()</span>
+    <span class="n">inProcessChannel</span> <span class="p">=</span> <span class="n">InProcessChannelBuilder</span><span class="p">.</span><span class="n">forName</span><span class="p">(</span><span class="n">UNIQUE_SERVER_NAME</span><span class="p">).</span><span class="n">directExecutor</span><span class="p">().</span><span class="n">build</span><span class="p">()</span>
+
+    <span class="n">inProcessServer</span><span class="p">.</span><span class="n">start</span><span class="p">()</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>テストコードは次のようになった。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Test</span>
+<span class="k">fun</span> <span class="nf">getProducts_NOT_FOUND</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="k">val</span> <span class="py">taskId</span> <span class="p">=</span> <span class="m">1L</span>
+    <span class="k">val</span> <span class="py">request</span> <span class="p">=</span> <span class="n">TaskInbound</span><span class="p">.</span><span class="n">newBuilder</span><span class="p">().</span><span class="n">setTaskId</span><span class="p">(</span><span class="n">taskId</span><span class="p">.</span><span class="n">toInt</span><span class="p">()).</span><span class="n">build</span><span class="p">()</span>
+
+    <span class="k">val</span> <span class="py">command</span> <span class="p">=</span> <span class="n">GetTaskCommand</span><span class="p">(</span><span class="n">taskId</span><span class="p">)</span>
+
+    <span class="c1">// mock
+</span><span class="c1"></span>    <span class="n">mockStatic</span><span class="p">(</span><span class="n">GRpcLogContextHandler</span><span class="o">::</span><span class="k">class</span><span class="p">)</span>
+    <span class="n">Mockito</span><span class="p">.</span><span class="n">`when`</span><span class="p">(</span><span class="n">GRpcLogContextHandler</span><span class="p">.</span><span class="n">getLog</span><span class="p">()).</span><span class="n">thenReturn</span><span class="p">(</span><span class="n">GRpcLogBuilder</span><span class="p">())</span>
+    <span class="n">Mockito</span><span class="p">.</span><span class="n">`when`</span><span class="p">(</span><span class="n">delegateTaskService</span><span class="p">.</span><span class="n">getTask</span><span class="p">(</span><span class="n">command</span><span class="p">)).</span><span class="n">thenThrow</span><span class="p">(</span><span class="n">WebAppException</span><span class="p">.</span><span class="n">NotFoundException</span><span class="p">(</span><span class="s">&#34;not found&#34;</span><span class="p">))</span>
+
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="c1">// request server
+</span><span class="c1"></span>        <span class="k">val</span> <span class="py">blockingStub</span> <span class="p">=</span> <span class="n">TaskServiceGrpc</span><span class="p">.</span><span class="n">newBlockingStub</span><span class="p">(</span><span class="n">inProcessChannel</span><span class="p">)</span>
+        <span class="n">blockingStub</span><span class="p">.</span><span class="n">getTaskService</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">StatusRuntimeException</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// assertion
+</span><span class="c1"></span>        <span class="n">e</span><span class="p">.</span><span class="n">status</span><span class="p">.</span><span class="n">code</span> <span class="n">shouldBe</span> <span class="n">Status</span><span class="p">.</span><span class="n">NOT_FOUND</span><span class="p">.</span><span class="n">code</span>
+        <span class="n">e</span><span class="p">.</span><span class="n">message</span> <span class="n">shouldBe</span> <span class="s">&#34;NOT_FOUND: not found&#34;</span>
+
+        <span class="c1">// metadataの`custom_status`が&#34;404&#34; であること
+</span><span class="c1"></span>        <span class="n">Mockito</span><span class="p">.</span><span class="n">verify</span><span class="p">(</span><span class="n">mockServerInterceptor</span><span class="p">).</span><span class="n">interceptCall</span><span class="p">(</span>
+                <span class="n">MockHelper</span><span class="p">.</span><span class="n">any</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ServerCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">TaskInbound</span><span class="p">,</span> <span class="n">TaskOutbound</span><span class="p">&gt;&gt;(),</span>
+                <span class="n">metadataCaptor</span><span class="p">.</span><span class="n">capture</span><span class="p">(),</span>
+                <span class="n">MockHelper</span><span class="p">.</span><span class="n">any</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ServerCallHandler</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">TaskInbound</span><span class="p">,</span> <span class="n">TaskOutbound</span><span class="p">&gt;&gt;())</span>
+        <span class="n">metadataCaptor</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="k">get</span><span class="p">(</span>
+                <span class="n">Metadata</span><span class="p">.</span><span class="n">Key</span><span class="p">.</span><span class="n">of</span><span class="p">(</span><span class="s">&#34;custom_status&#34;</span><span class="p">,</span> <span class="n">Metadata</span><span class="p">.</span><span class="n">ASCII_STRING_MARSHALLER</span><span class="p">))</span> <span class="n">shouldBe</span> <span class="s">&#34;404&#34;</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Mockitoの<code>ArgumentCaptor</code>を活用すればmetadataの検証も手軽に行うことができた。</p>
+
+<h3 id="コード">コード</h3>
+
+<p>githubにコードがありますので合わせて参照ください。</p>
+
+<p><div class="github-card" data-user="soushin" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>テストコードは<a href="https://github.com/soushin/spring5-kotlin-application/blob/master/backend/src/test/kotlin/app/grpc/server/TaskBackendServerGetTaskServiceTest.kt">こちら</a>です。</p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/metadata/">Metadata</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/test/">Test</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>ALBのアクセスログからAPIのレスポンスタイムを監視する - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="サービスのAPIのレスポンスタイムを監視することは運用において大事なことである。APIのレスポンスタイムを計測してモニタリングする方法は多様">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">ALBのアクセスログからAPIのレスポンスタイムを監視する</h1>
+    <div class="post-meta">2017.6.29</div>
+  </header>
+  <div class="post-content">
+
+<p>サービスのAPIのレスポンスタイムを監視することは運用において大事なことである。APIのレスポンスタイムを計測してモニタリングする方法は多様に考えられるが、このエントリでは次の図のようにALBのアクセスログをfluentdが収集してモニタリングツールと連携させることでAPIのレスポンスタイムの監視を実現していく。</p>
+
+<figure>
+    <img src="/images/20170629104620.png"/> 
+</figure>
+
+
+<ul>
+<li>ALBのアクセスログを有効にすると指定したS3のバケットにログファイルが貯まる</li>
+<li>FluentdはS3へアクセスしログを収集する</li>
+<li>収集したログをElasticSearchへ転送しKibanaでモニタリング</li>
+<li>収集したログを解析し収集インターバル中のアクセスのうち最大レスポンスタイムや平均レスポンスタイムを統計しMackerelへメトリックを投稿</li>
+<li>Mackerelでレスポンスタイムが閾値を超えた場合のアラート体制を整える</li>
+</ul>
+
+<p>上記の構成はログのモニタリングと合わせてレスポンスタイムが閾値を超えた場合の通知を実現している。<br/>
+また、ALBのアクセスログにはリクエストURLやUserAgentなどLBを通っているため監視に適した情報が揃っている。<br/>
+モニタリングはkibanaで行うのでデータの集計やグラフを組み合わせてログ監視のダッシュボードを作れる。</p>
+
+<p>そして、fluentdのプラグインを組み合わせれば、簡単にこの構成を実現できる。<br/>
+利用したプラグインを一覧する。</p>
+
+<ul>
+<li><a href="https://github.com/shinsaka/fluent-plugin-elb-log">fluent-plugin-elb-log</a></li>
+<li><a href="https://github.com/sonots/fluent-plugin-record-reformer">fluent-plugin-record-reformer</a></li>
+<li><a href="https://github.com/uken/fluent-plugin-elasticsearch">fluent-plugin-elasticsearch</a></li>
+<li><a href="https://github.com/sonots/fluent-plugin-stats">fluent-plugin-stats</a></li>
+<li><a href="https://github.com/mackerelio/fluent-plugin-mackerel">fluent-plugin-mackerel</a></li>
+</ul>
+
+<p>どれも提示されている標準の使い方で実現できる。 <br/>
+詳細なfluentdの設定はgithubに置いているので参照いただきたい。</p>
+
+<p><a href="https://github.com/nsoushi/alb-latency-collector">GitHub - nsoushi/alb-latency-collector: This repository contains fluentd setting for monitoring ALB latency.</a></p>
+
+<p>１点、ログ監視の注意点として挙げておきたいことがある。<br/>
+Fluentdで転送したログをLogstash形式でElasticsearchへインデキシングをしているときにALBのログタイムスタンプ（timeフィールド）を <code>@timestamp</code>に置き換える必要がある。障害でログが転送されない状況から再開したときにログ転送の時刻を計測してしまうと実際のALBのログタイムスタンプと差異が生まれてしまう。これを予防するのが次の設定になる。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml">api.access_log&gt;
+  type copy
+
+  <span class="nt">&lt;store&gt;&lt;/store&gt;</span>
+    type record_reformer
+    enable_ruby true
+    tag api.access_log.es
+    <span class="nt">&lt;record&gt;&lt;/record&gt;</span>
+    @timestamp ${record[&#39;time&#39;]}
+    
+  </code></pre></td></tr></table>
+</div>
+</div>
+<p>record_reformerでALBの <code>time</code>フィールドをLogstashの <code>@timestamp</code>へ置き換えている。</p>
+
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>Fluentdのプラグインを集めてALBのアクセスログを監視することができた。</li>
+<li>その他のALBがあれば同様にFluentdの設定を追加することで柔軟にAPIのレスポンスタイム監視を増やすことができる。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>設定値を変更すればdocker-composeで動作確認を行えるコードを用意したので試したい方はgithubを参照してください。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="alb-latency-collector" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/alb/">ALB</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/%E3%83%AD%E3%82%B0/">ログ</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/fluentd/">Fluentd</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+

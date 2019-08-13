@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="jp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <title>gRPC ServerのExceptionFilterの方法をまとめた（grpc-java） - 平日インプット週末アウトプットぶろぐ</title>
+    
+    <meta name="description" content="前回のエントリでは認証処理やメトリクス計測、ログ出力などをインターセプターをつかい横断的に処理する方法をまとめた。 Kotlin &#43; gRPCでio.grp">
+    <meta name="author" content="">
+    
+    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
+    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
+    
+    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
+    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
+    
+    <meta name="generator" content="Hugo 0.56.3" />
+    
+    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
+    
+    
+    
+    
+    
+  </head>
+  <body class="single">
+    <header class="header">
+      <div class="wrap">
+        
+        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
+        
+        
+        <button class="menu-toggle" type="button"></button>
+        
+      </div>
+    </header>
+    
+    <nav class="nav">
+      <ul class="menu">
+        
+        <li>
+          <a href="/">Home</a>
+        </li>
+        
+        <li>
+          <a href="/entry/">Archives</a>
+        </li>
+        
+        <li>
+          <a href="/tags/">Tags</a>
+        </li>
+        
+        <li>
+          <a href="/categories/">Categories</a>
+        </li>
+        
+        <li>
+          <a href="/about/">About</a>
+        </li>
+        
+      </ul>
+    </nav>
+    
+    <main class="main">
+
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">gRPC ServerのExceptionFilterの方法をまとめた（grpc-java）</h1>
+    <div class="post-meta">2017.8.18</div>
+  </header>
+  <div class="post-content">
+
+<p>前回のエントリでは認証処理やメトリクス計測、ログ出力などをインターセプターをつかい横断的に処理する方法をまとめた。</p>
+
+<p><a href="https://blog.soushi.me/entry/2017/07/20/101051">Kotlin + gRPCでio.grpc.Contextをつかってログ出力を横断処理してみた - 平日インプット週末アウトプットぶろぐ</a></p>
+
+<p>今回のエントリではgRPC Serverのトランザクション内で発生した例外処理を横断的にキャッチしてレスポンスを返す方法をまとめていきたい。</p>
+
+<h3 id="try-catchして例外クラスに応じた処理を施す">try-catchして例外クラスに応じた処理を施す</h3>
+
+<p>愚直に書けば次のようになるだろう。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">override</span> <span class="k">fun</span> <span class="nf">getTaskService</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">TaskInbound</span><span class="p">?,</span> <span class="n">responseObserver</span><span class="p">:</span> <span class="n">StreamObserver</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">TaskOutbound</span><span class="p">&gt;?)</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="k">val</span> <span class="py">taskId</span> <span class="p">=</span> <span class="n">GRpcInboundValidator</span><span class="p">.</span><span class="n">validTaskInbound</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="k">val</span> <span class="py">log</span> <span class="p">=</span> <span class="n">GRpcLogContextHandler</span><span class="p">.</span><span class="n">getLog</span><span class="p">()</span>
+        <span class="n">log</span><span class="p">.</span><span class="n">elem</span> <span class="p">{</span> <span class="s">&#34;taskId&#34;</span> <span class="n">to</span> <span class="n">taskId</span> <span class="p">}</span>
+
+        <span class="k">val</span> <span class="py">task</span> <span class="p">=</span> <span class="n">getTaskService</span><span class="p">(</span><span class="n">GetTaskCommand</span><span class="p">(</span><span class="n">taskId</span><span class="p">.</span><span class="n">toLong</span><span class="p">()))</span>
+        <span class="k">val</span> <span class="py">msg</span> <span class="p">=</span> <span class="n">getOutbound</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onNext</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onCompleted</span><span class="p">()</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">WebAppException</span><span class="p">.</span><span class="n">NotFoundException</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">logger</span><span class="p">.</span><span class="n">error</span> <span class="p">{</span> <span class="s">&#34;gRPC server error, task not found.&#34;</span> <span class="p">}</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onError</span><span class="p">(</span>
+                <span class="n">Status</span><span class="p">.</span><span class="n">NOT_FOUND</span><span class="p">.</span><span class="n">withDescription</span><span class="p">(</span><span class="s">&#34;task not found.&#34;</span><span class="p">).</span><span class="n">asRuntimeException</span><span class="p">())</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">WebAppException</span><span class="p">.</span><span class="n">BadRequestException</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">logger</span><span class="p">.</span><span class="n">error</span> <span class="p">{</span> <span class="s">&#34;gRPC server error, invalid request.&#34;</span> <span class="p">}</span>
+        <span class="n">responseObserver</span><span class="o">?.</span><span class="n">onError</span><span class="p">(</span>
+                <span class="n">Status</span><span class="p">.</span><span class="n">INVALID_ARGUMENT</span><span class="p">.</span><span class="n">withDescription</span><span class="p">(</span><span class="s">&#34;invalid request.&#34;</span><span class="p">).</span><span class="n">asRuntimeException</span><span class="p">())</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>タスクを１件取得するgRPC Serverのコード例である。<br/>
+タスクがなかった場合には<code>NOT FOUND</code>のレスポンス、リクエストに不備があれば<code>INVALID_ARGUMENT</code>のレスポンスを返していることがわかる。<br/>
+レスポンスを返す直前にはExceptionをキャッチしている。そしてExceptionごとにエラーレスポンスを並べている形だ。</p>
+
+<p>このような書き方を複数のgRPC Serverで続けると<code>catch</code>節が冗長になってしまう。<br/>
+gRPC ServerのインターセプターをつかいExceptionのキャッチを共通処理としていきたい。そうすれば上記のコードからtry-catchが無くなりコードの見通しが良くなる。</p>
+
+<h3 id="インターセプターをつくる">インターセプターをつくる</h3>
+
+<p>gRPC Serverのトランザクションで発生した例外をキャッチするには次のようなインターセプターを用意する。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">@Component</span>
+<span class="k">class</span> <span class="nc">ExceptionFilter</span> <span class="p">:</span> <span class="n">ServerInterceptor</span> <span class="p">{</span>
+
+    <span class="k">private</span> <span class="k">val</span> <span class="py">logger</span> <span class="p">=</span> <span class="n">KotlinLogging</span><span class="p">.</span><span class="n">logger</span> <span class="p">{}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="err">&amp;</span><span class="nf">lt</span><span class="p">;</span><span class="n">ReqT</span> <span class="p">:</span> <span class="n">Any</span><span class="p">?,</span> <span class="n">RespT</span> <span class="p">:</span> <span class="n">Any</span><span class="p">?&gt;</span> <span class="n">interceptCall</span><span class="p">(</span><span class="n">call</span><span class="p">:</span> <span class="n">ServerCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Metadata</span><span class="p">?,</span>
+                                                           <span class="n">next</span><span class="p">:</span> <span class="n">ServerCallHandler</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?):</span> <span class="n">ServerCall</span><span class="p">.</span><span class="n">Listener</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">object</span> <span class="err">: </span><span class="nc">ForwardingServerCallListener</span><span class="p">.</span><span class="n">SimpleForwardingServerCallListener</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">&gt;(</span><span class="n">next</span><span class="o">?.</span><span class="n">startCall</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span><span class="o">!!</span><span class="p">)</span> <span class="p">{</span>
+
+            <span class="k">override</span> <span class="k">fun</span> <span class="nf">onHalfClose</span><span class="p">()</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="p">{</span>
+                    <span class="k">super</span><span class="p">.</span><span class="n">onHalfClose</span><span class="p">()</span>
+                <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">ex</span><span class="p">:</span> <span class="n">RuntimeException</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">handleException</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+                    <span class="k">throw</span> <span class="n">ex</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="k">override</span> <span class="k">fun</span> <span class="nf">onReady</span><span class="p">()</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="p">{</span>
+                    <span class="k">super</span><span class="p">.</span><span class="n">onReady</span><span class="p">()</span>
+                <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">ex</span><span class="p">:</span> <span class="n">RuntimeException</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">handleException</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+                    <span class="k">throw</span> <span class="n">ex</span>
+                <span class="p">}</span>
+
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li><code>onHalfClose</code>と<code>onReady</code>をoverrideしたリスナーを用意する。<code>onHalfClose</code>と<code>onReady</code>はクライアントからリクエストが送信された後、つまりServer内の処理のリスナーである。</li>
+<li>この２つリスナー関数をtry-catchで囲むことでgRPC Server内の例外エラーを横断的にキャッチすることができる。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="k">private</span> <span class="k">fun</span> <span class="err">&amp;</span><span class="nf">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;</span> <span class="n">handleException</span><span class="p">(</span><span class="n">call</span><span class="p">:</span> <span class="n">ServerCall</span><span class="p">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">ReqT</span><span class="p">,</span> <span class="n">RespT</span><span class="p">&gt;?,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Metadata</span><span class="p">?,</span> <span class="n">ex</span><span class="p">:</span> <span class="n">Exception</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">logger</span><span class="p">.</span><span class="n">error</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span> <span class="p">{</span> <span class="n">ex</span><span class="p">.</span><span class="n">message</span> <span class="p">}</span>
+
+    <span class="k">when</span> <span class="p">(</span><span class="n">ex</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">is</span> <span class="n">RepositoryException</span><span class="p">.</span><span class="n">NotFoundException</span> <span class="p">-&gt;</span> <span class="n">call</span><span class="o">?.</span><span class="n">close</span><span class="p">(</span>
+                <span class="n">Status</span><span class="p">.</span><span class="n">fromCode</span><span class="p">(</span><span class="n">Status</span><span class="p">.</span><span class="n">NOT_FOUND</span><span class="p">.</span><span class="n">code</span><span class="p">).</span><span class="n">withDescription</span><span class="p">(</span><span class="n">ex</span><span class="p">.</span><span class="n">message</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+        <span class="k">is</span> <span class="n">RepositoryException</span><span class="p">.</span><span class="n">ConflictException</span> <span class="p">-&gt;</span> <span class="n">call</span><span class="o">?.</span><span class="n">close</span><span class="p">(</span>
+                <span class="n">Status</span><span class="p">.</span><span class="n">fromCode</span><span class="p">(</span><span class="n">Status</span><span class="p">.</span><span class="n">ALREADY_EXISTS</span><span class="p">.</span><span class="n">code</span><span class="p">).</span><span class="n">withDescription</span><span class="p">(</span><span class="n">ex</span><span class="p">.</span><span class="n">message</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+        <span class="k">is</span> <span class="n">WebAppException</span><span class="p">.</span><span class="n">BadRequestException</span> <span class="p">-&gt;</span> <span class="n">call</span><span class="o">?.</span><span class="n">close</span><span class="p">(</span>
+                <span class="n">Status</span><span class="p">.</span><span class="n">fromCode</span><span class="p">(</span><span class="n">Status</span><span class="p">.</span><span class="n">INVALID_ARGUMENT</span><span class="p">.</span><span class="n">code</span><span class="p">).</span><span class="n">withDescription</span><span class="p">(</span><span class="n">ex</span><span class="p">.</span><span class="n">message</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+        <span class="k">is</span> <span class="n">WebAppException</span><span class="p">.</span><span class="n">NotFoundException</span> <span class="p">-&gt;</span> <span class="n">call</span><span class="o">?.</span><span class="n">close</span><span class="p">(</span>
+                <span class="n">Status</span><span class="p">.</span><span class="n">fromCode</span><span class="p">(</span><span class="n">Status</span><span class="p">.</span><span class="n">NOT_FOUND</span><span class="p">.</span><span class="n">code</span><span class="p">).</span><span class="n">withDescription</span><span class="p">(</span><span class="n">ex</span><span class="p">.</span><span class="n">message</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+        <span class="k">is</span> <span class="n">EmptyResultDataAccessException</span> <span class="p">-&gt;</span> <span class="n">call</span><span class="o">?.</span><span class="n">close</span><span class="p">(</span>
+                <span class="n">Status</span><span class="p">.</span><span class="n">fromCode</span><span class="p">(</span><span class="n">Status</span><span class="p">.</span><span class="n">NOT_FOUND</span><span class="p">.</span><span class="n">code</span><span class="p">).</span><span class="n">withDescription</span><span class="p">(</span><span class="s">&#34;data not found.&#34;</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+        <span class="k">else</span> <span class="p">-&gt;</span> <span class="n">call</span><span class="o">?.</span><span class="n">close</span><span class="p">(</span><span class="n">Status</span><span class="p">.</span><span class="n">fromCode</span><span class="p">(</span><span class="n">Status</span><span class="p">.</span><span class="n">INTERNAL</span><span class="p">.</span><span class="n">code</span><span class="p">).</span><span class="n">withDescription</span><span class="p">(</span><span class="n">ex</span><span class="p">.</span><span class="n">message</span><span class="p">),</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></td></tr></table>
+</div>
+</div>
+<ul>
+<li><code>handleException</code>関数では例外クラスに応じたれステータスコードを定義して<code>call?.close</code>を呼び出している。</li>
+<li>これでExceptionFilterが例外エラーをすべてキャッチしてレスポンスを返すことができる。</li>
+</ul>
+
+<h3 id="grpc-serverのテスト時にexceptionfilterをつかう">gRPC Serverのテスト時にExceptionFilterをつかう</h3>
+
+<p>gRPC ServerでExceptionFilterクラスをテストしたい。その場合にはテスト時に<code>InProcessServer</code>のビルダーに<code>intercept</code>を加えるとよい。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="n">inProcessServer</span> <span class="p">=</span> <span class="n">InProcessServerBuilder</span>
+        <span class="p">.</span><span class="n">forName</span><span class="p">(</span><span class="n">UNIQUE_SERVER_NAME</span><span class="p">)</span>
+        <span class="p">.</span><span class="n">addService</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="p">.</span><span class="n">intercept</span><span class="p">(</span><span class="n">ExceptionFilter</span><span class="p">())</span>  <span class="err">←</span> <span class="err">こちら</span>
+        <span class="p">.</span><span class="n">directExecutor</span><span class="p">()</span>
+        <span class="p">.</span><span class="n">build</span><span class="p">()</span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="まとめ">まとめ</h3>
+
+<ul>
+<li>今回の例外エラーのキャッチ方法は情報が少なくgrpc-javaのissueのコメントで少し言及されていたところからヒントを得た。</li>
+<li>振り返ると<code>ServerCallListener</code>のドキュメントを読んだうえで、それぞれのリスナーの役割を理解できれば実装できるものだった。</li>
+<li>gRPCの実用化に向けてインターセプターのネタも揃ってきた。</li>
+</ul>
+
+<h3 id="コード">コード</h3>
+
+<p>エントリで紹介したコードは一部分のためコード全体はgithubを参照してください。</p>
+
+<p><div class="github-card" data-user="nsoushi" data-repo="spring5-kotlin-application" data-width="400" data-height="" data-theme="default"></div>
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script></p>
+
+<p>インターセプターのコードは<a href="https://github.com/nsoushi/spring5-kotlin-application/blob/master/backend/src/main/kotlin/app/grpc/interceptor/ExceptionFilter.kt">こちら</a>です。</p>
+</div>
+  <footer class="post-footer">
+    
+    <ul class="post-tags">
+      
+      <li><a href="https://soushin.github.io/tags/grpc/">gRPC</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/exception/">Exception</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/filter/">Filter</a></li>
+      
+      <li><a href="https://soushin.github.io/tags/interceptor/">Interceptor</a></li>
+      
+    </ul>
+    
+  </footer>
+  
+  
+  
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
+  <span>&middot;</span>
+  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
+  <span>&middot;</span>
+  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
+</footer>
+<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
+<script data-no-instant>InstantClick.init();</script>
+<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
+<script data-no-instant>
+  let body;
+  function menuToggleListener() {
+    body.classList.toggle('blur');
+  }
+  function setMenuToggleListener() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (!menuToggle) return;
+    body = document.querySelector('body');
+    menuToggle.addEventListener('click', menuToggleListener);
+  }
+
+  hljs.initHighlightingOnLoad();
+  setMenuToggleListener();
+
+  InstantClick.on('change', function () {
+    document.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightBlock(block);
+    });
+    setMenuToggleListener();
+  });
+</script>
+</body>
+</html>
+
