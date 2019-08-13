@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>About on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://blog.soushi.me/about/</link>
+    <description>Recent content in About on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <copyright>&amp;copy; Copyright 2019 &lt;a href=&#34;https://twitter.com/soushi_nozawa&#34;&gt;Soushi Nozawa&lt;/a&gt;</copyright>
+    <lastBuildDate>Tue, 13 Aug 2019 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://blog.soushi.me/about/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+  </channel>
+</rss>
