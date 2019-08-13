@@ -1,196 +1,308 @@
 <!DOCTYPE html>
 <html lang="jp">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    
-    <title>gRPC - 平日インプット週末アウトプットぶろぐ</title>
-    
-    <meta name="description" content="">
-    <meta name="author" content="">
-    
-    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
-    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
-    
-    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
-    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
-    
-    <meta name="generator" content="Hugo 0.56.3" />
-    
-    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
-    
-    
-    
-    
-    
-  </head>
-  <body class="list">
-    <header class="header">
-      <div class="wrap">
-        
-        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
-        
-        
-        <button class="menu-toggle" type="button"></button>
-        
-      </div>
-    </header>
-    
-    <nav class="nav">
-      <ul class="menu">
-        
-        <li>
-          <a href="/">Home</a>
-        </li>
-        
-        <li>
-          <a href="/entry/">Archives</a>
-        </li>
-        
-        <li>
-          <a href="/tags/">Tags</a>
-        </li>
-        
-        <li>
-          <a href="/categories/">Categories</a>
-        </li>
-        
-        <li>
-          <a href="/about/">About</a>
-        </li>
-        
-      </ul>
-    </nav>
-    
-    <main class="main">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <title>gRPC - 平日インプット週末アウトプットぶろぐ</title>
+  <meta property="og:title" content="gRPC - 平日インプット週末アウトプットぶろぐ" />
+  <meta name="twitter:title" content="gRPC - 平日インプット週末アウトプットぶろぐ" />
+  <meta name="author" content=""/>
+  <meta property="og:site_name" content="平日インプット週末アウトプットぶろぐ" />
+  <meta property="og:url" content="https://blog.soushi.me/tags/grpc/" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="generator" content="Hugo 0.56.3" />
+  <link href="/tags/grpc/index.xml" rel="alternate" type="application/rss+xml" title="平日インプット週末アウトプットぶろぐ" />
+  <link href="/tags/grpc/index.xml" rel="feed" type="application/rss+xml" title="平日インプット週末アウトプットぶろぐ" />
 
+  <link rel="stylesheet" href="/css/style.css" media="all" />
+  <link rel="stylesheet" href="/css/syntax.css" media="all" />
+  <link rel="stylesheet" href="/css/custom.css" media="all" />
 
+  <script src="/js/script.js"></script>
+  <script src="/js/custom.js"></script>
+  <script defer src="/js/fontawesome.js"></script>
+</head>
 
-<header class="page-header">
-  <h1>
-  gRPC
-  </h1>
-</header>
+<body>
 
-
-
-
-
-
-<article class="post-entry">
-  <header class="entry-header">
-    <h2>Kotlin コルーチンでasync/awaitをつかってgRPC Serverをリクエストしてみた</h2>
-  </header>
-  <section class="entry-content">
-   <p>Kotlin1.1からの新機能であるコルーチン(Coroutines)を試していきたい。Kotlin コルーチンをつかえば非同期処理を同期的な...</p>
-  </section>
-  <footer class="entry-footer">
-    <time>2017.7.27</time>
-  </footer>
-  <a class="entry-link" href="https://soushin.github.io/entry/2017/07/27/002018/"></a>
-</article>
-
-<article class="post-entry">
-  <header class="entry-header">
-    <h2>Kotlin &#43; gRPCでio.grpc.Contextをつかってログ出力を横断処理してみた</h2>
-  </header>
-  <section class="entry-content">
-   <p>アスペクト指向プログラミング（AOP）をgRPC Serverではどう扱うか考えていきたい。 横断的な関心事といえば認証やログ出力である。 gRP...</p>
-  </section>
-  <footer class="entry-footer">
-    <time>2017.7.20</time>
-  </footer>
-  <a class="entry-link" href="https://soushin.github.io/entry/2017/07/20/101051/"></a>
-</article>
-
-<article class="post-entry">
-  <header class="entry-header">
-    <h2>Kotlin &#43; gRPCでdropwizard/metricsをつかってメトリクスを取得してみた</h2>
-  </header>
-  <section class="entry-content">
-   <p>今回のエントリはKotlin &#43; gRPC（FWはSpringBoot 2.0.0.M1）のアプリケーションでgRPCのリクエストタイムやエラー回...</p>
-  </section>
-  <footer class="entry-footer">
-    <time>2017.7.13</time>
-  </footer>
-  <a class="entry-link" href="https://soushin.github.io/entry/2017/07/13/103649/"></a>
-</article>
-
-<article class="post-entry">
-  <header class="entry-header">
-    <h2>Kotlin &#43; gradleでgRPCプロトコル定義ファイル（.proto）のvendoringにprotodepをつかってみた</h2>
-  </header>
-  <section class="entry-content">
-   <p>gRPCのプロトコル定義ファイル（.proto）の管理を考えていきたい。gRPCを導入するプロジェクトであれば.protoファイルの運用方法...</p>
-  </section>
-  <footer class="entry-footer">
-    <time>2017.7.6</time>
-  </footer>
-  <a class="entry-link" href="https://soushin.github.io/entry/2017/07/06/122307/"></a>
-</article>
-
-<article class="post-entry">
-  <header class="entry-header">
-    <h2>Spring5.0 &#43; Kotlinで１つのjarにHTTPサーバーとgRPCサーバーを相乗りさせてみた</h2>
-  </header>
-  <section class="entry-content">
-   <p>Spring Boot 2.0.0 M1がリリースされました。以前のエントリで試した当時は 2.0.0.BUILD-SNAPSHOTでありHTTPサーバーが起動している状態...</p>
-  </section>
-  <footer class="entry-footer">
-    <time>2017.6.8</time>
-  </footer>
-  <a class="entry-link" href="https://soushin.github.io/entry/2017/06/08/134928/"></a>
-</article>
-
-
-
-
-<footer class="page-footer">
-  <nav class="pagination">
-    
-    <a class="prev" href="/tags/grpc/page/2/">← </a>
-    
-    
-    <a class="next" href="/tags/grpc/page/4/"> →</a>
-    
+<header class="site-header">
+  <nav class="site-navi">
+    <h1 class="site-title"><a href="/">平日インプット週末アウトプットぶろぐ</a></h1>
+    <ul class="site-navi-items">
+      <li class="site-navi-item-home"><a href="/" title="Home">Home</a></li>
+      <li class="site-navi-item-archives"><a href="/entry/" title="Archives">Archives</a></li>
+      <li class="site-navi-item-tags"><a href="/tags/" title="Tags">Tags</a></li>
+      <li class="site-navi-item-"><a href="/about/" title="About">About</a></li>
+    </ul>
   </nav>
-</footer>
+</header>
+<hr class="site-header-bottom">
+
+  <div class="breadcrumb">
+    <a href="/tags/">Tags</a> / G r p c
+  </div>
+  <div class="main" role="main">
+    <section class="list taxonomy-list">
+      <article class="article">
+        <a href="/entry/2017/07/27/002018/" class="article-titles">
+          <h2 class="article-title">Kotlin コルーチンでasync/awaitをつかってgRPC Serverをリクエストしてみた</h2>
+          
+        </a>
+        <ul class="article-meta">
+          <li class="article-meta-date"><time>July 27, 2017</time></li>
+          <li class="article-meta-tags">
+            <a href="/tags/kotlin/">
+              <i class="fas fa-tag"></i>
+              kotlin
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/coroutines/">
+              <i class="fas fa-tag"></i>
+              coroutines
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/grpc/">
+              <i class="fas fa-tag"></i>
+              gRPC
+            </a>&nbsp;
+          </li>
+        </ul>
+        <div class="article-content">
+          Kotlin1.1からの新機能であるコルーチン(Coroutines)を試していきたい。Kotlin コルーチンをつかえば非同期処理を同期的な
+        </div>
+        <div class="article-readmore"><a href="/entry/2017/07/27/002018/">Read more...</a></div>
+        <div class="article-floatclear"></div>
+      </article>
+      <article class="article">
+        <a href="/entry/2017/07/20/101051/" class="article-titles">
+          <h2 class="article-title">Kotlin &#43; gRPCでio.grpc.Contextをつかってログ出力を横断処理してみた</h2>
+          
+        </a>
+        <ul class="article-meta">
+          <li class="article-meta-date"><time>July 20, 2017</time></li>
+          <li class="article-meta-tags">
+            <a href="/tags/kotlin/">
+              <i class="fas fa-tag"></i>
+              kotlin
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/grpc/">
+              <i class="fas fa-tag"></i>
+              gRPC
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/aop/">
+              <i class="fas fa-tag"></i>
+              AOP
+            </a>&nbsp;
+          </li>
+        </ul>
+        <div class="article-content">
+          アスペクト指向プログラミング（AOP）をgRPC Serverではどう扱うか考えていきたい。 横断的な関心事といえば認証やログ出力である。 gRP
+        </div>
+        <div class="article-readmore"><a href="/entry/2017/07/20/101051/">Read more...</a></div>
+        <div class="article-floatclear"></div>
+      </article>
+      <article class="article">
+        <a href="/entry/2017/07/13/103649/" class="article-titles">
+          <h2 class="article-title">Kotlin &#43; gRPCでdropwizard/metricsをつかってメトリクスを取得してみた</h2>
+          
+        </a>
+        <ul class="article-meta">
+          <li class="article-meta-date"><time>July 13, 2017</time></li>
+          <li class="article-meta-tags">
+            <a href="/tags/grpc/">
+              <i class="fas fa-tag"></i>
+              gRPC
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/kotlin/">
+              <i class="fas fa-tag"></i>
+              kotlin
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/spring-boot/">
+              <i class="fas fa-tag"></i>
+              Spring Boot
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/metrics/">
+              <i class="fas fa-tag"></i>
+              Metrics
+            </a>&nbsp;
+          </li>
+        </ul>
+        <div class="article-content">
+          今回のエントリはKotlin + gRPC（FWはSpringBoot 2.0.0.M1）のアプリケーションでgRPCのリクエストタイムやエラー回
+        </div>
+        <div class="article-readmore"><a href="/entry/2017/07/13/103649/">Read more...</a></div>
+        <div class="article-floatclear"></div>
+      </article>
+      <article class="article">
+        <a href="/entry/2017/07/06/122307/" class="article-titles">
+          <h2 class="article-title">Kotlin &#43; gradleでgRPCプロトコル定義ファイル（.proto）のvendoringにprotodepをつかってみた</h2>
+          
+        </a>
+        <ul class="article-meta">
+          <li class="article-meta-date"><time>July 6, 2017</time></li>
+          <li class="article-meta-tags">
+            <a href="/tags/grpc/">
+              <i class="fas fa-tag"></i>
+              grpc
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/proto/">
+              <i class="fas fa-tag"></i>
+              proto
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/gradle/">
+              <i class="fas fa-tag"></i>
+              gradle
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/protodep/">
+              <i class="fas fa-tag"></i>
+              protodep
+            </a>&nbsp;
+          </li>
+        </ul>
+        <div class="article-content">
+          gRPCのプロトコル定義ファイル（.proto）の管理を考えていきたい。gRPCを導入するプロジェクトであれば.protoファイルの運用方法
+        </div>
+        <div class="article-readmore"><a href="/entry/2017/07/06/122307/">Read more...</a></div>
+        <div class="article-floatclear"></div>
+      </article>
+      <article class="article">
+        <a href="/entry/2017/06/08/134928/" class="article-titles">
+          <h2 class="article-title">Spring5.0 &#43; Kotlinで１つのjarにHTTPサーバーとgRPCサーバーを相乗りさせてみた</h2>
+          
+        </a>
+        <ul class="article-meta">
+          <li class="article-meta-date"><time>June 8, 2017</time></li>
+          <li class="article-meta-tags">
+            <a href="/tags/springboot/">
+              <i class="fas fa-tag"></i>
+              springboot
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/kotlin/">
+              <i class="fas fa-tag"></i>
+              kotlin
+            </a>&nbsp;
+          </li>
+          <li class="article-meta-tags">
+            <a href="/tags/grpc/">
+              <i class="fas fa-tag"></i>
+              gRPC
+            </a>&nbsp;
+          </li>
+        </ul>
+        <div class="article-content">
+          Spring Boot 2.0.0 M1がリリースされました。以前のエントリで試した当時は 2.0.0.BUILD-SNAPSHOTでありHTTPサーバーが起動している状態
+        </div>
+        <div class="article-readmore"><a href="/entry/2017/06/08/134928/">Read more...</a></div>
+        <div class="article-floatclear"></div>
+      </article>
+    </section>
+    
+
+<ul class="pagination">
+    
+    <li class="page-item">
+        <a href="/tags/grpc/" class="page-link" aria-label="First"><span aria-hidden="true">&laquo;&laquo;</span></a>
+    </li>
+    
+    <li class="page-item">
+    <a href="/tags/grpc/page/2/" class="page-link" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
+    </li>
+    
+    
+    
+    
+    
+    
+    
+        
+        
+    
+    
+    <li class="page-item"><a class="page-link" href="/tags/grpc/">1</a></li>
+    
+    
+    
+    
+    
+    
+        
+        
+    
+    
+    <li class="page-item"><a class="page-link" href="/tags/grpc/page/2/">2</a></li>
+    
+    
+    
+    
+    
+    
+        
+        
+    
+    
+    <li class="page-item active"><a class="page-link" href="/tags/grpc/page/3/">3</a></li>
+    
+    
+    
+    
+    
+    
+        
+        
+    
+    
+    <li class="page-item"><a class="page-link" href="/tags/grpc/page/4/">4</a></li>
+    
+    
+    <li class="page-item">
+    <a href="/tags/grpc/page/4/" class="page-link" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>
+    </li>
+    
+    <li class="page-item">
+        <a href="/tags/grpc/page/4/" class="page-link" aria-label="Last"><span aria-hidden="true">&raquo;&raquo;</span></a>
+    </li>
+    
+</ul>
+
+  </div>
 
 
-</main>
-<footer class="footer">
-  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
-  <span>&middot;</span>
-  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
-  <span>&middot;</span>
-  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
-</footer>
-<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
-<script data-no-instant>InstantClick.init();</script>
-<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
-<script data-no-instant>
-  let body;
-  function menuToggleListener() {
-    body.classList.toggle('blur');
-  }
-  function setMenuToggleListener() {
-    const menuToggle = document.querySelector('.menu-toggle');
-    if (!menuToggle) return;
-    body = document.querySelector('body');
-    menuToggle.addEventListener('click', menuToggleListener);
-  }
 
-  hljs.initHighlightingOnLoad();
-  setMenuToggleListener();
+<div class="site-footer">
+  <div class="copyright"></div>
+  <ul class="site-footer-items">
+    <li class="site-footer-item-rsslink">
+      <a href="/tags/grpc/index.xml" type="application/rss+xml" target="_blank" title="RSS">
+        <i class="fas fa-rss"></i>
+      </a>
+    </li>
+  </ul>
+  <div class="powerdby">
+    Powered by <a href="https://gohugo.io/">Hugo</a> and <a href="https://github.com/taikii/whiteplain">Whiteplain</a>
+  </div>
+</div>
 
-  InstantClick.on('change', function () {
-    document.querySelectorAll('pre code').forEach((block) => {
-      hljs.highlightBlock(block);
-    });
-    setMenuToggleListener();
-  });
-</script>
+
 </body>
 </html>
-

@@ -2,48 +2,48 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Docker on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/docker/</link>
+    <link>https://blog.soushi.me/tags/docker/</link>
     <description>Recent content in Docker on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Wed, 21 Nov 2018 10:06:54 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/docker/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/docker/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>BazelでDockerイメージのビルドとレジストリへのプッシュをする</title>
-      <link>https://soushin.github.io/entry/2018/11/21/100654/</link>
+      <link>https://blog.soushi.me/entry/2018/11/21/100654/</link>
       <pubDate>Wed, 21 Nov 2018 10:06:54 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/21/100654/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/21/100654/</guid>
       <description>前回までのエントリに引き続きBazelのビルドをまとめていく。 GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット</description>
     </item>
     
     <item>
       <title>supersetをシュッと起動できるDockerfile（認証方式をGoogle API OAuth2に変更）をつくってみた、あと触ってみた所感など</title>
-      <link>https://soushin.github.io/entry/2017/04/07/165144/</link>
+      <link>https://blog.soushi.me/entry/2017/04/07/165144/</link>
       <pubDate>Fri, 07 Apr 2017 16:51:44 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/04/07/165144/</guid>
+      <guid>https://blog.soushi.me/entry/2017/04/07/165144/</guid>
       <description>ダッシュボードツールのsupersetをシュッと起動できるDockerfileを作りました。といってもsupersetのDockerfile</description>
     </item>
     
     <item>
       <title>nginx-rtmp-module &#43; FFmpeg &#43; HLSで動画配信ができるdocker-composeをつくった</title>
-      <link>https://soushin.github.io/entry/2017/02/17/135834/</link>
+      <link>https://blog.soushi.me/entry/2017/02/17/135834/</link>
       <pubDate>Fri, 17 Feb 2017 13:58:34 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/02/17/135834/</guid>
+      <guid>https://blog.soushi.me/entry/2017/02/17/135834/</guid>
       <description>タイトルのdocker-composeをつくっていきます。ローカルで配信確認したいときにシュッと起動できるようにします。 次のような構成でつく</description>
     </item>
     
     <item>
       <title>Pact Broker DockerコンテナをつかってPact Broker環境を構築してみた</title>
-      <link>https://soushin.github.io/entry/2017/02/05/005941/</link>
+      <link>https://blog.soushi.me/entry/2017/02/05/005941/</link>
       <pubDate>Sun, 05 Feb 2017 00:59:41 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/02/05/005941/</guid>
+      <guid>https://blog.soushi.me/entry/2017/02/05/005941/</guid>
       <description>Consumer-Driven Contract テストをフレームワークさせるPactをつかったサンプルプロジェクトを前回のエントリでは紹介しました。 golang - kotlinのmicroserv</description>
     </item>
     

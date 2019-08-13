@@ -2,30 +2,30 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>fluentd on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/fluentd/</link>
+    <link>https://blog.soushi.me/tags/fluentd/</link>
     <description>Recent content in fluentd on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Thu, 29 Jun 2017 11:20:19 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/fluentd/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/fluentd/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>ALBのアクセスログからAPIのレスポンスタイムを監視する</title>
-      <link>https://soushin.github.io/entry/2017/06/29/112019/</link>
+      <link>https://blog.soushi.me/entry/2017/06/29/112019/</link>
       <pubDate>Thu, 29 Jun 2017 11:20:19 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/06/29/112019/</guid>
+      <guid>https://blog.soushi.me/entry/2017/06/29/112019/</guid>
       <description>サービスのAPIのレスポンスタイムを監視することは運用において大事なことである。APIのレスポンスタイムを計測してモニタリングする方法は多様</description>
     </item>
     
     <item>
       <title>fluentd &#43; logstash_formatの難点をrecord_reformerで解決した話</title>
-      <link>https://soushin.github.io/entry/2016/12/10/170633/</link>
+      <link>https://blog.soushi.me/entry/2016/12/10/170633/</link>
       <pubDate>Sat, 10 Dec 2016 17:06:33 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/12/10/170633/</guid>
+      <guid>https://blog.soushi.me/entry/2016/12/10/170633/</guid>
       <description>「アプリケーションで出力したログをelasticsearchにインデックスするときにログ時間のフィールド名を@timestampにしたい。」</description>
     </item>
     

@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Multiprojects on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/multiprojects/</link>
+    <link>https://blog.soushi.me/tags/multiprojects/</link>
     <description>Recent content in Multiprojects on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Wed, 14 Nov 2018 14:50:38 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/multiprojects/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/multiprojects/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>GoとKotlinのマルチプロジェクトをBazelでビルドする</title>
-      <link>https://soushin.github.io/entry/2018/11/14/145038/</link>
+      <link>https://blog.soushi.me/entry/2018/11/14/145038/</link>
       <pubDate>Wed, 14 Nov 2018 14:50:38 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/14/145038/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/14/145038/</guid>
       <description>Googleが開発するビルドツールのBazelを試していく。 Bazel - a fast, scalable, multi-language and extensible build system&amp;rdquo; - Bazel モチベーション GoやKotlinでつくるマイクロサービス</description>
     </item>
     

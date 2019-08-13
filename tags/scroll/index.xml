@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Scroll on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/scroll/</link>
+    <link>https://blog.soushi.me/tags/scroll/</link>
     <description>Recent content in Scroll on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Fri, 23 Dec 2016 16:28:25 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/scroll/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/scroll/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>ElasticsearchのScroll  APIをためしてみた</title>
-      <link>https://soushin.github.io/entry/2016/12/23/162825/</link>
+      <link>https://blog.soushi.me/entry/2016/12/23/162825/</link>
       <pubDate>Fri, 23 Dec 2016 16:28:25 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/12/23/162825/</guid>
+      <guid>https://blog.soushi.me/entry/2016/12/23/162825/</guid>
       <description>気になっていたElasticsearchのScroll APIの使用感を記録します。最近の開発でScroll APIを採用したい欲求がありました</description>
     </item>
     

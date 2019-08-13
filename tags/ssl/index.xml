@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>SSL on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/ssl/</link>
+    <link>https://blog.soushi.me/tags/ssl/</link>
     <description>Recent content in SSL on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Fri, 21 Apr 2017 10:16:24 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/ssl/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/ssl/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>KotlinでgRPC。SSL/TLSを有効にする方法をまとめた。</title>
-      <link>https://soushin.github.io/entry/2017/04/21/101624/</link>
+      <link>https://blog.soushi.me/entry/2017/04/21/101624/</link>
       <pubDate>Fri, 21 Apr 2017 10:16:24 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/04/21/101624/</guid>
+      <guid>https://blog.soushi.me/entry/2017/04/21/101624/</guid>
       <description>前回のエントリではgrpc/grpc-javaをベースにkotlinでgRPCを試しました。今回はSSL/TLSを有効にする方法をまとめてい</description>
     </item>
     

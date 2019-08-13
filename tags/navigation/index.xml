@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>navigation on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/navigation/</link>
+    <link>https://blog.soushi.me/tags/navigation/</link>
     <description>Recent content in navigation on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Mon, 04 Jun 2018 11:30:31 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/navigation/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/navigation/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Android JetpackのNavigationを試して導入手順をまとめた</title>
-      <link>https://soushin.github.io/entry/2018/06/04/113031/</link>
+      <link>https://blog.soushi.me/entry/2018/06/04/113031/</link>
       <pubDate>Mon, 04 Jun 2018 11:30:31 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/06/04/113031/</guid>
+      <guid>https://blog.soushi.me/entry/2018/06/04/113031/</guid>
       <description>Google IO 2018で発表されたJetpackの新しいコンポーネントのNavigationをアプリに導入してみた。 The Navigation Architecture Component | Android Developers TL;DR Toolbar、B</description>
     </item>
     

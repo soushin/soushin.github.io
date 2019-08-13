@@ -2,39 +2,39 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>logstash on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/logstash/</link>
+    <link>https://blog.soushi.me/tags/logstash/</link>
     <description>Recent content in logstash on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Sat, 10 Dec 2016 17:06:33 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/logstash/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/logstash/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>fluentd &#43; logstash_formatの難点をrecord_reformerで解決した話</title>
-      <link>https://soushin.github.io/entry/2016/12/10/170633/</link>
+      <link>https://blog.soushi.me/entry/2016/12/10/170633/</link>
       <pubDate>Sat, 10 Dec 2016 17:06:33 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/12/10/170633/</guid>
+      <guid>https://blog.soushi.me/entry/2016/12/10/170633/</guid>
       <description>「アプリケーションで出力したログをelasticsearchにインデックスするときにログ時間のフィールド名を@timestampにしたい。」</description>
     </item>
     
     <item>
       <title>Logstash &#43; Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, dateなど）</title>
-      <link>https://soushin.github.io/entry/2016/11/08/160204/</link>
+      <link>https://blog.soushi.me/entry/2016/11/08/160204/</link>
       <pubDate>Tue, 08 Nov 2016 16:02:04 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/11/08/160204/</guid>
+      <guid>https://blog.soushi.me/entry/2016/11/08/160204/</guid>
       <description>LogstashからElasticsearchへデータを送信する仕組みを試しました。Logstashのconfの参考になれば幸い。 json側</description>
     </item>
     
     <item>
       <title>Spring Boot &#43; KotlinでLogstashを使ってログ出力</title>
-      <link>https://soushin.github.io/entry/2016/11/07/105933/</link>
+      <link>https://blog.soushi.me/entry/2016/11/07/105933/</link>
       <pubDate>Mon, 07 Nov 2016 10:59:33 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/11/07/105933/</guid>
+      <guid>https://blog.soushi.me/entry/2016/11/07/105933/</guid>
       <description>Logstatshのお試しとして、Spring Boot + kotlinのアプリに導入したときのメモ。 ビルドツールはgradleを使う 1 2 3 4 5 6 7 8</description>
     </item>
     

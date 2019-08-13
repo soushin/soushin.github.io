@@ -2,687 +2,687 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Entries on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/entry/</link>
+    <link>https://blog.soushi.me/entry/</link>
     <description>Recent content in Entries on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Fri, 22 Feb 2019 11:06:48 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/entry/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/entry/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Kotlin MultiplatformサポートのGoogle Analyticsライブラリ「Measurer」をつくった</title>
-      <link>https://soushin.github.io/entry/2019/02/22/110648/</link>
+      <link>https://blog.soushi.me/entry/2019/02/22/110648/</link>
       <pubDate>Fri, 22 Feb 2019 11:06:48 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2019/02/22/110648/</guid>
+      <guid>https://blog.soushi.me/entry/2019/02/22/110648/</guid>
       <description>年始から個人的に大流行のKotlin Multiplatform。開発が楽しい。BFF Server触るエンジニアとネイティブエンジニアの距離感</description>
     </item>
     
     <item>
       <title>Prowの真骨頂であるTideでPRの自動マージを導入する。</title>
-      <link>https://soushin.github.io/entry/2019/01/09/133030/</link>
+      <link>https://blog.soushi.me/entry/2019/01/09/133030/</link>
       <pubDate>Wed, 09 Jan 2019 13:30:30 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2019/01/09/133030/</guid>
+      <guid>https://blog.soushi.me/entry/2019/01/09/133030/</guid>
       <description>前回のエントリ「ProwではじめるChatOps on GitHub。」からProwを完全理解した！と言ってはいけない。Prowの真骨頂はTide</description>
     </item>
     
     <item>
       <title>ProwではじめるChatOps on GitHub。</title>
-      <link>https://soushin.github.io/entry/2019/01/08/123752/</link>
+      <link>https://blog.soushi.me/entry/2019/01/08/123752/</link>
       <pubDate>Tue, 08 Jan 2019 12:37:52 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2019/01/08/123752/</guid>
+      <guid>https://blog.soushi.me/entry/2019/01/08/123752/</guid>
       <description>Kubernetesのtest-infraレポジトリにあるProwを試す。ProwはKubernates環境を基盤としたCIとCDのシステム</description>
     </item>
     
     <item>
       <title>Knative EventingのSourceにAWS SQSをつかいServiceを起動する</title>
-      <link>https://soushin.github.io/entry/2018/12/27/102942/</link>
+      <link>https://blog.soushi.me/entry/2018/12/27/102942/</link>
       <pubDate>Thu, 27 Dec 2018 10:29:42 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/12/27/102942/</guid>
+      <guid>https://blog.soushi.me/entry/2018/12/27/102942/</guid>
       <description>前回のエントリではKnativeの Buildの知見をまとめたが今回は Eventingをまとめる。試したところServerlessを体感できて</description>
     </item>
     
     <item>
       <title>サーバサイドKotlinをはじめよう。Ktor Tips集をまとめた。</title>
-      <link>https://soushin.github.io/entry/2018/12/22/003711/</link>
+      <link>https://blog.soushi.me/entry/2018/12/22/003711/</link>
       <pubDate>Sat, 22 Dec 2018 00:37:11 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/12/22/003711/</guid>
+      <guid>https://blog.soushi.me/entry/2018/12/22/003711/</guid>
       <description>この記事はCyberAgent Developers Advent Calendar 2018の22日目の記事です。 Ktor KtorはKotlin純正のWebフレームワークです。APIはラムダ式を</description>
     </item>
     
     <item>
       <title>Knative Buildのbuild templateにBazelをつかいビルドする</title>
-      <link>https://soushin.github.io/entry/2018/12/07/112558/</link>
+      <link>https://blog.soushi.me/entry/2018/12/07/112558/</link>
       <pubDate>Fri, 07 Dec 2018 11:25:58 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/12/07/112558/</guid>
+      <guid>https://blog.soushi.me/entry/2018/12/07/112558/</guid>
       <description>KnativeはKubernetesを基盤としたプラットフォームをビルド、デプロイを管理するためフレームワークを提供する。Serving、B</description>
     </item>
     
     <item>
       <title>BazelでビルドするマルチプロジェクトとCircleCIを連携する</title>
-      <link>https://soushin.github.io/entry/2018/11/22/144658/</link>
+      <link>https://blog.soushi.me/entry/2018/11/22/144658/</link>
       <pubDate>Thu, 22 Nov 2018 14:46:58 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/22/144658/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/22/144658/</guid>
       <description>今回のエントリではBazelでビルドしたマルチプロジェクトとCircleCIの連携をまとめていく。マルチプロジェクトとCIを連携する際の実運</description>
     </item>
     
     <item>
       <title>BazelでDockerイメージのビルドとレジストリへのプッシュをする</title>
-      <link>https://soushin.github.io/entry/2018/11/21/100654/</link>
+      <link>https://blog.soushi.me/entry/2018/11/21/100654/</link>
       <pubDate>Wed, 21 Nov 2018 10:06:54 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/21/100654/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/21/100654/</guid>
       <description>前回までのエントリに引き続きBazelのビルドをまとめていく。 GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット</description>
     </item>
     
     <item>
       <title>gRPCサーバを含むGoプロジェクトをBazelでビルドする</title>
-      <link>https://soushin.github.io/entry/2018/11/20/105331/</link>
+      <link>https://blog.soushi.me/entry/2018/11/20/105331/</link>
       <pubDate>Tue, 20 Nov 2018 10:53:31 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/20/105331/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/20/105331/</guid>
       <description>前回までのエントリに引き続きBazelのビルドをまとめていく。 GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット</description>
     </item>
     
     <item>
       <title>BazelでGoプロジェクトのビルド。Gazelleのgo_repositoryで外部ライブラリの依存とBazelのgo_testでテスト。</title>
-      <link>https://soushin.github.io/entry/2018/11/16/132000/</link>
+      <link>https://blog.soushi.me/entry/2018/11/16/132000/</link>
       <pubDate>Fri, 16 Nov 2018 13:20:00 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/16/132000/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/16/132000/</guid>
       <description>BazelをつかったGoプロジェクトのビルドをまとめている。前回のエントリではバイナリのビルドとDockerイメージのビルドをまとめた。 Go</description>
     </item>
     
     <item>
       <title>GoとKotlinのマルチプロジェクトをBazelでビルドする</title>
-      <link>https://soushin.github.io/entry/2018/11/14/145038/</link>
+      <link>https://blog.soushi.me/entry/2018/11/14/145038/</link>
       <pubDate>Wed, 14 Nov 2018 14:50:38 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/14/145038/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/14/145038/</guid>
       <description>Googleが開発するビルドツールのBazelを試していく。 Bazel - a fast, scalable, multi-language and extensible build system&amp;rdquo; - Bazel モチベーション GoやKotlinでつくるマイクロサービス</description>
     </item>
     
     <item>
       <title>Spring FuをGraalVMで動かす。起動速度に驚いた。</title>
-      <link>https://soushin.github.io/entry/2018/10/23/092744/</link>
+      <link>https://blog.soushi.me/entry/2018/10/23/092744/</link>
       <pubDate>Tue, 23 Oct 2018 09:27:44 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/10/23/092744/</guid>
+      <guid>https://blog.soushi.me/entry/2018/10/23/092744/</guid>
       <description>Serverlessプラットフォームが注目される中、その潮流にJava勢も乗っかりたいので起動速度が速いと注目のGraalVMを試してみた。</description>
     </item>
     
     <item>
       <title>Spring Web Flux でServer Sent EventsのPush型APIをつくってみた</title>
-      <link>https://soushin.github.io/entry/2018/09/17/201737/</link>
+      <link>https://blog.soushi.me/entry/2018/09/17/201737/</link>
       <pubDate>Mon, 17 Sep 2018 20:17:37 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/09/17/201737/</guid>
+      <guid>https://blog.soushi.me/entry/2018/09/17/201737/</guid>
       <description>Spring Boot 2.0からWebFlux frameworkが導入された。Reactorが使えてReactive Programmingが可能になったのでP</description>
     </item>
     
     <item>
       <title>Android JetpackのNavigationを試して導入手順をまとめた</title>
-      <link>https://soushin.github.io/entry/2018/06/04/113031/</link>
+      <link>https://blog.soushi.me/entry/2018/06/04/113031/</link>
       <pubDate>Mon, 04 Jun 2018 11:30:31 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/06/04/113031/</guid>
+      <guid>https://blog.soushi.me/entry/2018/06/04/113031/</guid>
       <description>Google IO 2018で発表されたJetpackの新しいコンポーネントのNavigationをアプリに導入してみた。 The Navigation Architecture Component | Android Developers TL;DR Toolbar、B</description>
     </item>
     
     <item>
       <title>Android Support LibraryのChipを触ってみた</title>
-      <link>https://soushin.github.io/entry/2018/05/30/095847/</link>
+      <link>https://blog.soushi.me/entry/2018/05/30/095847/</link>
       <pubDate>Wed, 30 May 2018 09:58:47 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/05/30/095847/</guid>
+      <guid>https://blog.soushi.me/entry/2018/05/30/095847/</guid>
       <description>Android Support LibraryのChipの使い方をまとめていく。ChipはMaterial DesignにあるがSupport Libraryに組み込まれた</description>
     </item>
     
     <item>
       <title>SwipeRefreshLayoutとRecycleViewをListViewに導入してみた</title>
-      <link>https://soushin.github.io/entry/2018/05/02/133854/</link>
+      <link>https://blog.soushi.me/entry/2018/05/02/133854/</link>
       <pubDate>Wed, 02 May 2018 13:38:54 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/05/02/133854/</guid>
+      <guid>https://blog.soushi.me/entry/2018/05/02/133854/</guid>
       <description>ブログエントリで試しているアプリにSwipeRefreshLayoutとRecycleViewをListViewに導入してみたのでまとめてい</description>
     </item>
     
     <item>
       <title>rx-preferencesをつかってSharedPreferencesの更新をSubscribeする</title>
-      <link>https://soushin.github.io/entry/2018/03/10/084405/</link>
+      <link>https://blog.soushi.me/entry/2018/03/10/084405/</link>
       <pubDate>Sat, 10 Mar 2018 08:44:05 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/03/10/084405/</guid>
+      <guid>https://blog.soushi.me/entry/2018/03/10/084405/</guid>
       <description>ブログエントリで試しているAndroidアプリにFluxアーキテクチャを導入をしたことでデータの流れがStreamになった。SharedPr</description>
     </item>
     
     <item>
       <title>Dagger2 &#43; uber/Autodispose &#43; RxJava2でFluxアーキテクチャを導入してみた</title>
-      <link>https://soushin.github.io/entry/2018/02/28/120040/</link>
+      <link>https://blog.soushi.me/entry/2018/02/28/120040/</link>
       <pubDate>Wed, 28 Feb 2018 12:00:40 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/02/28/120040/</guid>
+      <guid>https://blog.soushi.me/entry/2018/02/28/120040/</guid>
       <description>ブログエントリで試しているAndroidアプリにFluxアーキテクチャを導入してみたのでまとめる。 Fluxアーキテクチャ Fluxアーキテクチ</description>
     </item>
     
     <item>
       <title>Dagger2（android support module）をつかってFragmentにDIする</title>
-      <link>https://soushin.github.io/entry/2018/02/23/100250/</link>
+      <link>https://blog.soushi.me/entry/2018/02/23/100250/</link>
       <pubDate>Fri, 23 Feb 2018 10:02:50 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/02/23/100250/</guid>
+      <guid>https://blog.soushi.me/entry/2018/02/23/100250/</guid>
       <description>Dagger2（android support module）をつかってFragmentにDIする方法をまとめていく。 HasSupportFragmentI</description>
     </item>
     
     <item>
       <title>Dagger2 (android support module)とretrofit2をつかってAPIレスポンスをListViewで表示する</title>
-      <link>https://soushin.github.io/entry/2018/02/21/091803/</link>
+      <link>https://blog.soushi.me/entry/2018/02/21/091803/</link>
       <pubDate>Wed, 21 Feb 2018 09:18:03 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/02/21/091803/</guid>
+      <guid>https://blog.soushi.me/entry/2018/02/21/091803/</guid>
       <description>掲題のとおりAndroidのListViewを表示してみる。 APIリクエストは retrofitを使い天気情報を取得できるOpenWeathe</description>
     </item>
     
     <item>
       <title>minikube &#43; helmでローカル環境を構築する</title>
-      <link>https://soushin.github.io/entry/2018/01/30/071628/</link>
+      <link>https://blog.soushi.me/entry/2018/01/30/071628/</link>
       <pubDate>Tue, 30 Jan 2018 07:16:28 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/01/30/071628/</guid>
+      <guid>https://blog.soushi.me/entry/2018/01/30/071628/</guid>
       <description>plasmaの動作確認のためにローカル環境を構築する機会がありminikube + helmで構築してみようと始めたのがエントリのモチベーション</description>
     </item>
     
     <item>
       <title>SpringBoot 2.0.0でRouterFunctionのエラーハンドリングをWebExceptionHandlerで行う</title>
-      <link>https://soushin.github.io/entry/2017/12/27/210902/</link>
+      <link>https://blog.soushi.me/entry/2017/12/27/210902/</link>
       <pubDate>Wed, 27 Dec 2017 21:09:02 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/12/27/210902/</guid>
+      <guid>https://blog.soushi.me/entry/2017/12/27/210902/</guid>
       <description>SpringBoot 2.0.0からサポートされるRouterFunctionのエラーハンドリングをまとめていきたい。 RouterFunctionは従来のアノテ</description>
     </item>
     
     <item>
       <title>モダンな負荷テストツールのk6を試してみた</title>
-      <link>https://soushin.github.io/entry/2017/11/11/220606/</link>
+      <link>https://blog.soushi.me/entry/2017/11/11/220606/</link>
       <pubDate>Sat, 11 Nov 2017 22:06:06 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/11/11/220606/</guid>
+      <guid>https://blog.soushi.me/entry/2017/11/11/220606/</guid>
       <description>負荷テストツールのk6を試す機会があったのでアウトプットしていく。 k6 k6は負荷テストサービスを提供するloadimpact社が開発する負荷テ</description>
     </item>
     
     <item>
       <title>grpc-ecosystem/grpc-gatewayのセットアップ方法をまとめてみた</title>
-      <link>https://soushin.github.io/entry/2017/10/29/231246/</link>
+      <link>https://blog.soushi.me/entry/2017/10/29/231246/</link>
       <pubDate>Sun, 29 Oct 2017 23:12:46 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/10/29/231246/</guid>
+      <guid>https://blog.soushi.me/entry/2017/10/29/231246/</guid>
       <description>Server Side Kotlinのアウトプットにつかっているレポジトリにgrpc-gatewayを入れてみたので、セットアップ方法をまとめておく。 grpc-</description>
     </item>
     
     <item>
       <title>CA.ktに登壇してServer Side Kotlinについて話してきた。</title>
-      <link>https://soushin.github.io/entry/2017/10/21/001216/</link>
+      <link>https://blog.soushi.me/entry/2017/10/21/001216/</link>
       <pubDate>Sat, 21 Oct 2017 00:12:16 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/10/21/001216/</guid>
+      <guid>https://blog.soushi.me/entry/2017/10/21/001216/</guid>
       <description>CA.kt #3で登壇しました。テーマは「FRESH!プロジェクト／Server Side Kotlin 活用事例」。スライドはこちら。 speakerdeck.com 約１年前にFRESH!チームにジョ</description>
     </item>
     
     <item>
       <title>grpc-javaのClientでHeaderをセットしてリクエストする方法をまとめる</title>
-      <link>https://soushin.github.io/entry/2017/10/15/100616/</link>
+      <link>https://blog.soushi.me/entry/2017/10/15/100616/</link>
       <pubDate>Sun, 15 Oct 2017 10:06:16 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/10/15/100616/</guid>
+      <guid>https://blog.soushi.me/entry/2017/10/15/100616/</guid>
       <description>gRPCのClientで認証ヘッダーなどリクエストHeaderに値をセットしてgRPC Serverへリクエストするにはどうすればよいか？今回</description>
     </item>
     
     <item>
       <title>grpc-javaのServerでTLSを有効にした場合はALPN対応しているか確認すべし</title>
-      <link>https://soushin.github.io/entry/2017/10/09/152515/</link>
+      <link>https://blog.soushi.me/entry/2017/10/09/152515/</link>
       <pubDate>Mon, 09 Oct 2017 15:25:15 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/10/09/152515/</guid>
+      <guid>https://blog.soushi.me/entry/2017/10/09/152515/</guid>
       <description>開発中のプロジェクトでTLSが有効なGo製 gRPC ServerにAndorid8.0(Oreo)からは接続ができて、Kotlin製（grpc-ja</description>
     </item>
     
     <item>
       <title>SpringBoot 2.0とapiDocを連携させてみた</title>
-      <link>https://soushin.github.io/entry/2017/09/29/220526/</link>
+      <link>https://blog.soushi.me/entry/2017/09/29/220526/</link>
       <pubDate>Fri, 29 Sep 2017 22:05:26 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/09/29/220526/</guid>
+      <guid>https://blog.soushi.me/entry/2017/09/29/220526/</guid>
       <description>SpringFrameworkでAPIドキュメントを準備する手段としてSpringFoxやSpring REST Docsなどが候補にあがる。 SpringFox by springfox Spring</description>
     </item>
     
     <item>
       <title>gRPC serverのmetadataをテストする方法をまとめる</title>
-      <link>https://soushin.github.io/entry/2017/09/24/203224/</link>
+      <link>https://blog.soushi.me/entry/2017/09/24/203224/</link>
       <pubDate>Sun, 24 Sep 2017 20:32:24 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/09/24/203224/</guid>
+      <guid>https://blog.soushi.me/entry/2017/09/24/203224/</guid>
       <description>gRPC ServerのレスポンスにはMetadataを含めることができる。gRPCのレスポンス・ステータス（io.grpc.Status.OKやi</description>
     </item>
     
     <item>
       <title>jackson.datatypeをつかってiOSのレシートの日付文字列をデシアライズする</title>
-      <link>https://soushin.github.io/entry/2017/09/15/180630/</link>
+      <link>https://blog.soushi.me/entry/2017/09/15/180630/</link>
       <pubDate>Fri, 15 Sep 2017 18:06:30 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/09/15/180630/</guid>
+      <guid>https://blog.soushi.me/entry/2017/09/15/180630/</guid>
       <description>iOSアプリで購入したアイテムのレシート検証を実装する過程でレシートに含まれる日付文字列をdata classにデシアライズしてみた。 レシート</description>
     </item>
     
     <item>
       <title>KotlinでConstructor Injectionが増えてきたからDelegateをつかってリファクタリングしてみた</title>
-      <link>https://soushin.github.io/entry/2017/09/08/234753/</link>
+      <link>https://blog.soushi.me/entry/2017/09/08/234753/</link>
       <pubDate>Fri, 08 Sep 2017 23:47:53 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/09/08/234753/</guid>
+      <guid>https://blog.soushi.me/entry/2017/09/08/234753/</guid>
       <description>今回のエントリはDelegateの使い方をまとめる。 次のようなConstructor Injectionに複数のサービスクラスが並んだTask</description>
     </item>
     
     <item>
       <title>protobuf typeに値が入っているか確認するにはgoogle/protobuf/wrappers.protoをつかうとよい</title>
-      <link>https://soushin.github.io/entry/2017/09/03/170655/</link>
+      <link>https://blog.soushi.me/entry/2017/09/03/170655/</link>
       <pubDate>Sun, 03 Sep 2017 17:06:55 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/09/03/170655/</guid>
+      <guid>https://blog.soushi.me/entry/2017/09/03/170655/</guid>
       <description>今回のエントリも前回に続きprotobufの数あるtypeの中から１つの使い方まとめていきたい。今回は google/protobuf/wra</description>
     </item>
     
     <item>
       <title>protobuf typeに日付型のcom.google.protobuf.Timestampをつかってみた</title>
-      <link>https://soushin.github.io/entry/2017/08/25/225809/</link>
+      <link>https://blog.soushi.me/entry/2017/08/25/225809/</link>
       <pubDate>Fri, 25 Aug 2017 22:58:09 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/08/25/225809/</guid>
+      <guid>https://blog.soushi.me/entry/2017/08/25/225809/</guid>
       <description>protobufのtypeに日付型をつかいたいケースがあったので com.google.protobuf.Timestampをつかってみた。 g</description>
     </item>
     
     <item>
       <title>gRPC ServerのExceptionFilterの方法をまとめた（grpc-java）</title>
-      <link>https://soushin.github.io/entry/2017/08/18/234615/</link>
+      <link>https://blog.soushi.me/entry/2017/08/18/234615/</link>
       <pubDate>Fri, 18 Aug 2017 23:46:15 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/08/18/234615/</guid>
+      <guid>https://blog.soushi.me/entry/2017/08/18/234615/</guid>
       <description>前回のエントリでは認証処理やメトリクス計測、ログ出力などをインターセプターをつかい横断的に処理する方法をまとめた。 Kotlin + gRPCでio.grp</description>
     </item>
     
     <item>
       <title>grpc-javaのClient/ServerのテストをKotlinで書く - Client編</title>
-      <link>https://soushin.github.io/entry/2017/08/11/001047/</link>
+      <link>https://blog.soushi.me/entry/2017/08/11/001047/</link>
       <pubDate>Fri, 11 Aug 2017 00:10:47 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/08/11/001047/</guid>
+      <guid>https://blog.soushi.me/entry/2017/08/11/001047/</guid>
       <description>前回のエントリに続いて今回のエントリではgRPC Clientのテストの書き方をまとめていく。 grpc-javaのClient/Serverの</description>
     </item>
     
     <item>
       <title>grpc-javaのClient/ServerのテストをKotlinで書く - Server編</title>
-      <link>https://soushin.github.io/entry/2017/08/04/000534/</link>
+      <link>https://blog.soushi.me/entry/2017/08/04/000534/</link>
       <pubDate>Fri, 04 Aug 2017 00:05:34 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/08/04/000534/</guid>
+      <guid>https://blog.soushi.me/entry/2017/08/04/000534/</guid>
       <description>grpc-javaで実装されたgRPC ClientとgRPC Serverのテストコードについてまとめていきたい。 ClientとServerの</description>
     </item>
     
     <item>
       <title>Kotlin コルーチンでasync/awaitをつかってgRPC Serverをリクエストしてみた</title>
-      <link>https://soushin.github.io/entry/2017/07/27/002018/</link>
+      <link>https://blog.soushi.me/entry/2017/07/27/002018/</link>
       <pubDate>Thu, 27 Jul 2017 00:20:18 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/07/27/002018/</guid>
+      <guid>https://blog.soushi.me/entry/2017/07/27/002018/</guid>
       <description>Kotlin1.1からの新機能であるコルーチン(Coroutines)を試していきたい。Kotlin コルーチンをつかえば非同期処理を同期的な</description>
     </item>
     
     <item>
       <title>Kotlin &#43; gRPCでio.grpc.Contextをつかってログ出力を横断処理してみた</title>
-      <link>https://soushin.github.io/entry/2017/07/20/101051/</link>
+      <link>https://blog.soushi.me/entry/2017/07/20/101051/</link>
       <pubDate>Thu, 20 Jul 2017 10:10:51 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/07/20/101051/</guid>
+      <guid>https://blog.soushi.me/entry/2017/07/20/101051/</guid>
       <description>アスペクト指向プログラミング（AOP）をgRPC Serverではどう扱うか考えていきたい。 横断的な関心事といえば認証やログ出力である。 gRP</description>
     </item>
     
     <item>
       <title>Kotlin &#43; gRPCでdropwizard/metricsをつかってメトリクスを取得してみた</title>
-      <link>https://soushin.github.io/entry/2017/07/13/103649/</link>
+      <link>https://blog.soushi.me/entry/2017/07/13/103649/</link>
       <pubDate>Thu, 13 Jul 2017 10:36:49 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/07/13/103649/</guid>
+      <guid>https://blog.soushi.me/entry/2017/07/13/103649/</guid>
       <description>今回のエントリはKotlin + gRPC（FWはSpringBoot 2.0.0.M1）のアプリケーションでgRPCのリクエストタイムやエラー回</description>
     </item>
     
     <item>
       <title>Kotlin &#43; gradleでgRPCプロトコル定義ファイル（.proto）のvendoringにprotodepをつかってみた</title>
-      <link>https://soushin.github.io/entry/2017/07/06/122307/</link>
+      <link>https://blog.soushi.me/entry/2017/07/06/122307/</link>
       <pubDate>Thu, 06 Jul 2017 12:23:07 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/07/06/122307/</guid>
+      <guid>https://blog.soushi.me/entry/2017/07/06/122307/</guid>
       <description>gRPCのプロトコル定義ファイル（.proto）の管理を考えていきたい。gRPCを導入するプロジェクトであれば.protoファイルの運用方法</description>
     </item>
     
     <item>
       <title>ALBのアクセスログからAPIのレスポンスタイムを監視する</title>
-      <link>https://soushin.github.io/entry/2017/06/29/112019/</link>
+      <link>https://blog.soushi.me/entry/2017/06/29/112019/</link>
       <pubDate>Thu, 29 Jun 2017 11:20:19 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/06/29/112019/</guid>
+      <guid>https://blog.soushi.me/entry/2017/06/29/112019/</guid>
       <description>サービスのAPIのレスポンスタイムを監視することは運用において大事なことである。APIのレスポンスタイムを計測してモニタリングする方法は多様</description>
     </item>
     
     <item>
       <title>Spring5.0 &#43; KotlinのRouterFunctionのテストはどうすればよいか？ 試してみた</title>
-      <link>https://soushin.github.io/entry/2017/06/22/123942/</link>
+      <link>https://blog.soushi.me/entry/2017/06/22/123942/</link>
       <pubDate>Thu, 22 Jun 2017 12:39:42 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/06/22/123942/</guid>
+      <guid>https://blog.soushi.me/entry/2017/06/22/123942/</guid>
       <description>引き続きSpring5.0（Spring Boot 2.0） + KotlinのWebアプリケーションを試している。今回はRouterFunctionをつ</description>
     </item>
     
     <item>
       <title>Spring5.0 &#43; KotlinではDoma、Request Interceptorあたりはどうなっているのか調べてみた</title>
-      <link>https://soushin.github.io/entry/2017/06/15/122405/</link>
+      <link>https://blog.soushi.me/entry/2017/06/15/122405/</link>
       <pubDate>Thu, 15 Jun 2017 12:24:05 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/06/15/122405/</guid>
+      <guid>https://blog.soushi.me/entry/2017/06/15/122405/</guid>
       <description>Spring5.0のリリースが迫るなか、プロジェクトへ導入に向けて色々と調べている。インタセプターなどのSpring Frameworkにおけ</description>
     </item>
     
     <item>
       <title>Spring5.0 &#43; Kotlinで１つのjarにHTTPサーバーとgRPCサーバーを相乗りさせてみた</title>
-      <link>https://soushin.github.io/entry/2017/06/08/134928/</link>
+      <link>https://blog.soushi.me/entry/2017/06/08/134928/</link>
       <pubDate>Thu, 08 Jun 2017 13:49:28 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/06/08/134928/</guid>
+      <guid>https://blog.soushi.me/entry/2017/06/08/134928/</guid>
       <description>Spring Boot 2.0.0 M1がリリースされました。以前のエントリで試した当時は 2.0.0.BUILD-SNAPSHOTでありHTTPサーバーが起動している状態</description>
     </item>
     
     <item>
       <title>http4kをベースにサーバーサイド Kotlinの関連ライブラリをつかってみた</title>
-      <link>https://soushin.github.io/entry/2017/06/01/140812/</link>
+      <link>https://blog.soushi.me/entry/2017/06/01/140812/</link>
       <pubDate>Thu, 01 Jun 2017 14:08:12 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/06/01/140812/</guid>
+      <guid>https://blog.soushi.me/entry/2017/06/01/140812/</guid>
       <description>Google I/O 2017でKotlinがAndroidアプリ開発言語に選定された。Androidに限らずサーバーサイドでもメインの言語としてKotlin</description>
     </item>
     
     <item>
       <title>FCMでWeb Push。Firebase Javascript SDKを使ったプッシュ通知とトピック送信を試した。</title>
-      <link>https://soushin.github.io/entry/2017/05/23/100711/</link>
+      <link>https://blog.soushi.me/entry/2017/05/23/100711/</link>
       <pubDate>Tue, 23 May 2017 10:07:11 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/05/23/100711/</guid>
+      <guid>https://blog.soushi.me/entry/2017/05/23/100711/</guid>
       <description>FirebaseのFirebase Cloud Messaging（FCM）を試している。今回のエントリではFCMのJavaScriptライブラリを使っ</description>
     </item>
     
     <item>
       <title>Web PushをFCMとVAPIDで認証してブラウザにプッシュ通知を送る</title>
-      <link>https://soushin.github.io/entry/2017/05/18/124558/</link>
+      <link>https://blog.soushi.me/entry/2017/05/18/124558/</link>
       <pubDate>Thu, 18 May 2017 12:45:58 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/05/18/124558/</guid>
+      <guid>https://blog.soushi.me/entry/2017/05/18/124558/</guid>
       <description>Web Pushを試している。調べていく過程で２つの認証方式を用いてプッシュ通知を送信できることが分かった。１つはFirebase Cloud Messagi</description>
     </item>
     
     <item>
       <title>KotlinでgRPC。grpc-javaのTLS with JDKとTLS with OpenSSLの使い方をまとめた。</title>
-      <link>https://soushin.github.io/entry/2017/05/11/122139/</link>
+      <link>https://blog.soushi.me/entry/2017/05/11/122139/</link>
       <pubDate>Thu, 11 May 2017 12:21:39 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/05/11/122139/</guid>
+      <guid>https://blog.soushi.me/entry/2017/05/11/122139/</guid>
       <description>grpc-java/SECURITY.mdを読み進めるとTLSを有効にしたgRPCサーバの起動には２つのプロトコルプロバイダーを選択できる。</description>
     </item>
     
     <item>
       <title>PagerDutyとAsanaをzapierをつかって連携させてみた</title>
-      <link>https://soushin.github.io/entry/2017/04/27/093853/</link>
+      <link>https://blog.soushi.me/entry/2017/04/27/093853/</link>
       <pubDate>Thu, 27 Apr 2017 09:38:53 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/04/27/093853/</guid>
+      <guid>https://blog.soushi.me/entry/2017/04/27/093853/</guid>
       <description>zapierをつかってPagerDutyとAsanaを連携させる方法をまとめます。 The best apps. Better together. - Zapier モチベーション PagerDutyのIncid</description>
     </item>
     
     <item>
       <title>KotlinでgRPC。SSL/TLSを有効にする方法をまとめた。</title>
-      <link>https://soushin.github.io/entry/2017/04/21/101624/</link>
+      <link>https://blog.soushi.me/entry/2017/04/21/101624/</link>
       <pubDate>Fri, 21 Apr 2017 10:16:24 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/04/21/101624/</guid>
+      <guid>https://blog.soushi.me/entry/2017/04/21/101624/</guid>
       <description>前回のエントリではgrpc/grpc-javaをベースにkotlinでgRPCを試しました。今回はSSL/TLSを有効にする方法をまとめてい</description>
     </item>
     
     <item>
       <title>KotlinでgRPC。実運用にも活かせるWEBアプリケーション構成で試してみた。</title>
-      <link>https://soushin.github.io/entry/2017/04/13/152657/</link>
+      <link>https://blog.soushi.me/entry/2017/04/13/152657/</link>
       <pubDate>Thu, 13 Apr 2017 15:26:57 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/04/13/152657/</guid>
+      <guid>https://blog.soushi.me/entry/2017/04/13/152657/</guid>
       <description>KotlinでgRPCを試していきます。protocol buffersがkotlinに対応していないのでjavaに生成したものを使います。次</description>
     </item>
     
     <item>
       <title>supersetをシュッと起動できるDockerfile（認証方式をGoogle API OAuth2に変更）をつくってみた、あと触ってみた所感など</title>
-      <link>https://soushin.github.io/entry/2017/04/07/165144/</link>
+      <link>https://blog.soushi.me/entry/2017/04/07/165144/</link>
       <pubDate>Fri, 07 Apr 2017 16:51:44 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/04/07/165144/</guid>
+      <guid>https://blog.soushi.me/entry/2017/04/07/165144/</guid>
       <description>ダッシュボードツールのsupersetをシュッと起動できるDockerfileを作りました。といってもsupersetのDockerfile</description>
     </item>
     
     <item>
       <title>go-grpc-prometheusでgRPCのmetricsをPrometeusとGrafanaでモニタリングしてみた</title>
-      <link>https://soushin.github.io/entry/2017/03/28/180035/</link>
+      <link>https://blog.soushi.me/entry/2017/03/28/180035/</link>
       <pubDate>Tue, 28 Mar 2017 18:00:35 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/03/28/180035/</guid>
+      <guid>https://blog.soushi.me/entry/2017/03/28/180035/</guid>
       <description>gRPC Ecosystemの１つにgo-grpc-prometheusがあります。今回は「gRPC Ecosystemのgo-grpc-promet</description>
     </item>
     
     <item>
       <title>Terraform 0.9がリリース。0.8.xから0.9.xのStateマイグレーション手順をまとめました。</title>
-      <link>https://soushin.github.io/entry/2017/03/24/121550/</link>
+      <link>https://blog.soushi.me/entry/2017/03/24/121550/</link>
       <pubDate>Fri, 24 Mar 2017 12:15:50 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/03/24/121550/</guid>
+      <guid>https://blog.soushi.me/entry/2017/03/24/121550/</guid>
       <description>HashiCorpからTerraform 0.9がリリースされました。「よし、最新バージョンにあげよう。」と作業をはじめましたがremoteコ</description>
     </item>
     
     <item>
       <title>gRPC streamingをつかうとマイクロサービスの責務が整理できるし省コネクションでメリットあるよね、という話</title>
-      <link>https://soushin.github.io/entry/2017/03/17/125049/</link>
+      <link>https://blog.soushi.me/entry/2017/03/17/125049/</link>
       <pubDate>Fri, 17 Mar 2017 12:50:49 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/03/17/125049/</guid>
+      <guid>https://blog.soushi.me/entry/2017/03/17/125049/</guid>
       <description>今回はgRPCをマイクロサービス間通信に導入することってメリットあるよね、というエントリです。 定期的に処理を実行してくれるバッチはよくあるも</description>
     </item>
     
     <item>
       <title>CourseraのMachine Learningから線形回帰を学んだのでまとめてみた</title>
-      <link>https://soushin.github.io/entry/2017/03/10/125749/</link>
+      <link>https://blog.soushi.me/entry/2017/03/10/125749/</link>
       <pubDate>Fri, 10 Mar 2017 12:57:49 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/03/10/125749/</guid>
+      <guid>https://blog.soushi.me/entry/2017/03/10/125749/</guid>
       <description>CourseraのMachine Learningを受講しています。時間を見つけてはコツコツ進めて今のところWeek4に差し掛かったところです</description>
     </item>
     
     <item>
       <title>Page Object PatternをベースにTestCafeでE2Eテストを作ってみた</title>
-      <link>https://soushin.github.io/entry/2017/03/03/175105/</link>
+      <link>https://blog.soushi.me/entry/2017/03/03/175105/</link>
       <pubDate>Fri, 03 Mar 2017 17:51:05 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/03/03/175105/</guid>
+      <guid>https://blog.soushi.me/entry/2017/03/03/175105/</guid>
       <description>以前のエントリでKotlinでSelenideを使ったE2Eテストを作ったときもPage Object Patternを利用して見通しの良いテストコードが</description>
     </item>
     
     <item>
       <title>WebDriver不要のTestCafeを使ったE2EテストをChatOpsに導入してみた</title>
-      <link>https://soushin.github.io/entry/2017/02/24/165107/</link>
+      <link>https://blog.soushi.me/entry/2017/02/24/165107/</link>
       <pubDate>Fri, 24 Feb 2017 16:51:07 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/02/24/165107/</guid>
+      <guid>https://blog.soushi.me/entry/2017/02/24/165107/</guid>
       <description>今回はE2EテストをつくれるTestCafeをつかってみたエントリです。Automated browser testing for the modern web development stack | TestCafe以前のエントリで</description>
     </item>
     
     <item>
       <title>nginx-rtmp-module &#43; FFmpeg &#43; HLSで動画配信ができるdocker-composeをつくった</title>
-      <link>https://soushin.github.io/entry/2017/02/17/135834/</link>
+      <link>https://blog.soushi.me/entry/2017/02/17/135834/</link>
       <pubDate>Fri, 17 Feb 2017 13:58:34 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/02/17/135834/</guid>
+      <guid>https://blog.soushi.me/entry/2017/02/17/135834/</guid>
       <description>タイトルのdocker-composeをつくっていきます。ローカルで配信確認したいときにシュッと起動できるようにします。 次のような構成でつく</description>
     </item>
     
     <item>
       <title>mackerelのグラフアノテーションをChatOpsに加えてみた</title>
-      <link>https://soushin.github.io/entry/2017/02/09/182622/</link>
+      <link>https://blog.soushi.me/entry/2017/02/09/182622/</link>
       <pubDate>Thu, 09 Feb 2017 18:26:22 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/02/09/182622/</guid>
+      <guid>https://blog.soushi.me/entry/2017/02/09/182622/</guid>
       <description>mackerelからリリースされたグラフアノテーションを追加できるコマンドラインツールをgoで作りました。 作ったコマンドをBot経由で実行で</description>
     </item>
     
     <item>
       <title>Pact Broker DockerコンテナをつかってPact Broker環境を構築してみた</title>
-      <link>https://soushin.github.io/entry/2017/02/05/005941/</link>
+      <link>https://blog.soushi.me/entry/2017/02/05/005941/</link>
       <pubDate>Sun, 05 Feb 2017 00:59:41 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/02/05/005941/</guid>
+      <guid>https://blog.soushi.me/entry/2017/02/05/005941/</guid>
       <description>Consumer-Driven Contract テストをフレームワークさせるPactをつかったサンプルプロジェクトを前回のエントリでは紹介しました。 golang - kotlinのmicroserv</description>
     </item>
     
     <item>
       <title>golang - Kotlinのmicroservice構成のConsumer-Driven Contract testingをpactをつかって作ってみた</title>
-      <link>https://soushin.github.io/entry/2017/01/28/215229/</link>
+      <link>https://blog.soushi.me/entry/2017/01/28/215229/</link>
       <pubDate>Sat, 28 Jan 2017 21:52:29 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/01/28/215229/</guid>
+      <guid>https://blog.soushi.me/entry/2017/01/28/215229/</guid>
       <description>今回はConsumer-Driven Contract testingのサンプルを作ってみました。以前のSelenideを使ったE2Eの記事の流れからCons</description>
     </item>
     
     <item>
       <title>みんGO を読んでec2インスンスリストをタグ検索するコマンドラインツールを作ってみた</title>
-      <link>https://soushin.github.io/entry/2017/01/22/214441/</link>
+      <link>https://blog.soushi.me/entry/2017/01/22/214441/</link>
       <pubDate>Sun, 22 Jan 2017 21:44:41 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/01/22/214441/</guid>
+      <guid>https://blog.soushi.me/entry/2017/01/22/214441/</guid>
       <description>プロジェクトでGO言語に触れながら学習のためにコマンドラインツールを作り拡張させながら言語理解を深めようと目標を立てた。「みんなのGO言語」</description>
     </item>
     
     <item>
       <title>Kotlin &#43; SelenideでE2E自動テストのアプリケーションをつくってみた</title>
-      <link>https://soushin.github.io/entry/2017/01/15/205751/</link>
+      <link>https://blog.soushi.me/entry/2017/01/15/205751/</link>
       <pubDate>Sun, 15 Jan 2017 20:57:51 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/01/15/205751/</guid>
+      <guid>https://blog.soushi.me/entry/2017/01/15/205751/</guid>
       <description>昨年末のAdvent Calendarを読み漁ってたときにSelenideやE2E、kotlinなどのキーワードが頭に残っていました。キーワー</description>
     </item>
     
     <item>
       <title>KotlinでMockテストのまとめ</title>
-      <link>https://soushin.github.io/entry/2017/01/09/012530/</link>
+      <link>https://blog.soushi.me/entry/2017/01/09/012530/</link>
       <pubDate>Mon, 09 Jan 2017 01:25:30 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/01/09/012530/</guid>
+      <guid>https://blog.soushi.me/entry/2017/01/09/012530/</guid>
       <description>1ヶ月ほどkotlinで開発をしてきて、不慣れなkotlinであってもテストをしっかり書いていこうと目標を立て臨んだ1ヶ月。 おかげでkotl</description>
     </item>
     
     <item>
       <title>Kotlin &#43; Spring Boot／ResponseEntityを使ったJSONレスポンスにJacksonの@JsonPropertyを有効にする</title>
-      <link>https://soushin.github.io/entry/2016/12/29/134940/</link>
+      <link>https://blog.soushi.me/entry/2016/12/29/134940/</link>
       <pubDate>Thu, 29 Dec 2016 13:49:40 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/12/29/134940/</guid>
+      <guid>https://blog.soushi.me/entry/2016/12/29/134940/</guid>
       <description>Spring Bootを使ってkotlinで書いています。サーバサイドでkotlinを使うと新たな発見があるのでいいですね。 Controllerのレスポ</description>
     </item>
     
     <item>
       <title>ElasticsearchのScroll  APIをためしてみた</title>
-      <link>https://soushin.github.io/entry/2016/12/23/162825/</link>
+      <link>https://blog.soushi.me/entry/2016/12/23/162825/</link>
       <pubDate>Fri, 23 Dec 2016 16:28:25 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/12/23/162825/</guid>
+      <guid>https://blog.soushi.me/entry/2016/12/23/162825/</guid>
       <description>気になっていたElasticsearchのScroll APIの使用感を記録します。最近の開発でScroll APIを採用したい欲求がありました</description>
     </item>
     
     <item>
       <title>Kotlinで快適なJSONパース。Klaxon</title>
-      <link>https://soushin.github.io/entry/2016/12/17/225446/</link>
+      <link>https://blog.soushi.me/entry/2016/12/17/225446/</link>
       <pubDate>Sat, 17 Dec 2016 22:54:46 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/12/17/225446/</guid>
+      <guid>https://blog.soushi.me/entry/2016/12/17/225446/</guid>
       <description>前回の記事ではMoshiライブラリを使ったJSON文字列からのオブジェクト変換、オブジェクトからのJSON文字列変換の話でした。kotlin</description>
     </item>
     
     <item>
       <title>KotlinでtoJsonとfromJsonのJSONパース。MoshiのCustom Type Adaptersを使ってオブジェクトのテストを快適に。</title>
-      <link>https://soushin.github.io/entry/2016/12/14/215542/</link>
+      <link>https://blog.soushi.me/entry/2016/12/14/215542/</link>
       <pubDate>Wed, 14 Dec 2016 21:55:42 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/12/14/215542/</guid>
+      <guid>https://blog.soushi.me/entry/2016/12/14/215542/</guid>
       <description>最近はkotlinで開発しています。これまで他の言語で出来ていたこともkotlinではどうやって出来るのか？、調査したり試したりすることは楽</description>
     </item>
     
     <item>
       <title>fluentd &#43; logstash_formatの難点をrecord_reformerで解決した話</title>
-      <link>https://soushin.github.io/entry/2016/12/10/170633/</link>
+      <link>https://blog.soushi.me/entry/2016/12/10/170633/</link>
       <pubDate>Sat, 10 Dec 2016 17:06:33 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/12/10/170633/</guid>
+      <guid>https://blog.soushi.me/entry/2016/12/10/170633/</guid>
       <description>「アプリケーションで出力したログをelasticsearchにインデックスするときにログ時間のフィールド名を@timestampにしたい。」</description>
     </item>
     
     <item>
       <title>Spring Boot &#43; Kotlinでmockitoを使ってモック化したテストコードを書く</title>
-      <link>https://soushin.github.io/entry/2016/11/14/152239/</link>
+      <link>https://blog.soushi.me/entry/2016/11/14/152239/</link>
       <pubDate>Mon, 14 Nov 2016 15:22:39 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/11/14/152239/</guid>
+      <guid>https://blog.soushi.me/entry/2016/11/14/152239/</guid>
       <description>今回はkotlinでmockito使って処理をモック化したテストコードを書いてみた。Mockito framework site セットアップ 1 2 3 4 5 6 7 dependencies { ... testCompile &amp;#34;org.springframework.boot:spring-boot-starter-test&amp;#34; testCompile</description>
     </item>
     
     <item>
       <title>Logstash &#43; Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, dateなど）</title>
-      <link>https://soushin.github.io/entry/2016/11/08/160204/</link>
+      <link>https://blog.soushi.me/entry/2016/11/08/160204/</link>
       <pubDate>Tue, 08 Nov 2016 16:02:04 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/11/08/160204/</guid>
+      <guid>https://blog.soushi.me/entry/2016/11/08/160204/</guid>
       <description>LogstashからElasticsearchへデータを送信する仕組みを試しました。Logstashのconfの参考になれば幸い。 json側</description>
     </item>
     
     <item>
       <title>go langからGoogle Analytics APIを使う</title>
-      <link>https://soushin.github.io/entry/2016/11/07/152046/</link>
+      <link>https://blog.soushi.me/entry/2016/11/07/152046/</link>
       <pubDate>Mon, 07 Nov 2016 15:20:46 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/11/07/152046/</guid>
+      <guid>https://blog.soushi.me/entry/2016/11/07/152046/</guid>
       <description>こちらの記事↓ではSpring Boot + kotlinからの利用方法でしたがgoからの利用も調査しました。Spring Boot + kotlinでGoogle</description>
     </item>
     
     <item>
       <title>Spring Boot &#43; KotlinでGoogle Analytics APIを使ってみた</title>
-      <link>https://soushin.github.io/entry/2016/11/07/121410/</link>
+      <link>https://blog.soushi.me/entry/2016/11/07/121410/</link>
       <pubDate>Mon, 07 Nov 2016 12:14:10 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/11/07/121410/</guid>
+      <guid>https://blog.soushi.me/entry/2016/11/07/121410/</guid>
       <description>Googleアナリテクスの設定は本家情報を参照 https://developers.google.com/analytics/devguides/reporting/core/v3/quickstart/service-java?hl=ja 手順まとめ Google API Consoleでサービスアカウントを作成して認証する鍵を作成（今回はp12ファ</description>
     </item>
     
     <item>
       <title>Spring Boot &#43; KotlinでLogstashを使ってログ出力</title>
-      <link>https://soushin.github.io/entry/2016/11/07/105933/</link>
+      <link>https://blog.soushi.me/entry/2016/11/07/105933/</link>
       <pubDate>Mon, 07 Nov 2016 10:59:33 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/11/07/105933/</guid>
+      <guid>https://blog.soushi.me/entry/2016/11/07/105933/</guid>
       <description>Logstatshのお試しとして、Spring Boot + kotlinのアプリに導入したときのメモ。 ビルドツールはgradleを使う 1 2 3 4 5 6 7 8</description>
     </item>
     

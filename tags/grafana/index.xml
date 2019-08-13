@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Grafana on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/grafana/</link>
+    <link>https://blog.soushi.me/tags/grafana/</link>
     <description>Recent content in Grafana on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Tue, 28 Mar 2017 18:00:35 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/grafana/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/grafana/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>go-grpc-prometheusでgRPCのmetricsをPrometeusとGrafanaでモニタリングしてみた</title>
-      <link>https://soushin.github.io/entry/2017/03/28/180035/</link>
+      <link>https://blog.soushi.me/entry/2017/03/28/180035/</link>
       <pubDate>Tue, 28 Mar 2017 18:00:35 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/03/28/180035/</guid>
+      <guid>https://blog.soushi.me/entry/2017/03/28/180035/</guid>
       <description>gRPC Ecosystemの１つにgo-grpc-prometheusがあります。今回は「gRPC Ecosystemのgo-grpc-promet</description>
     </item>
     

@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>AOP on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/aop/</link>
+    <link>https://blog.soushi.me/tags/aop/</link>
     <description>Recent content in AOP on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Thu, 20 Jul 2017 10:10:51 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/aop/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/aop/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Kotlin &#43; gRPCでio.grpc.Contextをつかってログ出力を横断処理してみた</title>
-      <link>https://soushin.github.io/entry/2017/07/20/101051/</link>
+      <link>https://blog.soushi.me/entry/2017/07/20/101051/</link>
       <pubDate>Thu, 20 Jul 2017 10:10:51 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/07/20/101051/</guid>
+      <guid>https://blog.soushi.me/entry/2017/07/20/101051/</guid>
       <description>アスペクト指向プログラミング（AOP）をgRPC Serverではどう扱うか考えていきたい。 横断的な関心事といえば認証やログ出力である。 gRP</description>
     </item>
     

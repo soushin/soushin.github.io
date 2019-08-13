@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Spring-Fu on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/spring-fu/</link>
+    <link>https://blog.soushi.me/tags/spring-fu/</link>
     <description>Recent content in Spring-Fu on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Tue, 23 Oct 2018 09:27:44 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/spring-fu/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/spring-fu/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Spring FuをGraalVMで動かす。起動速度に驚いた。</title>
-      <link>https://soushin.github.io/entry/2018/10/23/092744/</link>
+      <link>https://blog.soushi.me/entry/2018/10/23/092744/</link>
       <pubDate>Tue, 23 Oct 2018 09:27:44 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/10/23/092744/</guid>
+      <guid>https://blog.soushi.me/entry/2018/10/23/092744/</guid>
       <description>Serverlessプラットフォームが注目される中、その潮流にJava勢も乗っかりたいので起動速度が速いと注目のGraalVMを試してみた。</description>
     </item>
     

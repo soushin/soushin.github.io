@@ -1,77 +1,90 @@
 <!DOCTYPE html>
 <html lang="jp">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    
-    <title>Logstash &#43; Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, dateなど） - 平日インプット週末アウトプットぶろぐ</title>
-    
-    <meta name="description" content="LogstashからElasticsearchへデータを送信する仕組みを試しました。Logstashのconfの参考になれば幸い。 json側">
-    <meta name="author" content="">
-    
-    <link href="https://soushin.github.io/css/github-gist.min.css" rel="stylesheet">
-    <link href="https://soushin.github.io/css/style.css" rel="stylesheet">
-    
-    <link rel="apple-touch-icon" href="https://soushin.github.io/img/apple-touch-icon.png">
-    <link rel="icon" href="https://soushin.github.io/img/favicon.ico">
-    
-    <meta name="generator" content="Hugo 0.56.3" />
-    
-    <link rel="alternate" type="application/atom+xml" href="https://soushin.github.io/index.xml" title="平日インプット週末アウトプットぶろぐ">
-    
-    
-    
-    
-    
-  </head>
-  <body class="single">
-    <header class="header">
-      <div class="wrap">
-        
-        <p class="logo"><a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></p>
-        
-        
-        <button class="menu-toggle" type="button"></button>
-        
-      </div>
-    </header>
-    
-    <nav class="nav">
-      <ul class="menu">
-        
-        <li>
-          <a href="/">Home</a>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <title>Logstash &#43; Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, dateなど） - 平日インプット週末アウトプットぶろぐ</title>
+  <meta property="og:title" content="Logstash &#43; Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, dateなど） - 平日インプット週末アウトプットぶろぐ" />
+  <meta name="twitter:title" content="Logstash &#43; Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, …" />
+  <meta name="description" content="LogstashからElasticsearchへデータを送信する仕組みを試しました。Logstashのconfの参考になれば幸い。 json側">
+  <meta property="og:description" content="LogstashからElasticsearchへデータを送信する仕組みを試しました。Logstashのconfの参考になれば幸い。 json側">
+  <meta name="twitter:description" content="LogstashからElasticsearchへデータを送信する仕組みを試しました。Logstashのconfの参考になれば幸い。 json側">
+  <meta name="author" content=""/>
+  <meta property="og:site_name" content="平日インプット週末アウトプットぶろぐ" />
+  <meta property="og:url" content="https://blog.soushi.me/entry/2016/11/08/160204/" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="generator" content="Hugo 0.56.3" />
+
+  <link rel="stylesheet" href="/css/style.css" media="all" />
+  <link rel="stylesheet" href="/css/syntax.css" media="all" />
+  <link rel="stylesheet" href="/css/custom.css" media="all" />
+
+  <script src="/js/script.js"></script>
+  <script src="/js/custom.js"></script>
+  <script defer src="/js/fontawesome.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <nav class="site-navi">
+    <h1 class="site-title"><a href="/">平日インプット週末アウトプットぶろぐ</a></h1>
+    <ul class="site-navi-items">
+      <li class="site-navi-item-home"><a href="/" title="Home">Home</a></li>
+      <li class="site-navi-item-archives"><a href="/entry/" title="Archives">Archives</a></li>
+      <li class="site-navi-item-tags"><a href="/tags/" title="Tags">Tags</a></li>
+      <li class="site-navi-item-"><a href="/about/" title="About">About</a></li>
+    </ul>
+  </nav>
+</header>
+<hr class="site-header-bottom">
+
+  <div class="main" role="main">
+    <article class="article">
+      
+      
+      <h1 class="article-title">Logstash &#43; Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, dateなど）</h1>
+      
+      <hr class="article-title-bottom">
+      <ul class="article-meta">
+        <li class="article-meta-date"><time>November 8, 2016</time></li>
+        <li class="article-meta-tags">
+          <a href="/tags/logstash/">
+            <i class="fas fa-tag"></i>
+            logstash
+          </a>&nbsp;
         </li>
-        
-        <li>
-          <a href="/entry/">Archives</a>
+        <li class="article-meta-tags">
+          <a href="/tags/elasticsearch/">
+            <i class="fas fa-tag"></i>
+            elasticsearch
+          </a>&nbsp;
         </li>
-        
-        <li>
-          <a href="/tags/">Tags</a>
-        </li>
-        
-        <li>
-          <a href="/categories/">Categories</a>
-        </li>
-        
-        <li>
-          <a href="/about/">About</a>
-        </li>
-        
       </ul>
-    </nav>
-    
-    <main class="main">
-
-
-<article class="post-single">
-  <header class="post-header">
-    <h1 class="post-title">Logstash &#43; Elasticsearch連携時のLogstash confメモ（jsonからconvert, filter, dateなど）</h1>
-    <div class="post-meta">2016.11.8</div>
-  </header>
-  <div class="post-content">
+      
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#ログはjsonフォーマット">ログはjsonフォーマット</a></li>
+<li><a href="#logstashのconfファイル">Logstashのconfファイル</a>
+<ul>
+<li><a href="#１-input">１： input</a></li>
+<li><a href="#２-codec">２：codec</a></li>
+<li><a href="#３-filter">３：filter</a></li>
+<li><a href="#４-output">４：output</a></li>
+</ul></li>
+<li><a href="#関連エントリ">関連エントリ</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+      
 
 <p>LogstashからElasticsearchへデータを送信する仕組みを試しました。Logstashのconfの参考になれば幸い。<br/>
 json側のフィールドをElasticsearchのdate型にconvertしたり、文字列を数値にconvertしたりしました。</p>
@@ -225,57 +238,55 @@ json側のフィールドをElasticsearchのdate型にconvertしたり、文字�
 <h3 id="関連エントリ">関連エントリ</h3>
 
 <p><a href="https://blog.soushi.me/entry/2016/12/10/170633">fluentd + logstash_formatの難点をrecord_reformerで解決した話 - 平日インプット週末アウトプットぶろぐ</a></p>
-</div>
-  <footer class="post-footer">
+
+    </article>
+
     
-    <ul class="post-tags">
-      
-      <li><a href="https://soushin.github.io/tags/logstash/">logstash</a></li>
-      
-      <li><a href="https://soushin.github.io/tags/elasticsearch/">elasticsearch</a></li>
-      
+<ul class="article-share">
+  <li>
+    <a href="https://twitter.com/share" class="twitter-share-button">Tweet</a> <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+  </li>
+  <li>
+    <div class="fb-share-button" data-href="https://blog.soushi.me/entry/2016/11/08/160204/" data-layout="button_count" data-action="like" data-size="small" data-show-faces="true" data-share="true"></div>
+    <div id="fb-root"></div>
+    <script>(function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.10";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));</script>
+  </li>
+  <li>
+    <a href="http://b.hatena.ne.jp/entry/" class="hatena-bookmark-button" data-hatena-bookmark-layout="basic-label-counter" data-hatena-bookmark-lang="en" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+  </li>
+  <li>
+    <a data-pocket-label="pocket" data-pocket-count="horizontal" class="pocket-btn" data-lang="en"></a>
+    <script>!function(d,i){if(!d.getElementById(i)){var j=d.createElement("script");j.id=i;j.src="https://widgets.getpocket.com/v1/j/btn.js?v=1";var w=d.getElementById(i);d.body.appendChild(j);}}(document,"pocket-btn-js");</script>
+  </li>
+</ul>
+
+
+    <ul class="pager article-pager">
+      <li class="pager-newer">
+          <a href="/entry/2016/11/14/152239/" data-toggle="tooltip" data-placement="top" title="Spring Boot &#43; Kotlinでmockitoを使ってモック化したテストコードを書く">&lt; Newer</a>
+      </li>
+      <li class="pager-older">
+        <a href="/entry/2016/11/07/152046/" data-toggle="tooltip" data-placement="top" title="go langからGoogle Analytics APIを使う">Older &gt;</a>
+      </li>
     </ul>
-    
-  </footer>
-  
-  
-  
-  
-</article>
+  </div>
 
-</main>
-<footer class="footer">
-  <span>&copy; 2019 <a href="https://soushin.github.io">平日インプット週末アウトプットぶろぐ</a></span>
-  <span>&middot;</span>
-  <span>Powered by <a href="https://gohugo.io/" rel="noopener" target="_blank">Hugo️️</a>️</span>
-  <span>&middot;</span>
-  <span>Theme️ <a href="https://github.com/nanxiaobei/hugo-paper" rel="noopener" target="_blank">Paper</a></span>
-</footer>
-<script src="https://soushin.github.io/js/instantclick.min.js" data-no-instant></script>
-<script data-no-instant>InstantClick.init();</script>
-<script src="https://soushin.github.io/js/highlight.min.js" data-no-instant></script>
-<script data-no-instant>
-  let body;
-  function menuToggleListener() {
-    body.classList.toggle('blur');
-  }
-  function setMenuToggleListener() {
-    const menuToggle = document.querySelector('.menu-toggle');
-    if (!menuToggle) return;
-    body = document.querySelector('body');
-    menuToggle.addEventListener('click', menuToggleListener);
-  }
 
-  hljs.initHighlightingOnLoad();
-  setMenuToggleListener();
+<div class="site-footer">
+  <div class="copyright"></div>
+  <ul class="site-footer-items">
+  </ul>
+  <div class="powerdby">
+    Powered by <a href="https://gohugo.io/">Hugo</a> and <a href="https://github.com/taikii/whiteplain">Whiteplain</a>
+  </div>
+</div>
 
-  InstantClick.on('change', function () {
-    document.querySelectorAll('pre code').forEach((block) => {
-      hljs.highlightBlock(block);
-    });
-    setMenuToggleListener();
-  });
-</script>
+
 </body>
 </html>
-

@@ -2,57 +2,57 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Go on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/go/</link>
+    <link>https://blog.soushi.me/tags/go/</link>
     <description>Recent content in Go on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Tue, 20 Nov 2018 10:53:31 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/go/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/go/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>gRPCサーバを含むGoプロジェクトをBazelでビルドする</title>
-      <link>https://soushin.github.io/entry/2018/11/20/105331/</link>
+      <link>https://blog.soushi.me/entry/2018/11/20/105331/</link>
       <pubDate>Tue, 20 Nov 2018 10:53:31 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/20/105331/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/20/105331/</guid>
       <description>前回までのエントリに引き続きBazelのビルドをまとめていく。 GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット</description>
     </item>
     
     <item>
       <title>GoとKotlinのマルチプロジェクトをBazelでビルドする</title>
-      <link>https://soushin.github.io/entry/2018/11/14/145038/</link>
+      <link>https://blog.soushi.me/entry/2018/11/14/145038/</link>
       <pubDate>Wed, 14 Nov 2018 14:50:38 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/14/145038/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/14/145038/</guid>
       <description>Googleが開発するビルドツールのBazelを試していく。 Bazel - a fast, scalable, multi-language and extensible build system&amp;rdquo; - Bazel モチベーション GoやKotlinでつくるマイクロサービス</description>
     </item>
     
     <item>
       <title>go-grpc-prometheusでgRPCのmetricsをPrometeusとGrafanaでモニタリングしてみた</title>
-      <link>https://soushin.github.io/entry/2017/03/28/180035/</link>
+      <link>https://blog.soushi.me/entry/2017/03/28/180035/</link>
       <pubDate>Tue, 28 Mar 2017 18:00:35 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/03/28/180035/</guid>
+      <guid>https://blog.soushi.me/entry/2017/03/28/180035/</guid>
       <description>gRPC Ecosystemの１つにgo-grpc-prometheusがあります。今回は「gRPC Ecosystemのgo-grpc-promet</description>
     </item>
     
     <item>
       <title>gRPC streamingをつかうとマイクロサービスの責務が整理できるし省コネクションでメリットあるよね、という話</title>
-      <link>https://soushin.github.io/entry/2017/03/17/125049/</link>
+      <link>https://blog.soushi.me/entry/2017/03/17/125049/</link>
       <pubDate>Fri, 17 Mar 2017 12:50:49 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/03/17/125049/</guid>
+      <guid>https://blog.soushi.me/entry/2017/03/17/125049/</guid>
       <description>今回はgRPCをマイクロサービス間通信に導入することってメリットあるよね、というエントリです。 定期的に処理を実行してくれるバッチはよくあるも</description>
     </item>
     
     <item>
       <title>mackerelのグラフアノテーションをChatOpsに加えてみた</title>
-      <link>https://soushin.github.io/entry/2017/02/09/182622/</link>
+      <link>https://blog.soushi.me/entry/2017/02/09/182622/</link>
       <pubDate>Thu, 09 Feb 2017 18:26:22 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/02/09/182622/</guid>
+      <guid>https://blog.soushi.me/entry/2017/02/09/182622/</guid>
       <description>mackerelからリリースされたグラフアノテーションを追加できるコマンドラインツールをgoで作りました。 作ったコマンドをBot経由で実行で</description>
     </item>
     

@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Router Function on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/router-function/</link>
+    <link>https://blog.soushi.me/tags/router-function/</link>
     <description>Recent content in Router Function on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Thu, 22 Jun 2017 12:39:42 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/router-function/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/router-function/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Spring5.0 &#43; KotlinのRouterFunctionのテストはどうすればよいか？ 試してみた</title>
-      <link>https://soushin.github.io/entry/2017/06/22/123942/</link>
+      <link>https://blog.soushi.me/entry/2017/06/22/123942/</link>
       <pubDate>Thu, 22 Jun 2017 12:39:42 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/06/22/123942/</guid>
+      <guid>https://blog.soushi.me/entry/2017/06/22/123942/</guid>
       <description>引き続きSpring5.0（Spring Boot 2.0） + KotlinのWebアプリケーションを試している。今回はRouterFunctionをつ</description>
     </item>
     

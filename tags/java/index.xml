@@ -2,30 +2,30 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Java on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/java/</link>
+    <link>https://blog.soushi.me/tags/java/</link>
     <description>Recent content in Java on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Thu, 11 May 2017 12:21:39 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/java/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/java/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>KotlinでgRPC。grpc-javaのTLS with JDKとTLS with OpenSSLの使い方をまとめた。</title>
-      <link>https://soushin.github.io/entry/2017/05/11/122139/</link>
+      <link>https://blog.soushi.me/entry/2017/05/11/122139/</link>
       <pubDate>Thu, 11 May 2017 12:21:39 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/05/11/122139/</guid>
+      <guid>https://blog.soushi.me/entry/2017/05/11/122139/</guid>
       <description>grpc-java/SECURITY.mdを読み進めるとTLSを有効にしたgRPCサーバの起動には２つのプロトコルプロバイダーを選択できる。</description>
     </item>
     
     <item>
       <title>gRPC streamingをつかうとマイクロサービスの責務が整理できるし省コネクションでメリットあるよね、という話</title>
-      <link>https://soushin.github.io/entry/2017/03/17/125049/</link>
+      <link>https://blog.soushi.me/entry/2017/03/17/125049/</link>
       <pubDate>Fri, 17 Mar 2017 12:50:49 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/03/17/125049/</guid>
+      <guid>https://blog.soushi.me/entry/2017/03/17/125049/</guid>
       <description>今回はgRPCをマイクロサービス間通信に導入することってメリットあるよね、というエントリです。 定期的に処理を実行してくれるバッチはよくあるも</description>
     </item>
     

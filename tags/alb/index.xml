@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>ALB on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/alb/</link>
+    <link>https://blog.soushi.me/tags/alb/</link>
     <description>Recent content in ALB on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Thu, 29 Jun 2017 11:20:19 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/alb/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/alb/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>ALBのアクセスログからAPIのレスポンスタイムを監視する</title>
-      <link>https://soushin.github.io/entry/2017/06/29/112019/</link>
+      <link>https://blog.soushi.me/entry/2017/06/29/112019/</link>
       <pubDate>Thu, 29 Jun 2017 11:20:19 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/06/29/112019/</guid>
+      <guid>https://blog.soushi.me/entry/2017/06/29/112019/</guid>
       <description>サービスのAPIのレスポンスタイムを監視することは運用において大事なことである。APIのレスポンスタイムを計測してモニタリングする方法は多様</description>
     </item>
     

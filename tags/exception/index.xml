@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Exception on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/exception/</link>
+    <link>https://blog.soushi.me/tags/exception/</link>
     <description>Recent content in Exception on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Fri, 18 Aug 2017 23:46:15 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/exception/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/exception/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>gRPC ServerのExceptionFilterの方法をまとめた（grpc-java）</title>
-      <link>https://soushin.github.io/entry/2017/08/18/234615/</link>
+      <link>https://blog.soushi.me/entry/2017/08/18/234615/</link>
       <pubDate>Fri, 18 Aug 2017 23:46:15 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/08/18/234615/</guid>
+      <guid>https://blog.soushi.me/entry/2017/08/18/234615/</guid>
       <description>前回のエントリでは認証処理やメトリクス計測、ログ出力などをインターセプターをつかい横断的に処理する方法をまとめた。 Kotlin + gRPCでio.grp</description>
     </item>
     

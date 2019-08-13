@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>apiDoc on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/apidoc/</link>
+    <link>https://blog.soushi.me/tags/apidoc/</link>
     <description>Recent content in apiDoc on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Fri, 29 Sep 2017 22:05:26 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/apidoc/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/apidoc/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>SpringBoot 2.0とapiDocを連携させてみた</title>
-      <link>https://soushin.github.io/entry/2017/09/29/220526/</link>
+      <link>https://blog.soushi.me/entry/2017/09/29/220526/</link>
       <pubDate>Fri, 29 Sep 2017 22:05:26 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/09/29/220526/</guid>
+      <guid>https://blog.soushi.me/entry/2017/09/29/220526/</guid>
       <description>SpringFrameworkでAPIドキュメントを準備する手段としてSpringFoxやSpring REST Docsなどが候補にあがる。 SpringFox by springfox Spring</description>
     </item>
     

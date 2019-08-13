@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>CI on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/ci/</link>
+    <link>https://blog.soushi.me/tags/ci/</link>
     <description>Recent content in CI on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Thu, 22 Nov 2018 14:46:58 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/ci/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/ci/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>BazelでビルドするマルチプロジェクトとCircleCIを連携する</title>
-      <link>https://soushin.github.io/entry/2018/11/22/144658/</link>
+      <link>https://blog.soushi.me/entry/2018/11/22/144658/</link>
       <pubDate>Thu, 22 Nov 2018 14:46:58 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/22/144658/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/22/144658/</guid>
       <description>今回のエントリではBazelでビルドしたマルチプロジェクトとCircleCIの連携をまとめていく。マルチプロジェクトとCIを連携する際の実運</description>
     </item>
     

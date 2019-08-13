@@ -2,30 +2,30 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Jackson on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/jackson/</link>
+    <link>https://blog.soushi.me/tags/jackson/</link>
     <description>Recent content in Jackson on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Fri, 15 Sep 2017 18:06:30 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/jackson/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/jackson/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>jackson.datatypeをつかってiOSのレシートの日付文字列をデシアライズする</title>
-      <link>https://soushin.github.io/entry/2017/09/15/180630/</link>
+      <link>https://blog.soushi.me/entry/2017/09/15/180630/</link>
       <pubDate>Fri, 15 Sep 2017 18:06:30 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/09/15/180630/</guid>
+      <guid>https://blog.soushi.me/entry/2017/09/15/180630/</guid>
       <description>iOSアプリで購入したアイテムのレシート検証を実装する過程でレシートに含まれる日付文字列をdata classにデシアライズしてみた。 レシート</description>
     </item>
     
     <item>
       <title>Kotlin &#43; Spring Boot／ResponseEntityを使ったJSONレスポンスにJacksonの@JsonPropertyを有効にする</title>
-      <link>https://soushin.github.io/entry/2016/12/29/134940/</link>
+      <link>https://blog.soushi.me/entry/2016/12/29/134940/</link>
       <pubDate>Thu, 29 Dec 2016 13:49:40 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/12/29/134940/</guid>
+      <guid>https://blog.soushi.me/entry/2016/12/29/134940/</guid>
       <description>Spring Bootを使ってkotlinで書いています。サーバサイドでkotlinを使うと新たな発見があるのでいいですね。 Controllerのレスポ</description>
     </item>
     

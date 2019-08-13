@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>chip on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/chip/</link>
+    <link>https://blog.soushi.me/tags/chip/</link>
     <description>Recent content in chip on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Wed, 30 May 2018 09:58:47 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/chip/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/chip/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Android Support LibraryのChipを触ってみた</title>
-      <link>https://soushin.github.io/entry/2018/05/30/095847/</link>
+      <link>https://blog.soushi.me/entry/2018/05/30/095847/</link>
       <pubDate>Wed, 30 May 2018 09:58:47 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/05/30/095847/</guid>
+      <guid>https://blog.soushi.me/entry/2018/05/30/095847/</guid>
       <description>Android Support LibraryのChipの使い方をまとめていく。ChipはMaterial DesignにあるがSupport Libraryに組み込まれた</description>
     </item>
     

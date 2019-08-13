@@ -2,75 +2,75 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Test on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/test/</link>
+    <link>https://blog.soushi.me/tags/test/</link>
     <description>Recent content in Test on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Fri, 16 Nov 2018 13:20:00 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/test/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/test/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>BazelでGoプロジェクトのビルド。Gazelleのgo_repositoryで外部ライブラリの依存とBazelのgo_testでテスト。</title>
-      <link>https://soushin.github.io/entry/2018/11/16/132000/</link>
+      <link>https://blog.soushi.me/entry/2018/11/16/132000/</link>
       <pubDate>Fri, 16 Nov 2018 13:20:00 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/11/16/132000/</guid>
+      <guid>https://blog.soushi.me/entry/2018/11/16/132000/</guid>
       <description>BazelをつかったGoプロジェクトのビルドをまとめている。前回のエントリではバイナリのビルドとDockerイメージのビルドをまとめた。 Go</description>
     </item>
     
     <item>
       <title>gRPC serverのmetadataをテストする方法をまとめる</title>
-      <link>https://soushin.github.io/entry/2017/09/24/203224/</link>
+      <link>https://blog.soushi.me/entry/2017/09/24/203224/</link>
       <pubDate>Sun, 24 Sep 2017 20:32:24 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/09/24/203224/</guid>
+      <guid>https://blog.soushi.me/entry/2017/09/24/203224/</guid>
       <description>gRPC ServerのレスポンスにはMetadataを含めることができる。gRPCのレスポンス・ステータス（io.grpc.Status.OKやi</description>
     </item>
     
     <item>
       <title>grpc-javaのClient/ServerのテストをKotlinで書く - Client編</title>
-      <link>https://soushin.github.io/entry/2017/08/11/001047/</link>
+      <link>https://blog.soushi.me/entry/2017/08/11/001047/</link>
       <pubDate>Fri, 11 Aug 2017 00:10:47 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/08/11/001047/</guid>
+      <guid>https://blog.soushi.me/entry/2017/08/11/001047/</guid>
       <description>前回のエントリに続いて今回のエントリではgRPC Clientのテストの書き方をまとめていく。 grpc-javaのClient/Serverの</description>
     </item>
     
     <item>
       <title>grpc-javaのClient/ServerのテストをKotlinで書く - Server編</title>
-      <link>https://soushin.github.io/entry/2017/08/04/000534/</link>
+      <link>https://blog.soushi.me/entry/2017/08/04/000534/</link>
       <pubDate>Fri, 04 Aug 2017 00:05:34 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/08/04/000534/</guid>
+      <guid>https://blog.soushi.me/entry/2017/08/04/000534/</guid>
       <description>grpc-javaで実装されたgRPC ClientとgRPC Serverのテストコードについてまとめていきたい。 ClientとServerの</description>
     </item>
     
     <item>
       <title>Spring5.0 &#43; KotlinのRouterFunctionのテストはどうすればよいか？ 試してみた</title>
-      <link>https://soushin.github.io/entry/2017/06/22/123942/</link>
+      <link>https://blog.soushi.me/entry/2017/06/22/123942/</link>
       <pubDate>Thu, 22 Jun 2017 12:39:42 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/06/22/123942/</guid>
+      <guid>https://blog.soushi.me/entry/2017/06/22/123942/</guid>
       <description>引き続きSpring5.0（Spring Boot 2.0） + KotlinのWebアプリケーションを試している。今回はRouterFunctionをつ</description>
     </item>
     
     <item>
       <title>golang - Kotlinのmicroservice構成のConsumer-Driven Contract testingをpactをつかって作ってみた</title>
-      <link>https://soushin.github.io/entry/2017/01/28/215229/</link>
+      <link>https://blog.soushi.me/entry/2017/01/28/215229/</link>
       <pubDate>Sat, 28 Jan 2017 21:52:29 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/01/28/215229/</guid>
+      <guid>https://blog.soushi.me/entry/2017/01/28/215229/</guid>
       <description>今回はConsumer-Driven Contract testingのサンプルを作ってみました。以前のSelenideを使ったE2Eの記事の流れからCons</description>
     </item>
     
     <item>
       <title>Kotlin &#43; SelenideでE2E自動テストのアプリケーションをつくってみた</title>
-      <link>https://soushin.github.io/entry/2017/01/15/205751/</link>
+      <link>https://blog.soushi.me/entry/2017/01/15/205751/</link>
       <pubDate>Sun, 15 Jan 2017 20:57:51 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/01/15/205751/</guid>
+      <guid>https://blog.soushi.me/entry/2017/01/15/205751/</guid>
       <description>昨年末のAdvent Calendarを読み漁ってたときにSelenideやE2E、kotlinなどのキーワードが頭に残っていました。キーワー</description>
     </item>
     

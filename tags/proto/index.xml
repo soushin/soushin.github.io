@@ -2,39 +2,39 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>proto on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/proto/</link>
+    <link>https://blog.soushi.me/tags/proto/</link>
     <description>Recent content in proto on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Sun, 29 Oct 2017 23:12:46 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/proto/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/proto/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>grpc-ecosystem/grpc-gatewayのセットアップ方法をまとめてみた</title>
-      <link>https://soushin.github.io/entry/2017/10/29/231246/</link>
+      <link>https://blog.soushi.me/entry/2017/10/29/231246/</link>
       <pubDate>Sun, 29 Oct 2017 23:12:46 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/10/29/231246/</guid>
+      <guid>https://blog.soushi.me/entry/2017/10/29/231246/</guid>
       <description>Server Side Kotlinのアウトプットにつかっているレポジトリにgrpc-gatewayを入れてみたので、セットアップ方法をまとめておく。 grpc-</description>
     </item>
     
     <item>
       <title>protobuf typeに値が入っているか確認するにはgoogle/protobuf/wrappers.protoをつかうとよい</title>
-      <link>https://soushin.github.io/entry/2017/09/03/170655/</link>
+      <link>https://blog.soushi.me/entry/2017/09/03/170655/</link>
       <pubDate>Sun, 03 Sep 2017 17:06:55 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/09/03/170655/</guid>
+      <guid>https://blog.soushi.me/entry/2017/09/03/170655/</guid>
       <description>今回のエントリも前回に続きprotobufの数あるtypeの中から１つの使い方まとめていきたい。今回は google/protobuf/wra</description>
     </item>
     
     <item>
       <title>Kotlin &#43; gradleでgRPCプロトコル定義ファイル（.proto）のvendoringにprotodepをつかってみた</title>
-      <link>https://soushin.github.io/entry/2017/07/06/122307/</link>
+      <link>https://blog.soushi.me/entry/2017/07/06/122307/</link>
       <pubDate>Thu, 06 Jul 2017 12:23:07 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/07/06/122307/</guid>
+      <guid>https://blog.soushi.me/entry/2017/07/06/122307/</guid>
       <description>gRPCのプロトコル定義ファイル（.proto）の管理を考えていきたい。gRPCを導入するプロジェクトであれば.protoファイルの運用方法</description>
     </item>
     

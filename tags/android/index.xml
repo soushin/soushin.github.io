@@ -2,75 +2,75 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>android on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/android/</link>
+    <link>https://blog.soushi.me/tags/android/</link>
     <description>Recent content in android on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Mon, 04 Jun 2018 11:30:31 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/android/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/android/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Android JetpackのNavigationを試して導入手順をまとめた</title>
-      <link>https://soushin.github.io/entry/2018/06/04/113031/</link>
+      <link>https://blog.soushi.me/entry/2018/06/04/113031/</link>
       <pubDate>Mon, 04 Jun 2018 11:30:31 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/06/04/113031/</guid>
+      <guid>https://blog.soushi.me/entry/2018/06/04/113031/</guid>
       <description>Google IO 2018で発表されたJetpackの新しいコンポーネントのNavigationをアプリに導入してみた。 The Navigation Architecture Component | Android Developers TL;DR Toolbar、B</description>
     </item>
     
     <item>
       <title>Android Support LibraryのChipを触ってみた</title>
-      <link>https://soushin.github.io/entry/2018/05/30/095847/</link>
+      <link>https://blog.soushi.me/entry/2018/05/30/095847/</link>
       <pubDate>Wed, 30 May 2018 09:58:47 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/05/30/095847/</guid>
+      <guid>https://blog.soushi.me/entry/2018/05/30/095847/</guid>
       <description>Android Support LibraryのChipの使い方をまとめていく。ChipはMaterial DesignにあるがSupport Libraryに組み込まれた</description>
     </item>
     
     <item>
       <title>SwipeRefreshLayoutとRecycleViewをListViewに導入してみた</title>
-      <link>https://soushin.github.io/entry/2018/05/02/133854/</link>
+      <link>https://blog.soushi.me/entry/2018/05/02/133854/</link>
       <pubDate>Wed, 02 May 2018 13:38:54 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/05/02/133854/</guid>
+      <guid>https://blog.soushi.me/entry/2018/05/02/133854/</guid>
       <description>ブログエントリで試しているアプリにSwipeRefreshLayoutとRecycleViewをListViewに導入してみたのでまとめてい</description>
     </item>
     
     <item>
       <title>rx-preferencesをつかってSharedPreferencesの更新をSubscribeする</title>
-      <link>https://soushin.github.io/entry/2018/03/10/084405/</link>
+      <link>https://blog.soushi.me/entry/2018/03/10/084405/</link>
       <pubDate>Sat, 10 Mar 2018 08:44:05 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/03/10/084405/</guid>
+      <guid>https://blog.soushi.me/entry/2018/03/10/084405/</guid>
       <description>ブログエントリで試しているAndroidアプリにFluxアーキテクチャを導入をしたことでデータの流れがStreamになった。SharedPr</description>
     </item>
     
     <item>
       <title>Dagger2 &#43; uber/Autodispose &#43; RxJava2でFluxアーキテクチャを導入してみた</title>
-      <link>https://soushin.github.io/entry/2018/02/28/120040/</link>
+      <link>https://blog.soushi.me/entry/2018/02/28/120040/</link>
       <pubDate>Wed, 28 Feb 2018 12:00:40 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/02/28/120040/</guid>
+      <guid>https://blog.soushi.me/entry/2018/02/28/120040/</guid>
       <description>ブログエントリで試しているAndroidアプリにFluxアーキテクチャを導入してみたのでまとめる。 Fluxアーキテクチャ Fluxアーキテクチ</description>
     </item>
     
     <item>
       <title>Dagger2（android support module）をつかってFragmentにDIする</title>
-      <link>https://soushin.github.io/entry/2018/02/23/100250/</link>
+      <link>https://blog.soushi.me/entry/2018/02/23/100250/</link>
       <pubDate>Fri, 23 Feb 2018 10:02:50 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/02/23/100250/</guid>
+      <guid>https://blog.soushi.me/entry/2018/02/23/100250/</guid>
       <description>Dagger2（android support module）をつかってFragmentにDIする方法をまとめていく。 HasSupportFragmentI</description>
     </item>
     
     <item>
       <title>Dagger2 (android support module)とretrofit2をつかってAPIレスポンスをListViewで表示する</title>
-      <link>https://soushin.github.io/entry/2018/02/21/091803/</link>
+      <link>https://blog.soushi.me/entry/2018/02/21/091803/</link>
       <pubDate>Wed, 21 Feb 2018 09:18:03 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/02/21/091803/</guid>
+      <guid>https://blog.soushi.me/entry/2018/02/21/091803/</guid>
       <description>掲題のとおりAndroidのListViewを表示してみる。 APIリクエストは retrofitを使い天気情報を取得できるOpenWeathe</description>
     </item>
     

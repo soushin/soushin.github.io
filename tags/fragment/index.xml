@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Fragment on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/fragment/</link>
+    <link>https://blog.soushi.me/tags/fragment/</link>
     <description>Recent content in Fragment on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Fri, 23 Feb 2018 10:02:50 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/fragment/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/fragment/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Dagger2（android support module）をつかってFragmentにDIする</title>
-      <link>https://soushin.github.io/entry/2018/02/23/100250/</link>
+      <link>https://blog.soushi.me/entry/2018/02/23/100250/</link>
       <pubDate>Fri, 23 Feb 2018 10:02:50 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/02/23/100250/</guid>
+      <guid>https://blog.soushi.me/entry/2018/02/23/100250/</guid>
       <description>Dagger2（android support module）をつかってFragmentにDIする方法をまとめていく。 HasSupportFragmentI</description>
     </item>
     

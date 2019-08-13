@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>nginx on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/nginx/</link>
+    <link>https://blog.soushi.me/tags/nginx/</link>
     <description>Recent content in nginx on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Fri, 17 Feb 2017 13:58:34 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/nginx/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/nginx/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>nginx-rtmp-module &#43; FFmpeg &#43; HLSで動画配信ができるdocker-composeをつくった</title>
-      <link>https://soushin.github.io/entry/2017/02/17/135834/</link>
+      <link>https://blog.soushi.me/entry/2017/02/17/135834/</link>
       <pubDate>Fri, 17 Feb 2017 13:58:34 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/02/17/135834/</guid>
+      <guid>https://blog.soushi.me/entry/2017/02/17/135834/</guid>
       <description>タイトルのdocker-composeをつくっていきます。ローカルで配信確認したいときにシュッと起動できるようにします。 次のような構成でつく</description>
     </item>
     

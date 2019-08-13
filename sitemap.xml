@@ -3,1143 +3,1143 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://soushin.github.io/about/</loc>
+    <loc>https://blog.soushi.me/about/</loc>
     <lastmod>2017-08-28T21:41:52+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/</loc>
+    <loc>https://blog.soushi.me/entry/</loc>
     <lastmod>2019-02-22T11:06:48+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/google-analytics/</loc>
+    <loc>https://blog.soushi.me/tags/google-analytics/</loc>
     <lastmod>2019-02-22T11:06:48+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/kotlin-multiplatform/</loc>
+    <loc>https://blog.soushi.me/tags/kotlin-multiplatform/</loc>
     <lastmod>2019-02-22T11:06:48+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2019/02/22/110648/</loc>
+    <loc>https://blog.soushi.me/entry/2019/02/22/110648/</loc>
     <lastmod>2019-02-22T11:06:48+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/kotlin/native/</loc>
-    <lastmod>2019-02-22T11:06:48+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/measurement-protocol/</loc>
+    <loc>https://blog.soushi.me/tags/kotlin/native/</loc>
     <lastmod>2019-02-22T11:06:48+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/</loc>
+    <loc>https://blog.soushi.me/tags/measurement-protocol/</loc>
     <lastmod>2019-02-22T11:06:48+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/kotlin/</loc>
+    <loc>https://blog.soushi.me/tags/</loc>
     <lastmod>2019-02-22T11:06:48+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/</loc>
+    <loc>https://blog.soushi.me/tags/kotlin/</loc>
     <lastmod>2019-02-22T11:06:48+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/github/</loc>
+    <loc>https://blog.soushi.me/</loc>
+    <lastmod>2019-02-22T11:06:48+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/tags/github/</loc>
     <lastmod>2019-01-09T13:30:30+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/kubernetes/</loc>
+    <loc>https://blog.soushi.me/tags/kubernetes/</loc>
     <lastmod>2019-01-09T13:30:30+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/prow/</loc>
+    <loc>https://blog.soushi.me/tags/prow/</loc>
     <lastmod>2019-01-09T13:30:30+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2019/01/09/133030/</loc>
+    <loc>https://blog.soushi.me/entry/2019/01/09/133030/</loc>
     <lastmod>2019-01-09T13:30:30+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/tide/</loc>
+    <loc>https://blog.soushi.me/tags/tide/</loc>
     <lastmod>2019-01-09T13:30:30+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/chatops/</loc>
+    <loc>https://blog.soushi.me/tags/chatops/</loc>
     <lastmod>2019-01-08T12:37:52+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2019/01/08/123752/</loc>
+    <loc>https://blog.soushi.me/entry/2019/01/08/123752/</loc>
     <lastmod>2019-01-08T12:37:52+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/aws-sqs/</loc>
+    <loc>https://blog.soushi.me/tags/aws-sqs/</loc>
     <lastmod>2018-12-27T10:29:42+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/knative/</loc>
+    <loc>https://blog.soushi.me/tags/knative/</loc>
     <lastmod>2018-12-27T10:29:42+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/12/27/102942/</loc>
+    <loc>https://blog.soushi.me/entry/2018/12/27/102942/</loc>
     <lastmod>2018-12-27T10:29:42+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/eventing/</loc>
+    <loc>https://blog.soushi.me/tags/eventing/</loc>
     <lastmod>2018-12-27T10:29:42+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/kotlinnative/</loc>
+    <loc>https://blog.soushi.me/tags/kotlinnative/</loc>
     <lastmod>2018-12-22T00:37:11+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/ktor/</loc>
+    <loc>https://blog.soushi.me/tags/ktor/</loc>
     <lastmod>2018-12-22T00:37:11+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/serversidekotlin/</loc>
+    <loc>https://blog.soushi.me/tags/serversidekotlin/</loc>
     <lastmod>2018-12-22T00:37:11+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/12/22/003711/</loc>
+    <loc>https://blog.soushi.me/entry/2018/12/22/003711/</loc>
     <lastmod>2018-12-22T00:37:11+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/bazel/</loc>
+    <loc>https://blog.soushi.me/tags/bazel/</loc>
     <lastmod>2018-12-07T11:25:58+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/build/</loc>
+    <loc>https://blog.soushi.me/tags/build/</loc>
     <lastmod>2018-12-07T11:25:58+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/12/07/112558/</loc>
+    <loc>https://blog.soushi.me/entry/2018/12/07/112558/</loc>
     <lastmod>2018-12-07T11:25:58+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/11/22/144658/</loc>
+    <loc>https://blog.soushi.me/entry/2018/11/22/144658/</loc>
     <lastmod>2018-11-22T14:46:58+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/ci/</loc>
-    <lastmod>2018-11-22T14:46:58+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/circleci/</loc>
+    <loc>https://blog.soushi.me/tags/ci/</loc>
     <lastmod>2018-11-22T14:46:58+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/11/21/100654/</loc>
+    <loc>https://blog.soushi.me/tags/circleci/</loc>
+    <lastmod>2018-11-22T14:46:58+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/entry/2018/11/21/100654/</loc>
     <lastmod>2018-11-21T10:06:54+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/docker/</loc>
+    <loc>https://blog.soushi.me/tags/docker/</loc>
     <lastmod>2018-11-21T10:06:54+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/go/</loc>
+    <loc>https://blog.soushi.me/tags/go/</loc>
     <lastmod>2018-11-20T10:53:31+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/grpc/</loc>
+    <loc>https://blog.soushi.me/tags/grpc/</loc>
     <lastmod>2018-11-20T10:53:31+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/11/20/105331/</loc>
+    <loc>https://blog.soushi.me/entry/2018/11/20/105331/</loc>
     <lastmod>2018-11-20T10:53:31+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/11/16/132000/</loc>
+    <loc>https://blog.soushi.me/entry/2018/11/16/132000/</loc>
     <lastmod>2018-11-16T13:20:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/dependencies/</loc>
-    <lastmod>2018-11-16T13:20:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/gazelle/</loc>
+    <loc>https://blog.soushi.me/tags/dependencies/</loc>
     <lastmod>2018-11-16T13:20:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/test/</loc>
+    <loc>https://blog.soushi.me/tags/gazelle/</loc>
     <lastmod>2018-11-16T13:20:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/11/14/145038/</loc>
+    <loc>https://blog.soushi.me/tags/test/</loc>
+    <lastmod>2018-11-16T13:20:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/entry/2018/11/14/145038/</loc>
     <lastmod>2018-11-14T14:50:38+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/multiprojects/</loc>
+    <loc>https://blog.soushi.me/tags/multiprojects/</loc>
     <lastmod>2018-11-14T14:50:38+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/graalvm/</loc>
+    <loc>https://blog.soushi.me/tags/graalvm/</loc>
     <lastmod>2018-10-23T09:27:44+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/10/23/092744/</loc>
+    <loc>https://blog.soushi.me/entry/2018/10/23/092744/</loc>
     <lastmod>2018-10-23T09:27:44+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/spring-fu/</loc>
+    <loc>https://blog.soushi.me/tags/spring-fu/</loc>
     <lastmod>2018-10-23T09:27:44+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/09/17/201737/</loc>
+    <loc>https://blog.soushi.me/entry/2018/09/17/201737/</loc>
     <lastmod>2018-09-17T20:17:37+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/06/04/113031/</loc>
+    <loc>https://blog.soushi.me/entry/2018/06/04/113031/</loc>
     <lastmod>2018-06-04T11:30:31+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/android/</loc>
-    <lastmod>2018-06-04T11:30:31+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/jetpack/</loc>
+    <loc>https://blog.soushi.me/tags/android/</loc>
     <lastmod>2018-06-04T11:30:31+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/navigation/</loc>
+    <loc>https://blog.soushi.me/tags/jetpack/</loc>
     <lastmod>2018-06-04T11:30:31+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/05/30/095847/</loc>
+    <loc>https://blog.soushi.me/tags/navigation/</loc>
+    <lastmod>2018-06-04T11:30:31+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/entry/2018/05/30/095847/</loc>
     <lastmod>2018-05-30T09:58:47+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/chip/</loc>
-    <lastmod>2018-05-30T09:58:47+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/support-library/</loc>
+    <loc>https://blog.soushi.me/tags/chip/</loc>
     <lastmod>2018-05-30T09:58:47+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/recycleview/</loc>
+    <loc>https://blog.soushi.me/tags/support-library/</loc>
+    <lastmod>2018-05-30T09:58:47+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/tags/recycleview/</loc>
     <lastmod>2018-05-02T13:38:54+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/swiperefreshlayout/</loc>
+    <loc>https://blog.soushi.me/tags/swiperefreshlayout/</loc>
     <lastmod>2018-05-02T13:38:54+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/05/02/133854/</loc>
+    <loc>https://blog.soushi.me/entry/2018/05/02/133854/</loc>
     <lastmod>2018-05-02T13:38:54+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/sharedpreferences/</loc>
+    <loc>https://blog.soushi.me/tags/sharedpreferences/</loc>
     <lastmod>2018-03-10T08:44:05+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/rx/</loc>
+    <loc>https://blog.soushi.me/tags/rx/</loc>
     <lastmod>2018-03-10T08:44:05+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/03/10/084405/</loc>
+    <loc>https://blog.soushi.me/entry/2018/03/10/084405/</loc>
     <lastmod>2018-03-10T08:44:05+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/02/28/120040/</loc>
+    <loc>https://blog.soushi.me/entry/2018/02/28/120040/</loc>
     <lastmod>2018-02-28T12:00:40+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/flux/</loc>
+    <loc>https://blog.soushi.me/tags/flux/</loc>
     <lastmod>2018-02-28T12:00:40+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/di/</loc>
+    <loc>https://blog.soushi.me/tags/di/</loc>
     <lastmod>2018-02-23T10:02:50+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/02/23/100250/</loc>
+    <loc>https://blog.soushi.me/entry/2018/02/23/100250/</loc>
     <lastmod>2018-02-23T10:02:50+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/fragment/</loc>
-    <lastmod>2018-02-23T10:02:50+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/dagger/</loc>
+    <loc>https://blog.soushi.me/tags/fragment/</loc>
     <lastmod>2018-02-23T10:02:50+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/02/21/091803/</loc>
+    <loc>https://blog.soushi.me/tags/dagger/</loc>
+    <lastmod>2018-02-23T10:02:50+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/entry/2018/02/21/091803/</loc>
     <lastmod>2018-02-21T09:18:03+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/retrofit/</loc>
+    <loc>https://blog.soushi.me/tags/retrofit/</loc>
     <lastmod>2018-02-21T09:18:03+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/helm/</loc>
+    <loc>https://blog.soushi.me/tags/helm/</loc>
     <lastmod>2018-01-30T07:16:28+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/minikube/</loc>
+    <loc>https://blog.soushi.me/tags/minikube/</loc>
     <lastmod>2018-01-30T07:16:28+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2018/01/30/071628/</loc>
+    <loc>https://blog.soushi.me/entry/2018/01/30/071628/</loc>
     <lastmod>2018-01-30T07:16:28+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/plasma/</loc>
+    <loc>https://blog.soushi.me/tags/plasma/</loc>
     <lastmod>2018-01-30T07:16:28+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/spring-boot/</loc>
+    <loc>https://blog.soushi.me/tags/spring-boot/</loc>
     <lastmod>2017-12-27T21:09:02+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/12/27/210902/</loc>
+    <loc>https://blog.soushi.me/entry/2017/12/27/210902/</loc>
     <lastmod>2017-12-27T21:09:02+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/k6/</loc>
+    <loc>https://blog.soushi.me/tags/k6/</loc>
     <lastmod>2017-11-11T22:06:06+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/loadtest/</loc>
+    <loc>https://blog.soushi.me/tags/loadtest/</loc>
     <lastmod>2017-11-11T22:06:06+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/11/11/220606/</loc>
+    <loc>https://blog.soushi.me/entry/2017/11/11/220606/</loc>
     <lastmod>2017-11-11T22:06:06+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/10/29/231246/</loc>
+    <loc>https://blog.soushi.me/entry/2017/10/29/231246/</loc>
     <lastmod>2017-10-29T23:12:46+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/grpc-gateway/</loc>
-    <lastmod>2017-10-29T23:12:46+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/proto/</loc>
+    <loc>https://blog.soushi.me/tags/grpc-gateway/</loc>
     <lastmod>2017-10-29T23:12:46+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/ca.kt/</loc>
+    <loc>https://blog.soushi.me/tags/proto/</loc>
+    <lastmod>2017-10-29T23:12:46+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/tags/ca.kt/</loc>
     <lastmod>2017-10-21T00:12:16+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/10/21/001216/</loc>
+    <loc>https://blog.soushi.me/entry/2017/10/21/001216/</loc>
     <lastmod>2017-10-21T00:12:16+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/client/</loc>
+    <loc>https://blog.soushi.me/tags/client/</loc>
     <lastmod>2017-10-15T10:06:16+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/header/</loc>
+    <loc>https://blog.soushi.me/tags/header/</loc>
     <lastmod>2017-10-15T10:06:16+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/10/15/100616/</loc>
+    <loc>https://blog.soushi.me/entry/2017/10/15/100616/</loc>
     <lastmod>2017-10-15T10:06:16+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/alpn/</loc>
+    <loc>https://blog.soushi.me/tags/alpn/</loc>
     <lastmod>2017-10-09T15:25:15+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/tls/</loc>
+    <loc>https://blog.soushi.me/tags/tls/</loc>
     <lastmod>2017-10-09T15:25:15+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/10/09/152515/</loc>
+    <loc>https://blog.soushi.me/entry/2017/10/09/152515/</loc>
     <lastmod>2017-10-09T15:25:15+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/09/29/220526/</loc>
+    <loc>https://blog.soushi.me/entry/2017/09/29/220526/</loc>
     <lastmod>2017-09-29T22:05:26+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/apidoc/</loc>
+    <loc>https://blog.soushi.me/tags/apidoc/</loc>
     <lastmod>2017-09-29T22:05:26+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/metadata/</loc>
+    <loc>https://blog.soushi.me/tags/metadata/</loc>
     <lastmod>2017-09-24T20:32:24+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/09/24/203224/</loc>
+    <loc>https://blog.soushi.me/entry/2017/09/24/203224/</loc>
     <lastmod>2017-09-24T20:32:24+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/jackson/</loc>
+    <loc>https://blog.soushi.me/tags/jackson/</loc>
     <lastmod>2017-09-15T18:06:30+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/datetype/</loc>
+    <loc>https://blog.soushi.me/tags/datetype/</loc>
     <lastmod>2017-09-15T18:06:30+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/09/15/180630/</loc>
+    <loc>https://blog.soushi.me/entry/2017/09/15/180630/</loc>
     <lastmod>2017-09-15T18:06:30+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/json/</loc>
+    <loc>https://blog.soushi.me/tags/json/</loc>
     <lastmod>2017-09-15T18:06:30+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/09/08/234753/</loc>
+    <loc>https://blog.soushi.me/entry/2017/09/08/234753/</loc>
     <lastmod>2017-09-08T23:47:53+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/delegate/</loc>
+    <loc>https://blog.soushi.me/tags/delegate/</loc>
     <lastmod>2017-09-08T23:47:53+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/09/03/170655/</loc>
+    <loc>https://blog.soushi.me/entry/2017/09/03/170655/</loc>
     <lastmod>2017-09-03T17:06:55+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/wrappers/</loc>
+    <loc>https://blog.soushi.me/tags/wrappers/</loc>
     <lastmod>2017-09-03T17:06:55+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/protobuf/</loc>
+    <loc>https://blog.soushi.me/tags/protobuf/</loc>
     <lastmod>2017-08-25T22:58:09+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/08/25/225809/</loc>
+    <loc>https://blog.soushi.me/entry/2017/08/25/225809/</loc>
     <lastmod>2017-08-25T22:58:09+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/timestamp/</loc>
+    <loc>https://blog.soushi.me/tags/timestamp/</loc>
     <lastmod>2017-08-25T22:58:09+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/exception/</loc>
+    <loc>https://blog.soushi.me/tags/exception/</loc>
     <lastmod>2017-08-18T23:46:15+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/filter/</loc>
+    <loc>https://blog.soushi.me/tags/filter/</loc>
     <lastmod>2017-08-18T23:46:15+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/interceptor/</loc>
+    <loc>https://blog.soushi.me/tags/interceptor/</loc>
     <lastmod>2017-08-18T23:46:15+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/08/18/234615/</loc>
+    <loc>https://blog.soushi.me/entry/2017/08/18/234615/</loc>
     <lastmod>2017-08-18T23:46:15+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/08/11/001047/</loc>
+    <loc>https://blog.soushi.me/entry/2017/08/11/001047/</loc>
     <lastmod>2017-08-11T00:10:47+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/08/04/000534/</loc>
+    <loc>https://blog.soushi.me/entry/2017/08/04/000534/</loc>
     <lastmod>2017-08-04T00:05:34+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/07/27/002018/</loc>
+    <loc>https://blog.soushi.me/entry/2017/07/27/002018/</loc>
     <lastmod>2017-07-27T00:20:18+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/coroutines/</loc>
+    <loc>https://blog.soushi.me/tags/coroutines/</loc>
     <lastmod>2017-07-27T00:20:18+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/aop/</loc>
+    <loc>https://blog.soushi.me/tags/aop/</loc>
     <lastmod>2017-07-20T10:10:51+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/07/20/101051/</loc>
+    <loc>https://blog.soushi.me/entry/2017/07/20/101051/</loc>
     <lastmod>2017-07-20T10:10:51+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/07/13/103649/</loc>
+    <loc>https://blog.soushi.me/entry/2017/07/13/103649/</loc>
     <lastmod>2017-07-13T10:36:49+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/metrics/</loc>
+    <loc>https://blog.soushi.me/tags/metrics/</loc>
     <lastmod>2017-07-13T10:36:49+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/07/06/122307/</loc>
+    <loc>https://blog.soushi.me/entry/2017/07/06/122307/</loc>
     <lastmod>2017-07-06T12:23:07+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/gradle/</loc>
-    <lastmod>2017-07-06T12:23:07+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/protodep/</loc>
+    <loc>https://blog.soushi.me/tags/gradle/</loc>
     <lastmod>2017-07-06T12:23:07+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/alb/</loc>
+    <loc>https://blog.soushi.me/tags/protodep/</loc>
+    <lastmod>2017-07-06T12:23:07+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/tags/alb/</loc>
     <lastmod>2017-06-29T11:20:19+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/06/29/112019/</loc>
+    <loc>https://blog.soushi.me/entry/2017/06/29/112019/</loc>
     <lastmod>2017-06-29T11:20:19+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/fluentd/</loc>
-    <lastmod>2017-06-29T11:20:19+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/%E3%83%AD%E3%82%B0/</loc>
+    <loc>https://blog.soushi.me/tags/fluentd/</loc>
     <lastmod>2017-06-29T11:20:19+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/router-function/</loc>
+    <loc>https://blog.soushi.me/tags/%E3%83%AD%E3%82%B0/</loc>
+    <lastmod>2017-06-29T11:20:19+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/tags/router-function/</loc>
     <lastmod>2017-06-22T12:39:42+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/06/22/123942/</loc>
+    <loc>https://blog.soushi.me/entry/2017/06/22/123942/</loc>
     <lastmod>2017-06-22T12:39:42+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/06/15/122405/</loc>
+    <loc>https://blog.soushi.me/entry/2017/06/15/122405/</loc>
     <lastmod>2017-06-15T12:24:05+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/springboot/</loc>
+    <loc>https://blog.soushi.me/tags/springboot/</loc>
     <lastmod>2017-06-15T12:24:05+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/06/08/134928/</loc>
+    <loc>https://blog.soushi.me/entry/2017/06/08/134928/</loc>
     <lastmod>2017-06-08T13:49:28+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/06/01/140812/</loc>
+    <loc>https://blog.soushi.me/entry/2017/06/01/140812/</loc>
     <lastmod>2017-06-01T14:08:12+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/%E3%82%B5%E3%83%BC%E3%83%90%E3%83%BC%E3%82%B5%E3%82%A4%E3%83%89/</loc>
+    <loc>https://blog.soushi.me/tags/%E3%82%B5%E3%83%BC%E3%83%90%E3%83%BC%E3%82%B5%E3%82%A4%E3%83%89/</loc>
     <lastmod>2017-06-01T14:08:12+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/fcm/</loc>
+    <loc>https://blog.soushi.me/tags/fcm/</loc>
     <lastmod>2017-05-23T10:07:11+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/05/23/100711/</loc>
+    <loc>https://blog.soushi.me/entry/2017/05/23/100711/</loc>
     <lastmod>2017-05-23T10:07:11+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/sdk/</loc>
-    <lastmod>2017-05-23T10:07:11+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/web-push/</loc>
+    <loc>https://blog.soushi.me/tags/sdk/</loc>
     <lastmod>2017-05-23T10:07:11+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/vapid/</loc>
+    <loc>https://blog.soushi.me/tags/web-push/</loc>
+    <lastmod>2017-05-23T10:07:11+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/tags/vapid/</loc>
     <lastmod>2017-05-18T12:45:58+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/05/18/124558/</loc>
+    <loc>https://blog.soushi.me/entry/2017/05/18/124558/</loc>
     <lastmod>2017-05-18T12:45:58+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/java/</loc>
+    <loc>https://blog.soushi.me/tags/java/</loc>
     <lastmod>2017-05-11T12:21:39+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/05/11/122139/</loc>
+    <loc>https://blog.soushi.me/entry/2017/05/11/122139/</loc>
     <lastmod>2017-05-11T12:21:39+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/asana/</loc>
+    <loc>https://blog.soushi.me/tags/asana/</loc>
     <lastmod>2017-04-27T09:38:53+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/pagerduty/</loc>
+    <loc>https://blog.soushi.me/tags/pagerduty/</loc>
     <lastmod>2017-04-27T09:38:53+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/04/27/093853/</loc>
+    <loc>https://blog.soushi.me/entry/2017/04/27/093853/</loc>
     <lastmod>2017-04-27T09:38:53+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/zapier/</loc>
+    <loc>https://blog.soushi.me/tags/zapier/</loc>
     <lastmod>2017-04-27T09:38:53+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/04/21/101624/</loc>
+    <loc>https://blog.soushi.me/entry/2017/04/21/101624/</loc>
     <lastmod>2017-04-21T10:16:24+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/ssl/</loc>
+    <loc>https://blog.soushi.me/tags/ssl/</loc>
     <lastmod>2017-04-21T10:16:24+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/04/13/152657/</loc>
+    <loc>https://blog.soushi.me/entry/2017/04/13/152657/</loc>
     <lastmod>2017-04-13T15:26:57+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/superset/</loc>
+    <loc>https://blog.soushi.me/tags/superset/</loc>
     <lastmod>2017-04-07T16:51:44+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/04/07/165144/</loc>
+    <loc>https://blog.soushi.me/entry/2017/04/07/165144/</loc>
     <lastmod>2017-04-07T16:51:44+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/grafana/</loc>
+    <loc>https://blog.soushi.me/tags/grafana/</loc>
     <lastmod>2017-03-28T18:00:35+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/prometheus/</loc>
+    <loc>https://blog.soushi.me/tags/prometheus/</loc>
     <lastmod>2017-03-28T18:00:35+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/03/28/180035/</loc>
+    <loc>https://blog.soushi.me/entry/2017/03/28/180035/</loc>
     <lastmod>2017-03-28T18:00:35+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/terraform/</loc>
+    <loc>https://blog.soushi.me/tags/terraform/</loc>
     <lastmod>2017-03-24T12:15:50+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/03/24/121550/</loc>
+    <loc>https://blog.soushi.me/entry/2017/03/24/121550/</loc>
     <lastmod>2017-03-24T12:15:50+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/03/17/125049/</loc>
+    <loc>https://blog.soushi.me/entry/2017/03/17/125049/</loc>
     <lastmod>2017-03-17T12:50:49+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/coursera/</loc>
+    <loc>https://blog.soushi.me/tags/coursera/</loc>
     <lastmod>2017-03-10T12:57:49+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/03/10/125749/</loc>
+    <loc>https://blog.soushi.me/entry/2017/03/10/125749/</loc>
     <lastmod>2017-03-10T12:57:49+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92/</loc>
-    <lastmod>2017-03-10T12:57:49+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/%E7%B7%9A%E5%BD%A2%E5%9B%9E%E5%B8%B0/</loc>
+    <loc>https://blog.soushi.me/tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92/</loc>
     <lastmod>2017-03-10T12:57:49+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/e2e/</loc>
+    <loc>https://blog.soushi.me/tags/%E7%B7%9A%E5%BD%A2%E5%9B%9E%E5%B8%B0/</loc>
+    <lastmod>2017-03-10T12:57:49+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/tags/e2e/</loc>
     <lastmod>2017-03-03T17:51:05+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/03/03/175105/</loc>
+    <loc>https://blog.soushi.me/entry/2017/03/03/175105/</loc>
     <lastmod>2017-03-03T17:51:05+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/testcafe/</loc>
+    <loc>https://blog.soushi.me/tags/testcafe/</loc>
     <lastmod>2017-03-03T17:51:05+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/node/</loc>
+    <loc>https://blog.soushi.me/tags/node/</loc>
     <lastmod>2017-02-24T16:51:07+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/02/24/165107/</loc>
+    <loc>https://blog.soushi.me/entry/2017/02/24/165107/</loc>
     <lastmod>2017-02-24T16:51:07+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/hls/</loc>
+    <loc>https://blog.soushi.me/tags/hls/</loc>
     <lastmod>2017-02-17T13:58:34+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/ffmpeg/</loc>
+    <loc>https://blog.soushi.me/tags/ffmpeg/</loc>
     <lastmod>2017-02-17T13:58:34+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/nginx/</loc>
+    <loc>https://blog.soushi.me/tags/nginx/</loc>
     <lastmod>2017-02-17T13:58:34+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/02/17/135834/</loc>
+    <loc>https://blog.soushi.me/entry/2017/02/17/135834/</loc>
     <lastmod>2017-02-17T13:58:34+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/rtmp/</loc>
+    <loc>https://blog.soushi.me/tags/rtmp/</loc>
     <lastmod>2017-02-17T13:58:34+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/mackerel/</loc>
+    <loc>https://blog.soushi.me/tags/mackerel/</loc>
     <lastmod>2017-02-09T18:26:22+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/02/09/182622/</loc>
+    <loc>https://blog.soushi.me/entry/2017/02/09/182622/</loc>
     <lastmod>2017-02-09T18:26:22+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%83%A9%E3%82%A4%E3%83%B3%E3%83%84%E3%83%BC%E3%83%AB/</loc>
+    <loc>https://blog.soushi.me/tags/%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%83%A9%E3%82%A4%E3%83%B3%E3%83%84%E3%83%BC%E3%83%AB/</loc>
     <lastmod>2017-02-09T18:26:22+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/cdc/</loc>
+    <loc>https://blog.soushi.me/tags/cdc/</loc>
     <lastmod>2017-02-05T00:59:41+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/pact/</loc>
+    <loc>https://blog.soushi.me/tags/pact/</loc>
     <lastmod>2017-02-05T00:59:41+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/pact-broker/</loc>
+    <loc>https://blog.soushi.me/tags/pact-broker/</loc>
     <lastmod>2017-02-05T00:59:41+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/02/05/005941/</loc>
+    <loc>https://blog.soushi.me/entry/2017/02/05/005941/</loc>
     <lastmod>2017-02-05T00:59:41+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/golang/</loc>
+    <loc>https://blog.soushi.me/tags/golang/</loc>
     <lastmod>2017-01-28T21:52:29+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/01/28/215229/</loc>
+    <loc>https://blog.soushi.me/entry/2017/01/28/215229/</loc>
     <lastmod>2017-01-28T21:52:29+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/peco/</loc>
+    <loc>https://blog.soushi.me/tags/peco/</loc>
     <lastmod>2017-01-22T21:44:41+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/ssh/</loc>
+    <loc>https://blog.soushi.me/tags/ssh/</loc>
     <lastmod>2017-01-22T21:44:41+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/zsh/</loc>
+    <loc>https://blog.soushi.me/tags/zsh/</loc>
     <lastmod>2017-01-22T21:44:41+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/01/22/214441/</loc>
+    <loc>https://blog.soushi.me/entry/2017/01/22/214441/</loc>
     <lastmod>2017-01-22T21:44:41+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/01/15/205751/</loc>
+    <loc>https://blog.soushi.me/entry/2017/01/15/205751/</loc>
     <lastmod>2017-01-15T20:57:51+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/selenide/</loc>
-    <lastmod>2017-01-15T20:57:51+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/selenium/</loc>
+    <loc>https://blog.soushi.me/tags/selenide/</loc>
     <lastmod>2017-01-15T20:57:51+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/jmockit/</loc>
+    <loc>https://blog.soushi.me/tags/selenium/</loc>
+    <lastmod>2017-01-15T20:57:51+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/tags/jmockit/</loc>
     <lastmod>2017-01-09T01:25:30+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2017/01/09/012530/</loc>
+    <loc>https://blog.soushi.me/entry/2017/01/09/012530/</loc>
     <lastmod>2017-01-09T01:25:30+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/mockito/</loc>
-    <lastmod>2017-01-09T01:25:30+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/powermock/</loc>
+    <loc>https://blog.soushi.me/tags/mockito/</loc>
     <lastmod>2017-01-09T01:25:30+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/mock/</loc>
+    <loc>https://blog.soushi.me/tags/powermock/</loc>
     <lastmod>2017-01-09T01:25:30+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2016/12/29/134940/</loc>
+    <loc>https://blog.soushi.me/tags/mock/</loc>
+    <lastmod>2017-01-09T01:25:30+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/entry/2016/12/29/134940/</loc>
     <lastmod>2016-12-29T13:49:40+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2016/12/23/162825/</loc>
+    <loc>https://blog.soushi.me/entry/2016/12/23/162825/</loc>
     <lastmod>2016-12-23T16:28:25+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/scroll/</loc>
-    <lastmod>2016-12-23T16:28:25+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://soushin.github.io/tags/elasticsearch/</loc>
+    <loc>https://blog.soushi.me/tags/scroll/</loc>
     <lastmod>2016-12-23T16:28:25+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/klaxon/</loc>
+    <loc>https://blog.soushi.me/tags/elasticsearch/</loc>
+    <lastmod>2016-12-23T16:28:25+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.soushi.me/tags/klaxon/</loc>
     <lastmod>2016-12-17T22:54:46+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2016/12/17/225446/</loc>
+    <loc>https://blog.soushi.me/entry/2016/12/17/225446/</loc>
     <lastmod>2016-12-17T22:54:46+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2016/12/14/215542/</loc>
+    <loc>https://blog.soushi.me/entry/2016/12/14/215542/</loc>
     <lastmod>2016-12-14T21:55:42+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/moshi/</loc>
+    <loc>https://blog.soushi.me/tags/moshi/</loc>
     <lastmod>2016-12-14T21:55:42+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2016/12/10/170633/</loc>
+    <loc>https://blog.soushi.me/entry/2016/12/10/170633/</loc>
     <lastmod>2016-12-10T17:06:33+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/logstash/</loc>
+    <loc>https://blog.soushi.me/tags/logstash/</loc>
     <lastmod>2016-12-10T17:06:33+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2016/11/14/152239/</loc>
+    <loc>https://blog.soushi.me/entry/2016/11/14/152239/</loc>
     <lastmod>2016-11-14T15:22:39+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2016/11/08/160204/</loc>
+    <loc>https://blog.soushi.me/entry/2016/11/08/160204/</loc>
     <lastmod>2016-11-08T16:02:04+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/tags/ga/</loc>
+    <loc>https://blog.soushi.me/tags/ga/</loc>
     <lastmod>2016-11-07T15:20:46+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2016/11/07/152046/</loc>
+    <loc>https://blog.soushi.me/entry/2016/11/07/152046/</loc>
     <lastmod>2016-11-07T15:20:46+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2016/11/07/121410/</loc>
+    <loc>https://blog.soushi.me/entry/2016/11/07/121410/</loc>
     <lastmod>2016-11-07T12:14:10+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/entry/2016/11/07/105933/</loc>
+    <loc>https://blog.soushi.me/entry/2016/11/07/105933/</loc>
     <lastmod>2016-11-07T10:59:33+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://soushin.github.io/categories/</loc>
+    <loc>https://blog.soushi.me/categories/</loc>
     <priority>0</priority>
   </url>
   

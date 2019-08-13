@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>grpc-gateway on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/grpc-gateway/</link>
+    <link>https://blog.soushi.me/tags/grpc-gateway/</link>
     <description>Recent content in grpc-gateway on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Sun, 29 Oct 2017 23:12:46 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/grpc-gateway/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/grpc-gateway/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>grpc-ecosystem/grpc-gatewayのセットアップ方法をまとめてみた</title>
-      <link>https://soushin.github.io/entry/2017/10/29/231246/</link>
+      <link>https://blog.soushi.me/entry/2017/10/29/231246/</link>
       <pubDate>Sun, 29 Oct 2017 23:12:46 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/10/29/231246/</guid>
+      <guid>https://blog.soushi.me/entry/2017/10/29/231246/</guid>
       <description>Server Side Kotlinのアウトプットにつかっているレポジトリにgrpc-gatewayを入れてみたので、セットアップ方法をまとめておく。 grpc-</description>
     </item>
     

@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>retrofit on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/retrofit/</link>
+    <link>https://blog.soushi.me/tags/retrofit/</link>
     <description>Recent content in retrofit on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Wed, 21 Feb 2018 09:18:03 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/retrofit/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/retrofit/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Dagger2 (android support module)とretrofit2をつかってAPIレスポンスをListViewで表示する</title>
-      <link>https://soushin.github.io/entry/2018/02/21/091803/</link>
+      <link>https://blog.soushi.me/entry/2018/02/21/091803/</link>
       <pubDate>Wed, 21 Feb 2018 09:18:03 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2018/02/21/091803/</guid>
+      <guid>https://blog.soushi.me/entry/2018/02/21/091803/</guid>
       <description>掲題のとおりAndroidのListViewを表示してみる。 APIリクエストは retrofitを使い天気情報を取得できるOpenWeathe</description>
     </item>
     

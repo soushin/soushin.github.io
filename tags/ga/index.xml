@@ -2,30 +2,30 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>ga on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/ga/</link>
+    <link>https://blog.soushi.me/tags/ga/</link>
     <description>Recent content in ga on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Mon, 07 Nov 2016 15:20:46 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/ga/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/ga/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>go langからGoogle Analytics APIを使う</title>
-      <link>https://soushin.github.io/entry/2016/11/07/152046/</link>
+      <link>https://blog.soushi.me/entry/2016/11/07/152046/</link>
       <pubDate>Mon, 07 Nov 2016 15:20:46 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/11/07/152046/</guid>
+      <guid>https://blog.soushi.me/entry/2016/11/07/152046/</guid>
       <description>こちらの記事↓ではSpring Boot + kotlinからの利用方法でしたがgoからの利用も調査しました。Spring Boot + kotlinでGoogle</description>
     </item>
     
     <item>
       <title>Spring Boot &#43; KotlinでGoogle Analytics APIを使ってみた</title>
-      <link>https://soushin.github.io/entry/2016/11/07/121410/</link>
+      <link>https://blog.soushi.me/entry/2016/11/07/121410/</link>
       <pubDate>Mon, 07 Nov 2016 12:14:10 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/11/07/121410/</guid>
+      <guid>https://blog.soushi.me/entry/2016/11/07/121410/</guid>
       <description>Googleアナリテクスの設定は本家情報を参照 https://developers.google.com/analytics/devguides/reporting/core/v3/quickstart/service-java?hl=ja 手順まとめ Google API Consoleでサービスアカウントを作成して認証する鍵を作成（今回はp12ファ</description>
     </item>
     

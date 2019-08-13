@@ -2,30 +2,30 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>mock on 平日インプット週末アウトプットぶろぐ</title>
-    <link>https://soushin.github.io/tags/mock/</link>
+    <link>https://blog.soushi.me/tags/mock/</link>
     <description>Recent content in mock on 平日インプット週末アウトプットぶろぐ</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <lastBuildDate>Mon, 09 Jan 2017 01:25:30 +0000</lastBuildDate>
     
-	<atom:link href="https://soushin.github.io/tags/mock/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://blog.soushi.me/tags/mock/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>KotlinでMockテストのまとめ</title>
-      <link>https://soushin.github.io/entry/2017/01/09/012530/</link>
+      <link>https://blog.soushi.me/entry/2017/01/09/012530/</link>
       <pubDate>Mon, 09 Jan 2017 01:25:30 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2017/01/09/012530/</guid>
+      <guid>https://blog.soushi.me/entry/2017/01/09/012530/</guid>
       <description>1ヶ月ほどkotlinで開発をしてきて、不慣れなkotlinであってもテストをしっかり書いていこうと目標を立て臨んだ1ヶ月。 おかげでkotl</description>
     </item>
     
     <item>
       <title>Spring Boot &#43; Kotlinでmockitoを使ってモック化したテストコードを書く</title>
-      <link>https://soushin.github.io/entry/2016/11/14/152239/</link>
+      <link>https://blog.soushi.me/entry/2016/11/14/152239/</link>
       <pubDate>Mon, 14 Nov 2016 15:22:39 +0000</pubDate>
       
-      <guid>https://soushin.github.io/entry/2016/11/14/152239/</guid>
+      <guid>https://blog.soushi.me/entry/2016/11/14/152239/</guid>
       <description>今回はkotlinでmockito使って処理をモック化したテストコードを書いてみた。Mockito framework site セットアップ 1 2 3 4 5 6 7 dependencies { ... testCompile &amp;#34;org.springframework.boot:spring-boot-starter-test&amp;#34; testCompile</description>
     </item>
     
