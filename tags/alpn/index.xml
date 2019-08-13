@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>ALPN on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/alpn/</link>
+    <description>Recent content in ALPN on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Mon, 09 Oct 2017 15:25:15 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/alpn/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>grpc-javaのServerでTLSを有効にした場合はALPN対応しているか確認すべし</title>
+      <link>https://soushin.github.io/entry/2017/10/09/152515/</link>
+      <pubDate>Mon, 09 Oct 2017 15:25:15 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/10/09/152515/</guid>
+      <description>開発中のプロジェクトでTLSが有効なGo製 gRPC ServerにAndorid8.0(Oreo)からは接続ができて、Kotlin製（grpc-ja</description>
+    </item>
+    
+  </channel>
+</rss>

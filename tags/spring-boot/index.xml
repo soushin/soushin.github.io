@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Spring Boot on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/spring-boot/</link>
+    <description>Recent content in Spring Boot on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Wed, 27 Dec 2017 21:09:02 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/spring-boot/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>SpringBoot 2.0.0でRouterFunctionのエラーハンドリングをWebExceptionHandlerで行う</title>
+      <link>https://soushin.github.io/entry/2017/12/27/210902/</link>
+      <pubDate>Wed, 27 Dec 2017 21:09:02 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/12/27/210902/</guid>
+      <description>SpringBoot 2.0.0からサポートされるRouterFunctionのエラーハンドリングをまとめていきたい。 RouterFunctionは従来のアノテ</description>
+    </item>
+    
+    <item>
+      <title>SpringBoot 2.0とapiDocを連携させてみた</title>
+      <link>https://soushin.github.io/entry/2017/09/29/220526/</link>
+      <pubDate>Fri, 29 Sep 2017 22:05:26 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/09/29/220526/</guid>
+      <description>SpringFrameworkでAPIドキュメントを準備する手段としてSpringFoxやSpring REST Docsなどが候補にあがる。 SpringFox by springfox Spring</description>
+    </item>
+    
+    <item>
+      <title>Kotlin &#43; gRPCでdropwizard/metricsをつかってメトリクスを取得してみた</title>
+      <link>https://soushin.github.io/entry/2017/07/13/103649/</link>
+      <pubDate>Thu, 13 Jul 2017 10:36:49 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/07/13/103649/</guid>
+      <description>今回のエントリはKotlin + gRPC（FWはSpringBoot 2.0.0.M1）のアプリケーションでgRPCのリクエストタイムやエラー回</description>
+    </item>
+    
+    <item>
+      <title>Spring5.0 &#43; KotlinのRouterFunctionのテストはどうすればよいか？ 試してみた</title>
+      <link>https://soushin.github.io/entry/2017/06/22/123942/</link>
+      <pubDate>Thu, 22 Jun 2017 12:39:42 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/06/22/123942/</guid>
+      <description>引き続きSpring5.0（Spring Boot 2.0） + KotlinのWebアプリケーションを試している。今回はRouterFunctionをつ</description>
+    </item>
+    
+    <item>
+      <title>KotlinでgRPC。実運用にも活かせるWEBアプリケーション構成で試してみた。</title>
+      <link>https://soushin.github.io/entry/2017/04/13/152657/</link>
+      <pubDate>Thu, 13 Apr 2017 15:26:57 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/04/13/152657/</guid>
+      <description>KotlinでgRPCを試していきます。protocol buffersがkotlinに対応していないのでjavaに生成したものを使います。次</description>
+    </item>
+    
+  </channel>
+</rss>

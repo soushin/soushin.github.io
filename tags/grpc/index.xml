@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>gRPC on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/grpc/</link>
+    <description>Recent content in gRPC on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Tue, 20 Nov 2018 10:53:31 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/grpc/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>gRPCサーバを含むGoプロジェクトをBazelでビルドする</title>
+      <link>https://soushin.github.io/entry/2018/11/20/105331/</link>
+      <pubDate>Tue, 20 Nov 2018 10:53:31 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/11/20/105331/</guid>
+      <description>前回までのエントリに引き続きBazelのビルドをまとめていく。 GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット</description>
+    </item>
+    
+    <item>
+      <title>Spring FuをGraalVMで動かす。起動速度に驚いた。</title>
+      <link>https://soushin.github.io/entry/2018/10/23/092744/</link>
+      <pubDate>Tue, 23 Oct 2018 09:27:44 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/10/23/092744/</guid>
+      <description>Serverlessプラットフォームが注目される中、その潮流にJava勢も乗っかりたいので起動速度が速いと注目のGraalVMを試してみた。</description>
+    </item>
+    
+    <item>
+      <title>grpc-javaのClientでHeaderをセットしてリクエストする方法をまとめる</title>
+      <link>https://soushin.github.io/entry/2017/10/15/100616/</link>
+      <pubDate>Sun, 15 Oct 2017 10:06:16 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/10/15/100616/</guid>
+      <description>gRPCのClientで認証ヘッダーなどリクエストHeaderに値をセットしてgRPC Serverへリクエストするにはどうすればよいか？今回</description>
+    </item>
+    
+    <item>
+      <title>grpc-javaのServerでTLSを有効にした場合はALPN対応しているか確認すべし</title>
+      <link>https://soushin.github.io/entry/2017/10/09/152515/</link>
+      <pubDate>Mon, 09 Oct 2017 15:25:15 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/10/09/152515/</guid>
+      <description>開発中のプロジェクトでTLSが有効なGo製 gRPC ServerにAndorid8.0(Oreo)からは接続ができて、Kotlin製（grpc-ja</description>
+    </item>
+    
+    <item>
+      <title>gRPC serverのmetadataをテストする方法をまとめる</title>
+      <link>https://soushin.github.io/entry/2017/09/24/203224/</link>
+      <pubDate>Sun, 24 Sep 2017 20:32:24 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/09/24/203224/</guid>
+      <description>gRPC ServerのレスポンスにはMetadataを含めることができる。gRPCのレスポンス・ステータス（io.grpc.Status.OKやi</description>
+    </item>
+    
+    <item>
+      <title>protobuf typeに値が入っているか確認するにはgoogle/protobuf/wrappers.protoをつかうとよい</title>
+      <link>https://soushin.github.io/entry/2017/09/03/170655/</link>
+      <pubDate>Sun, 03 Sep 2017 17:06:55 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/09/03/170655/</guid>
+      <description>今回のエントリも前回に続きprotobufの数あるtypeの中から１つの使い方まとめていきたい。今回は google/protobuf/wra</description>
+    </item>
+    
+    <item>
+      <title>protobuf typeに日付型のcom.google.protobuf.Timestampをつかってみた</title>
+      <link>https://soushin.github.io/entry/2017/08/25/225809/</link>
+      <pubDate>Fri, 25 Aug 2017 22:58:09 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/08/25/225809/</guid>
+      <description>protobufのtypeに日付型をつかいたいケースがあったので com.google.protobuf.Timestampをつかってみた。 g</description>
+    </item>
+    
+    <item>
+      <title>gRPC ServerのExceptionFilterの方法をまとめた（grpc-java）</title>
+      <link>https://soushin.github.io/entry/2017/08/18/234615/</link>
+      <pubDate>Fri, 18 Aug 2017 23:46:15 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/08/18/234615/</guid>
+      <description>前回のエントリでは認証処理やメトリクス計測、ログ出力などをインターセプターをつかい横断的に処理する方法をまとめた。 Kotlin + gRPCでio.grp</description>
+    </item>
+    
+    <item>
+      <title>grpc-javaのClient/ServerのテストをKotlinで書く - Client編</title>
+      <link>https://soushin.github.io/entry/2017/08/11/001047/</link>
+      <pubDate>Fri, 11 Aug 2017 00:10:47 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/08/11/001047/</guid>
+      <description>前回のエントリに続いて今回のエントリではgRPC Clientのテストの書き方をまとめていく。 grpc-javaのClient/Serverの</description>
+    </item>
+    
+    <item>
+      <title>grpc-javaのClient/ServerのテストをKotlinで書く - Server編</title>
+      <link>https://soushin.github.io/entry/2017/08/04/000534/</link>
+      <pubDate>Fri, 04 Aug 2017 00:05:34 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/08/04/000534/</guid>
+      <description>grpc-javaで実装されたgRPC ClientとgRPC Serverのテストコードについてまとめていきたい。 ClientとServerの</description>
+    </item>
+    
+    <item>
+      <title>Kotlin コルーチンでasync/awaitをつかってgRPC Serverをリクエストしてみた</title>
+      <link>https://soushin.github.io/entry/2017/07/27/002018/</link>
+      <pubDate>Thu, 27 Jul 2017 00:20:18 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/07/27/002018/</guid>
+      <description>Kotlin1.1からの新機能であるコルーチン(Coroutines)を試していきたい。Kotlin コルーチンをつかえば非同期処理を同期的な</description>
+    </item>
+    
+    <item>
+      <title>Kotlin &#43; gRPCでio.grpc.Contextをつかってログ出力を横断処理してみた</title>
+      <link>https://soushin.github.io/entry/2017/07/20/101051/</link>
+      <pubDate>Thu, 20 Jul 2017 10:10:51 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/07/20/101051/</guid>
+      <description>アスペクト指向プログラミング（AOP）をgRPC Serverではどう扱うか考えていきたい。 横断的な関心事といえば認証やログ出力である。 gRP</description>
+    </item>
+    
+    <item>
+      <title>Kotlin &#43; gRPCでdropwizard/metricsをつかってメトリクスを取得してみた</title>
+      <link>https://soushin.github.io/entry/2017/07/13/103649/</link>
+      <pubDate>Thu, 13 Jul 2017 10:36:49 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/07/13/103649/</guid>
+      <description>今回のエントリはKotlin + gRPC（FWはSpringBoot 2.0.0.M1）のアプリケーションでgRPCのリクエストタイムやエラー回</description>
+    </item>
+    
+    <item>
+      <title>Kotlin &#43; gradleでgRPCプロトコル定義ファイル（.proto）のvendoringにprotodepをつかってみた</title>
+      <link>https://soushin.github.io/entry/2017/07/06/122307/</link>
+      <pubDate>Thu, 06 Jul 2017 12:23:07 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/07/06/122307/</guid>
+      <description>gRPCのプロトコル定義ファイル（.proto）の管理を考えていきたい。gRPCを導入するプロジェクトであれば.protoファイルの運用方法</description>
+    </item>
+    
+    <item>
+      <title>Spring5.0 &#43; Kotlinで１つのjarにHTTPサーバーとgRPCサーバーを相乗りさせてみた</title>
+      <link>https://soushin.github.io/entry/2017/06/08/134928/</link>
+      <pubDate>Thu, 08 Jun 2017 13:49:28 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/06/08/134928/</guid>
+      <description>Spring Boot 2.0.0 M1がリリースされました。以前のエントリで試した当時は 2.0.0.BUILD-SNAPSHOTでありHTTPサーバーが起動している状態</description>
+    </item>
+    
+    <item>
+      <title>KotlinでgRPC。grpc-javaのTLS with JDKとTLS with OpenSSLの使い方をまとめた。</title>
+      <link>https://soushin.github.io/entry/2017/05/11/122139/</link>
+      <pubDate>Thu, 11 May 2017 12:21:39 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/05/11/122139/</guid>
+      <description>grpc-java/SECURITY.mdを読み進めるとTLSを有効にしたgRPCサーバの起動には２つのプロトコルプロバイダーを選択できる。</description>
+    </item>
+    
+    <item>
+      <title>KotlinでgRPC。SSL/TLSを有効にする方法をまとめた。</title>
+      <link>https://soushin.github.io/entry/2017/04/21/101624/</link>
+      <pubDate>Fri, 21 Apr 2017 10:16:24 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/04/21/101624/</guid>
+      <description>前回のエントリではgrpc/grpc-javaをベースにkotlinでgRPCを試しました。今回はSSL/TLSを有効にする方法をまとめてい</description>
+    </item>
+    
+    <item>
+      <title>KotlinでgRPC。実運用にも活かせるWEBアプリケーション構成で試してみた。</title>
+      <link>https://soushin.github.io/entry/2017/04/13/152657/</link>
+      <pubDate>Thu, 13 Apr 2017 15:26:57 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/04/13/152657/</guid>
+      <description>KotlinでgRPCを試していきます。protocol buffersがkotlinに対応していないのでjavaに生成したものを使います。次</description>
+    </item>
+    
+    <item>
+      <title>gRPC streamingをつかうとマイクロサービスの責務が整理できるし省コネクションでメリットあるよね、という話</title>
+      <link>https://soushin.github.io/entry/2017/03/17/125049/</link>
+      <pubDate>Fri, 17 Mar 2017 12:50:49 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/03/17/125049/</guid>
+      <description>今回はgRPCをマイクロサービス間通信に導入することってメリットあるよね、というエントリです。 定期的に処理を実行してくれるバッチはよくあるも</description>
+    </item>
+    
+  </channel>
+</rss>

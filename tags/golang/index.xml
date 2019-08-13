@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>golang on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/golang/</link>
+    <description>Recent content in golang on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Sat, 28 Jan 2017 21:52:29 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/golang/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>golang - Kotlinのmicroservice構成のConsumer-Driven Contract testingをpactをつかって作ってみた</title>
+      <link>https://soushin.github.io/entry/2017/01/28/215229/</link>
+      <pubDate>Sat, 28 Jan 2017 21:52:29 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/01/28/215229/</guid>
+      <description>今回はConsumer-Driven Contract testingのサンプルを作ってみました。以前のSelenideを使ったE2Eの記事の流れからCons</description>
+    </item>
+    
+    <item>
+      <title>みんGO を読んでec2インスンスリストをタグ検索するコマンドラインツールを作ってみた</title>
+      <link>https://soushin.github.io/entry/2017/01/22/214441/</link>
+      <pubDate>Sun, 22 Jan 2017 21:44:41 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/01/22/214441/</guid>
+      <description>プロジェクトでGO言語に触れながら学習のためにコマンドラインツールを作り拡張させながら言語理解を深めようと目標を立てた。「みんなのGO言語」</description>
+    </item>
+    
+    <item>
+      <title>go langからGoogle Analytics APIを使う</title>
+      <link>https://soushin.github.io/entry/2016/11/07/152046/</link>
+      <pubDate>Mon, 07 Nov 2016 15:20:46 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2016/11/07/152046/</guid>
+      <description>こちらの記事↓ではSpring Boot + kotlinからの利用方法でしたがgoからの利用も調査しました。Spring Boot + kotlinでGoogle</description>
+    </item>
+    
+  </channel>
+</rss>

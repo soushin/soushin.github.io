@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>PowerMock on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/powermock/</link>
+    <description>Recent content in PowerMock on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Mon, 09 Jan 2017 01:25:30 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/powermock/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>KotlinでMockテストのまとめ</title>
+      <link>https://soushin.github.io/entry/2017/01/09/012530/</link>
+      <pubDate>Mon, 09 Jan 2017 01:25:30 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/01/09/012530/</guid>
+      <description>1ヶ月ほどkotlinで開発をしてきて、不慣れなkotlinであってもテストをしっかり書いていこうと目標を立て臨んだ1ヶ月。 おかげでkotl</description>
+    </item>
+    
+  </channel>
+</rss>

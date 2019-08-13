@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CA.kt on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/ca.kt/</link>
+    <description>Recent content in CA.kt on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Sat, 21 Oct 2017 00:12:16 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/ca.kt/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>CA.ktに登壇してServer Side Kotlinについて話してきた。</title>
+      <link>https://soushin.github.io/entry/2017/10/21/001216/</link>
+      <pubDate>Sat, 21 Oct 2017 00:12:16 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/10/21/001216/</guid>
+      <description>CA.kt #3で登壇しました。テーマは「FRESH!プロジェクト／Server Side Kotlin 活用事例」。スライドはこちら。 speakerdeck.com 約１年前にFRESH!チームにジョ</description>
+    </item>
+    
+  </channel>
+</rss>

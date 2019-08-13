@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>springboot on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/springboot/</link>
+    <description>Recent content in springboot on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Thu, 15 Jun 2017 12:24:05 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/springboot/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Spring5.0 &#43; KotlinではDoma、Request Interceptorあたりはどうなっているのか調べてみた</title>
+      <link>https://soushin.github.io/entry/2017/06/15/122405/</link>
+      <pubDate>Thu, 15 Jun 2017 12:24:05 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/06/15/122405/</guid>
+      <description>Spring5.0のリリースが迫るなか、プロジェクトへ導入に向けて色々と調べている。インタセプターなどのSpring Frameworkにおけ</description>
+    </item>
+    
+    <item>
+      <title>Spring5.0 &#43; Kotlinで１つのjarにHTTPサーバーとgRPCサーバーを相乗りさせてみた</title>
+      <link>https://soushin.github.io/entry/2017/06/08/134928/</link>
+      <pubDate>Thu, 08 Jun 2017 13:49:28 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/06/08/134928/</guid>
+      <description>Spring Boot 2.0.0 M1がリリースされました。以前のエントリで試した当時は 2.0.0.BUILD-SNAPSHOTでありHTTPサーバーが起動している状態</description>
+    </item>
+    
+    <item>
+      <title>Kotlin &#43; Spring Boot／ResponseEntityを使ったJSONレスポンスにJacksonの@JsonPropertyを有効にする</title>
+      <link>https://soushin.github.io/entry/2016/12/29/134940/</link>
+      <pubDate>Thu, 29 Dec 2016 13:49:40 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2016/12/29/134940/</guid>
+      <description>Spring Bootを使ってkotlinで書いています。サーバサイドでkotlinを使うと新たな発見があるのでいいですね。 Controllerのレスポ</description>
+    </item>
+    
+    <item>
+      <title>Spring Boot &#43; Kotlinでmockitoを使ってモック化したテストコードを書く</title>
+      <link>https://soushin.github.io/entry/2016/11/14/152239/</link>
+      <pubDate>Mon, 14 Nov 2016 15:22:39 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2016/11/14/152239/</guid>
+      <description>今回はkotlinでmockito使って処理をモック化したテストコードを書いてみた。Mockito framework site セットアップ 1 2 3 4 5 6 7 dependencies { ... testCompile &amp;#34;org.springframework.boot:spring-boot-starter-test&amp;#34; testCompile</description>
+    </item>
+    
+    <item>
+      <title>Spring Boot &#43; KotlinでGoogle Analytics APIを使ってみた</title>
+      <link>https://soushin.github.io/entry/2016/11/07/121410/</link>
+      <pubDate>Mon, 07 Nov 2016 12:14:10 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2016/11/07/121410/</guid>
+      <description>Googleアナリテクスの設定は本家情報を参照 https://developers.google.com/analytics/devguides/reporting/core/v3/quickstart/service-java?hl=ja 手順まとめ Google API Consoleでサービスアカウントを作成して認証する鍵を作成（今回はp12ファ</description>
+    </item>
+    
+    <item>
+      <title>Spring Boot &#43; KotlinでLogstashを使ってログ出力</title>
+      <link>https://soushin.github.io/entry/2016/11/07/105933/</link>
+      <pubDate>Mon, 07 Nov 2016 10:59:33 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2016/11/07/105933/</guid>
+      <description>Logstatshのお試しとして、Spring Boot + kotlinのアプリに導入したときのメモ。 ビルドツールはgradleを使う 1 2 3 4 5 6 7 8</description>
+    </item>
+    
+  </channel>
+</rss>

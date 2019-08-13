@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>サーバーサイド on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/%E3%82%B5%E3%83%BC%E3%83%90%E3%83%BC%E3%82%B5%E3%82%A4%E3%83%89/</link>
+    <description>Recent content in サーバーサイド on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Thu, 01 Jun 2017 14:08:12 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/%E3%82%B5%E3%83%BC%E3%83%90%E3%83%BC%E3%82%B5%E3%82%A4%E3%83%89/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>http4kをベースにサーバーサイド Kotlinの関連ライブラリをつかってみた</title>
+      <link>https://soushin.github.io/entry/2017/06/01/140812/</link>
+      <pubDate>Thu, 01 Jun 2017 14:08:12 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/06/01/140812/</guid>
+      <description>Google I/O 2017でKotlinがAndroidアプリ開発言語に選定された。Androidに限らずサーバーサイドでもメインの言語としてKotlin</description>
+    </item>
+    
+  </channel>
+</rss>

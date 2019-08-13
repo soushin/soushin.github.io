@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Build on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/build/</link>
+    <description>Recent content in Build on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Fri, 07 Dec 2018 11:25:58 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/build/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Knative Buildのbuild templateにBazelをつかいビルドする</title>
+      <link>https://soushin.github.io/entry/2018/12/07/112558/</link>
+      <pubDate>Fri, 07 Dec 2018 11:25:58 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/12/07/112558/</guid>
+      <description>KnativeはKubernetesを基盤としたプラットフォームをビルド、デプロイを管理するためフレームワークを提供する。Serving、B</description>
+    </item>
+    
+  </channel>
+</rss>

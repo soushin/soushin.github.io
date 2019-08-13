@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>protobuf on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/protobuf/</link>
+    <description>Recent content in protobuf on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Fri, 25 Aug 2017 22:58:09 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/protobuf/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>protobuf typeに日付型のcom.google.protobuf.Timestampをつかってみた</title>
+      <link>https://soushin.github.io/entry/2017/08/25/225809/</link>
+      <pubDate>Fri, 25 Aug 2017 22:58:09 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/08/25/225809/</guid>
+      <description>protobufのtypeに日付型をつかいたいケースがあったので com.google.protobuf.Timestampをつかってみた。 g</description>
+    </item>
+    
+  </channel>
+</rss>

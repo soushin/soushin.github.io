@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>RecycleView on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/recycleview/</link>
+    <description>Recent content in RecycleView on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Wed, 02 May 2018 13:38:54 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/recycleview/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>SwipeRefreshLayoutとRecycleViewをListViewに導入してみた</title>
+      <link>https://soushin.github.io/entry/2018/05/02/133854/</link>
+      <pubDate>Wed, 02 May 2018 13:38:54 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/05/02/133854/</guid>
+      <description>ブログエントリで試しているアプリにSwipeRefreshLayoutとRecycleViewをListViewに導入してみたのでまとめてい</description>
+    </item>
+    
+  </channel>
+</rss>

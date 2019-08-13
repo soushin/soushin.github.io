@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>coroutines on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/coroutines/</link>
+    <description>Recent content in coroutines on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Thu, 27 Jul 2017 00:20:18 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/coroutines/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Kotlin コルーチンでasync/awaitをつかってgRPC Serverをリクエストしてみた</title>
+      <link>https://soushin.github.io/entry/2017/07/27/002018/</link>
+      <pubDate>Thu, 27 Jul 2017 00:20:18 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/07/27/002018/</guid>
+      <description>Kotlin1.1からの新機能であるコルーチン(Coroutines)を試していきたい。Kotlin コルーチンをつかえば非同期処理を同期的な</description>
+    </item>
+    
+  </channel>
+</rss>

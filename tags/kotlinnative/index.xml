@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>KotlinNative on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/kotlinnative/</link>
+    <description>Recent content in KotlinNative on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Sat, 22 Dec 2018 00:37:11 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/kotlinnative/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>サーバサイドKotlinをはじめよう。Ktor Tips集をまとめた。</title>
+      <link>https://soushin.github.io/entry/2018/12/22/003711/</link>
+      <pubDate>Sat, 22 Dec 2018 00:37:11 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/12/22/003711/</guid>
+      <description>この記事はCyberAgent Developers Advent Calendar 2018の22日目の記事です。 Ktor KtorはKotlin純正のWebフレームワークです。APIはラムダ式を</description>
+    </item>
+    
+  </channel>
+</rss>

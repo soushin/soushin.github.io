@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>moshi on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/moshi/</link>
+    <description>Recent content in moshi on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Wed, 14 Dec 2016 21:55:42 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/moshi/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>KotlinでtoJsonとfromJsonのJSONパース。MoshiのCustom Type Adaptersを使ってオブジェクトのテストを快適に。</title>
+      <link>https://soushin.github.io/entry/2016/12/14/215542/</link>
+      <pubDate>Wed, 14 Dec 2016 21:55:42 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2016/12/14/215542/</guid>
+      <description>最近はkotlinで開発しています。これまで他の言語で出来ていたこともkotlinではどうやって出来るのか？、調査したり試したりすることは楽</description>
+    </item>
+    
+  </channel>
+</rss>

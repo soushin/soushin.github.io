@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Header on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/header/</link>
+    <description>Recent content in Header on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Sun, 15 Oct 2017 10:06:16 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/header/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>grpc-javaのClientでHeaderをセットしてリクエストする方法をまとめる</title>
+      <link>https://soushin.github.io/entry/2017/10/15/100616/</link>
+      <pubDate>Sun, 15 Oct 2017 10:06:16 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/10/15/100616/</guid>
+      <description>gRPCのClientで認証ヘッダーなどリクエストHeaderに値をセットしてgRPC Serverへリクエストするにはどうすればよいか？今回</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Dependencies on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/dependencies/</link>
+    <description>Recent content in Dependencies on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Fri, 16 Nov 2018 13:20:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/dependencies/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>BazelでGoプロジェクトのビルド。Gazelleのgo_repositoryで外部ライブラリの依存とBazelのgo_testでテスト。</title>
+      <link>https://soushin.github.io/entry/2018/11/16/132000/</link>
+      <pubDate>Fri, 16 Nov 2018 13:20:00 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/11/16/132000/</guid>
+      <description>BazelをつかったGoプロジェクトのビルドをまとめている。前回のエントリではバイナリのビルドとDockerイメージのビルドをまとめた。 Go</description>
+    </item>
+    
+  </channel>
+</rss>

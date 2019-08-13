@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>GitHub on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/github/</link>
+    <description>Recent content in GitHub on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Wed, 09 Jan 2019 13:30:30 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/github/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Prowの真骨頂であるTideでPRの自動マージを導入する。</title>
+      <link>https://soushin.github.io/entry/2019/01/09/133030/</link>
+      <pubDate>Wed, 09 Jan 2019 13:30:30 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2019/01/09/133030/</guid>
+      <description>前回のエントリ「ProwではじめるChatOps on GitHub。」からProwを完全理解した！と言ってはいけない。Prowの真骨頂はTide</description>
+    </item>
+    
+    <item>
+      <title>ProwではじめるChatOps on GitHub。</title>
+      <link>https://soushin.github.io/entry/2019/01/08/123752/</link>
+      <pubDate>Tue, 08 Jan 2019 12:37:52 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2019/01/08/123752/</guid>
+      <description>Kubernetesのtest-infraレポジトリにあるProwを試す。ProwはKubernates環境を基盤としたCIとCDのシステム</description>
+    </item>
+    
+  </channel>
+</rss>

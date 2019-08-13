@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Metadata on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/metadata/</link>
+    <description>Recent content in Metadata on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Sun, 24 Sep 2017 20:32:24 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/metadata/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>gRPC serverのmetadataをテストする方法をまとめる</title>
+      <link>https://soushin.github.io/entry/2017/09/24/203224/</link>
+      <pubDate>Sun, 24 Sep 2017 20:32:24 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/09/24/203224/</guid>
+      <description>gRPC ServerのレスポンスにはMetadataを含めることができる。gRPCのレスポンス・ステータス（io.grpc.Status.OKやi</description>
+    </item>
+    
+  </channel>
+</rss>

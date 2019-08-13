@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>TLS on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/tls/</link>
+    <description>Recent content in TLS on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Mon, 09 Oct 2017 15:25:15 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/tls/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>grpc-javaのServerでTLSを有効にした場合はALPN対応しているか確認すべし</title>
+      <link>https://soushin.github.io/entry/2017/10/09/152515/</link>
+      <pubDate>Mon, 09 Oct 2017 15:25:15 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/10/09/152515/</guid>
+      <description>開発中のプロジェクトでTLSが有効なGo製 gRPC ServerにAndorid8.0(Oreo)からは接続ができて、Kotlin製（grpc-ja</description>
+    </item>
+    
+    <item>
+      <title>KotlinでgRPC。grpc-javaのTLS with JDKとTLS with OpenSSLの使い方をまとめた。</title>
+      <link>https://soushin.github.io/entry/2017/05/11/122139/</link>
+      <pubDate>Thu, 11 May 2017 12:21:39 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/05/11/122139/</guid>
+      <description>grpc-java/SECURITY.mdを読み進めるとTLSを有効にしたgRPCサーバの起動には２つのプロトコルプロバイダーを選択できる。</description>
+    </item>
+    
+    <item>
+      <title>KotlinでgRPC。SSL/TLSを有効にする方法をまとめた。</title>
+      <link>https://soushin.github.io/entry/2017/04/21/101624/</link>
+      <pubDate>Fri, 21 Apr 2017 10:16:24 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/04/21/101624/</guid>
+      <description>前回のエントリではgrpc/grpc-javaをベースにkotlinでgRPCを試しました。今回はSSL/TLSを有効にする方法をまとめてい</description>
+    </item>
+    
+  </channel>
+</rss>

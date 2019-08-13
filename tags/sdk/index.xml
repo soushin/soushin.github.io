@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>SDK on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/sdk/</link>
+    <description>Recent content in SDK on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Tue, 23 May 2017 10:07:11 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/sdk/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>FCMでWeb Push。Firebase Javascript SDKを使ったプッシュ通知とトピック送信を試した。</title>
+      <link>https://soushin.github.io/entry/2017/05/23/100711/</link>
+      <pubDate>Tue, 23 May 2017 10:07:11 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/05/23/100711/</guid>
+      <description>FirebaseのFirebase Cloud Messaging（FCM）を試している。今回のエントリではFCMのJavaScriptライブラリを使っ</description>
+    </item>
+    
+  </channel>
+</rss>

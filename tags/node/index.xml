@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Node on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/node/</link>
+    <description>Recent content in Node on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Fri, 24 Feb 2017 16:51:07 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/node/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>WebDriver不要のTestCafeを使ったE2EテストをChatOpsに導入してみた</title>
+      <link>https://soushin.github.io/entry/2017/02/24/165107/</link>
+      <pubDate>Fri, 24 Feb 2017 16:51:07 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2017/02/24/165107/</guid>
+      <description>今回はE2EテストをつくれるTestCafeをつかってみたエントリです。Automated browser testing for the modern web development stack | TestCafe以前のエントリで</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>AWS Sqs on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/aws-sqs/</link>
+    <description>Recent content in AWS Sqs on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Thu, 27 Dec 2018 10:29:42 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/aws-sqs/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Knative EventingのSourceにAWS SQSをつかいServiceを起動する</title>
+      <link>https://soushin.github.io/entry/2018/12/27/102942/</link>
+      <pubDate>Thu, 27 Dec 2018 10:29:42 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/12/27/102942/</guid>
+      <description>前回のエントリではKnativeの Buildの知見をまとめたが今回は Eventingをまとめる。試したところServerlessを体感できて</description>
+    </item>
+    
+  </channel>
+</rss>

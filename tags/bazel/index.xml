@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Bazel on 平日インプット週末アウトプットぶろぐ</title>
+    <link>https://soushin.github.io/tags/bazel/</link>
+    <description>Recent content in Bazel on 平日インプット週末アウトプットぶろぐ</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>jp</language>
+    <lastBuildDate>Fri, 07 Dec 2018 11:25:58 +0000</lastBuildDate>
+    
+	<atom:link href="https://soushin.github.io/tags/bazel/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Knative Buildのbuild templateにBazelをつかいビルドする</title>
+      <link>https://soushin.github.io/entry/2018/12/07/112558/</link>
+      <pubDate>Fri, 07 Dec 2018 11:25:58 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/12/07/112558/</guid>
+      <description>KnativeはKubernetesを基盤としたプラットフォームをビルド、デプロイを管理するためフレームワークを提供する。Serving、B</description>
+    </item>
+    
+    <item>
+      <title>BazelでビルドするマルチプロジェクトとCircleCIを連携する</title>
+      <link>https://soushin.github.io/entry/2018/11/22/144658/</link>
+      <pubDate>Thu, 22 Nov 2018 14:46:58 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/11/22/144658/</guid>
+      <description>今回のエントリではBazelでビルドしたマルチプロジェクトとCircleCIの連携をまとめていく。マルチプロジェクトとCIを連携する際の実運</description>
+    </item>
+    
+    <item>
+      <title>BazelでDockerイメージのビルドとレジストリへのプッシュをする</title>
+      <link>https://soushin.github.io/entry/2018/11/21/100654/</link>
+      <pubDate>Wed, 21 Nov 2018 10:06:54 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/11/21/100654/</guid>
+      <description>前回までのエントリに引き続きBazelのビルドをまとめていく。 GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット</description>
+    </item>
+    
+    <item>
+      <title>gRPCサーバを含むGoプロジェクトをBazelでビルドする</title>
+      <link>https://soushin.github.io/entry/2018/11/20/105331/</link>
+      <pubDate>Tue, 20 Nov 2018 10:53:31 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/11/20/105331/</guid>
+      <description>前回までのエントリに引き続きBazelのビルドをまとめていく。 GoとKotlinのマルチプロジェクトをBazelでビルドする - 平日インプット</description>
+    </item>
+    
+    <item>
+      <title>BazelでGoプロジェクトのビルド。Gazelleのgo_repositoryで外部ライブラリの依存とBazelのgo_testでテスト。</title>
+      <link>https://soushin.github.io/entry/2018/11/16/132000/</link>
+      <pubDate>Fri, 16 Nov 2018 13:20:00 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/11/16/132000/</guid>
+      <description>BazelをつかったGoプロジェクトのビルドをまとめている。前回のエントリではバイナリのビルドとDockerイメージのビルドをまとめた。 Go</description>
+    </item>
+    
+    <item>
+      <title>GoとKotlinのマルチプロジェクトをBazelでビルドする</title>
+      <link>https://soushin.github.io/entry/2018/11/14/145038/</link>
+      <pubDate>Wed, 14 Nov 2018 14:50:38 +0000</pubDate>
+      
+      <guid>https://soushin.github.io/entry/2018/11/14/145038/</guid>
+      <description>Googleが開発するビルドツールのBazelを試していく。 Bazel - a fast, scalable, multi-language and extensible build system&amp;rdquo; - Bazel モチベーション GoやKotlinでつくるマイクロサービス</description>
+    </item>
+    
+  </channel>
+</rss>
