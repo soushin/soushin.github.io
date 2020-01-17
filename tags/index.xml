@@ -7,10 +7,37 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>jp</language>
     <copyright>&amp;copy; Copyright 2019 &lt;a href=&#34;https://twitter.com/soushi_nozawa&#34;&gt;Soushi Nozawa&lt;/a&gt;</copyright>
-    <lastBuildDate>Fri, 22 Feb 2019 11:06:48 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 17 Jan 2020 15:30:25 +0900</lastBuildDate>
     
 	<atom:link href="https://blog.soushi.me/tags/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>kubernetees</title>
+      <link>https://blog.soushi.me/tags/kubernetees/</link>
+      <pubDate>Fri, 17 Jan 2020 15:30:25 +0900</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/kubernetees/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Prometheus</title>
+      <link>https://blog.soushi.me/tags/prometheus/</link>
+      <pubDate>Fri, 17 Jan 2020 15:30:25 +0900</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/prometheus/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>stackdriver</title>
+      <link>https://blog.soushi.me/tags/stackdriver/</link>
+      <pubDate>Fri, 17 Jan 2020 15:30:25 +0900</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/stackdriver/</guid>
+      <description></description>
+    </item>
     
     <item>
       <title>Google Analytics</title>
@@ -18,6 +45,15 @@
       <pubDate>Fri, 22 Feb 2019 11:06:48 +0000</pubDate>
       
       <guid>https://blog.soushi.me/tags/google-analytics/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>kotlin</title>
+      <link>https://blog.soushi.me/tags/kotlin/</link>
+      <pubDate>Fri, 22 Feb 2019 11:06:48 +0000</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/kotlin/</guid>
       <description></description>
     </item>
     
@@ -45,15 +81,6 @@
       <pubDate>Fri, 22 Feb 2019 11:06:48 +0000</pubDate>
       
       <guid>https://blog.soushi.me/tags/measurement-protocol/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>kotlin</title>
-      <link>https://blog.soushi.me/tags/kotlin/</link>
-      <pubDate>Fri, 22 Feb 2019 11:06:48 +0000</pubDate>
-      
-      <guid>https://blog.soushi.me/tags/kotlin/</guid>
       <description></description>
     </item>
     
@@ -112,20 +139,20 @@
     </item>
     
     <item>
-      <title>Knative</title>
-      <link>https://blog.soushi.me/tags/knative/</link>
-      <pubDate>Thu, 27 Dec 2018 10:29:42 +0000</pubDate>
-      
-      <guid>https://blog.soushi.me/tags/knative/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>eventing</title>
       <link>https://blog.soushi.me/tags/eventing/</link>
       <pubDate>Thu, 27 Dec 2018 10:29:42 +0000</pubDate>
       
       <guid>https://blog.soushi.me/tags/eventing/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Knative</title>
+      <link>https://blog.soushi.me/tags/knative/</link>
+      <pubDate>Thu, 27 Dec 2018 10:29:42 +0000</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/knative/</guid>
       <description></description>
     </item>
     
@@ -337,15 +364,6 @@
     </item>
     
     <item>
-      <title>SharedPreferences</title>
-      <link>https://blog.soushi.me/tags/sharedpreferences/</link>
-      <pubDate>Sat, 10 Mar 2018 08:44:05 +0000</pubDate>
-      
-      <guid>https://blog.soushi.me/tags/sharedpreferences/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>rx</title>
       <link>https://blog.soushi.me/tags/rx/</link>
       <pubDate>Sat, 10 Mar 2018 08:44:05 +0000</pubDate>
@@ -355,11 +373,29 @@
     </item>
     
     <item>
+      <title>SharedPreferences</title>
+      <link>https://blog.soushi.me/tags/sharedpreferences/</link>
+      <pubDate>Sat, 10 Mar 2018 08:44:05 +0000</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/sharedpreferences/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>flux</title>
       <link>https://blog.soushi.me/tags/flux/</link>
       <pubDate>Wed, 28 Feb 2018 12:00:40 +0000</pubDate>
       
       <guid>https://blog.soushi.me/tags/flux/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>dagger</title>
+      <link>https://blog.soushi.me/tags/dagger/</link>
+      <pubDate>Fri, 23 Feb 2018 10:02:50 +0000</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/dagger/</guid>
       <description></description>
     </item>
     
@@ -378,15 +414,6 @@
       <pubDate>Fri, 23 Feb 2018 10:02:50 +0000</pubDate>
       
       <guid>https://blog.soushi.me/tags/fragment/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>dagger</title>
-      <link>https://blog.soushi.me/tags/dagger/</link>
-      <pubDate>Fri, 23 Feb 2018 10:02:50 +0000</pubDate>
-      
-      <guid>https://blog.soushi.me/tags/dagger/</guid>
       <description></description>
     </item>
     
@@ -535,20 +562,20 @@
     </item>
     
     <item>
-      <title>Jackson</title>
-      <link>https://blog.soushi.me/tags/jackson/</link>
-      <pubDate>Fri, 15 Sep 2017 18:06:30 +0000</pubDate>
-      
-      <guid>https://blog.soushi.me/tags/jackson/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>datetype</title>
       <link>https://blog.soushi.me/tags/datetype/</link>
       <pubDate>Fri, 15 Sep 2017 18:06:30 +0000</pubDate>
       
       <guid>https://blog.soushi.me/tags/datetype/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Jackson</title>
+      <link>https://blog.soushi.me/tags/jackson/</link>
+      <pubDate>Fri, 15 Sep 2017 18:06:30 +0000</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/jackson/</guid>
       <description></description>
     </item>
     
@@ -823,15 +850,6 @@
     </item>
     
     <item>
-      <title>Prometheus</title>
-      <link>https://blog.soushi.me/tags/prometheus/</link>
-      <pubDate>Tue, 28 Mar 2017 18:00:35 +0000</pubDate>
-      
-      <guid>https://blog.soushi.me/tags/prometheus/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>Terraform</title>
       <link>https://blog.soushi.me/tags/terraform/</link>
       <pubDate>Fri, 24 Mar 2017 12:15:50 +0000</pubDate>
@@ -895,20 +913,20 @@
     </item>
     
     <item>
-      <title>HLS</title>
-      <link>https://blog.soushi.me/tags/hls/</link>
-      <pubDate>Fri, 17 Feb 2017 13:58:34 +0000</pubDate>
-      
-      <guid>https://blog.soushi.me/tags/hls/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>ffmpeg</title>
       <link>https://blog.soushi.me/tags/ffmpeg/</link>
       <pubDate>Fri, 17 Feb 2017 13:58:34 +0000</pubDate>
       
       <guid>https://blog.soushi.me/tags/ffmpeg/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>HLS</title>
+      <link>https://blog.soushi.me/tags/hls/</link>
+      <pubDate>Fri, 17 Feb 2017 13:58:34 +0000</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/hls/</guid>
       <description></description>
     </item>
     
@@ -1039,6 +1057,15 @@
     </item>
     
     <item>
+      <title>mock</title>
+      <link>https://blog.soushi.me/tags/mock/</link>
+      <pubDate>Mon, 09 Jan 2017 01:25:30 +0000</pubDate>
+      
+      <guid>https://blog.soushi.me/tags/mock/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Mockito</title>
       <link>https://blog.soushi.me/tags/mockito/</link>
       <pubDate>Mon, 09 Jan 2017 01:25:30 +0000</pubDate>
@@ -1057,11 +1084,11 @@
     </item>
     
     <item>
-      <title>mock</title>
-      <link>https://blog.soushi.me/tags/mock/</link>
-      <pubDate>Mon, 09 Jan 2017 01:25:30 +0000</pubDate>
+      <title>elasticsearch</title>
+      <link>https://blog.soushi.me/tags/elasticsearch/</link>
+      <pubDate>Fri, 23 Dec 2016 16:28:25 +0000</pubDate>
       
-      <guid>https://blog.soushi.me/tags/mock/</guid>
+      <guid>https://blog.soushi.me/tags/elasticsearch/</guid>
       <description></description>
     </item>
     
@@ -1071,15 +1098,6 @@
       <pubDate>Fri, 23 Dec 2016 16:28:25 +0000</pubDate>
       
       <guid>https://blog.soushi.me/tags/scroll/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>elasticsearch</title>
-      <link>https://blog.soushi.me/tags/elasticsearch/</link>
-      <pubDate>Fri, 23 Dec 2016 16:28:25 +0000</pubDate>
-      
-      <guid>https://blog.soushi.me/tags/elasticsearch/</guid>
       <description></description>
     </item>
     

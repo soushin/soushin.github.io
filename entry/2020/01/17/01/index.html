@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="jp">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <title>Prometheusのcannot allocate memory エラーの調査と解消 - 平日インプット週末アウトプットぶろぐ</title>
+  <meta property="og:title" content="Prometheusのcannot allocate memory エラーの調査と解消 - 平日インプット週末アウトプットぶろぐ" />
+  <meta name="twitter:title" content="Prometheusのcannot allocate memory エラーの調査と解消 - 平日インプット週末アウトプットぶろぐ" />
+  <meta name="description" content="弊プロジェクトでprometheusのあるエラーログから発生するメモリリークによりPodが再起動を繰り返す事象に悩まされたが解消できたので経">
+  <meta property="og:description" content="弊プロジェクトでprometheusのあるエラーログから発生するメモリリークによりPodが再起動を繰り返す事象に悩まされたが解消できたので経">
+  <meta name="twitter:description" content="弊プロジェクトでprometheusのあるエラーログから発生するメモリリークによりPodが再起動を繰り返す事象に悩まされたが解消できたので経">
+  <meta name="author" content=""/>
+  <link rel='icon' type='image/x-icon' href="https://blog.soushi.me/favicon.ico" />
+  <meta property="og:site_name" content="平日インプット週末アウトプットぶろぐ" />
+  <meta property="og:url" content="https://blog.soushi.me/entry/2020/01/17/01/" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="generator" content="Hugo 0.57.2" />
+
+  <link rel="stylesheet" href="/css/style.css" media="all" />
+  <link rel="stylesheet" href="/css/syntax.css" media="all" />
+  <link rel="stylesheet" href="/css/custom.css" media="all" />
+
+  <script src="/js/script.js"></script>
+  <script src="/js/custom.js"></script>
+  <script defer src="/js/fontawesome.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <nav class="site-navi">
+    <h1 class="site-title"><a href="/">平日インプット週末アウトプットぶろぐ</a></h1>
+    <ul class="site-navi-items">
+      <li class="site-navi-item-home"><a href="/" title="Home">Home</a></li>
+      <li class="site-navi-item-archives"><a href="/entry/" title="Archives">Archives</a></li>
+      <li class="site-navi-item-tags"><a href="/tags/" title="Tags">Tags</a></li>
+      <li class="site-navi-item-about"><a href="/about/" title="About">About</a></li>
+    </ul>
+  </nav>
+</header>
+<hr class="site-header-bottom">
+
+  <div class="main" role="main">
+    <article class="article">
+      
+      
+      <h1 class="article-title">Prometheusのcannot allocate memory エラーの調査と解消</h1>
+      
+      <hr class="article-title-bottom">
+      <ul class="article-meta">
+        <li class="article-meta-date"><time>January 17, 2020</time></li>
+        <li class="article-meta-tags">
+          <a href="/tags/prometheus/">
+            <i class="fas fa-tag"></i>
+            prometheus
+          </a>&nbsp;
+        </li>
+        <li class="article-meta-tags">
+          <a href="/tags/stackdriver/">
+            <i class="fas fa-tag"></i>
+            stackdriver
+          </a>&nbsp;
+        </li>
+        <li class="article-meta-tags">
+          <a href="/tags/kubernetees/">
+            <i class="fas fa-tag"></i>
+            kubernetees
+          </a>&nbsp;
+        </li>
+      </ul>
+      
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#弊プロジェクト-prometheus">弊プロジェクト × prometheus</a>
+<ul>
+<li><a href="#diskサイズ逼迫の考慮が裏目に出た">Diskサイズ逼迫の考慮が裏目に出た</a></li>
+</ul></li>
+<li><a href="#発生していた事象">発生していた事象</a></li>
+<li><a href="#どうやって解消したか">どうやって解消したか</a>
+<ul>
+<li><a href="#結果どうなったか">結果どうなったか</a></li>
+</ul></li>
+<li><a href="#special-thanks">Special thanks</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+      
+
+<p>弊プロジェクトでprometheusのあるエラーログから発生するメモリリークによりPodが再起動を繰り返す事象に悩まされたが解消できたので経緯も含めてナレッジとして共有。</p>
+
+<h2 id="弊プロジェクト-prometheus">弊プロジェクト × prometheus</h2>
+
+<p>弊プロジェクトではkubernetes上で稼働するコンテナのメトリクスをprometheusで収集している。</p>
+
+<ul>
+<li>prometheusも例外なくkubernetest上で動くpodの１つ。</li>
+<li>モニタリングはstackdriverを利用しているのでstackdriver-prometheus-sidecarをサイドカーに置いてメトリクスをstackdriverに送っている。</li>
+</ul>
+
+<div class="github-card" data-user="Stackdriver" data-repo="stackdriver-prometheus-sidecar" data-width="400" data-height="" data-theme="default"></div>
+
+<h3 id="diskサイズ逼迫の考慮が裏目に出た">Diskサイズ逼迫の考慮が裏目に出た</h3>
+
+<p>prometheusはローカルストレージを選択して <code>/data</code>に蓄積されるメトリクスの保存期間を短くしていた。理由は以下。</p>
+
+<ul>
+<li>podのdisk利用量を抑える</li>
+<li>sidecarでstackdriverにメトリクスが流れるのでpod内にメトリクスを長時間保持しておく必要がない</li>
+</ul>
+
+<p>この保存期間を短くする設定が影響して <code>/data</code>のデータがrotationされずメモリリークを起こしていた。</p>
+
+<h2 id="発生していた事象">発生していた事象</h2>
+
+<ul>
+<li>prometheusは収集したメトリクスを一定期間ごとにブロックディレクトリを作成して分割していく。</li>
+<li>前述したとおりデータを長く保持する必要がないので保持期間の設定を短くしていたが実際には期限切れのデータが消えていなかった。（rotationされていなかった）</li>
+<li>徐々にブロック内のデータが大きくなりrotation時に利用するメモリが肥大化したことが原因と予想される</li>
+</ul>
+
+<p>次のようなエラーログとともにpodのメモリ利用量も右肩上がりになっていた。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">prometheus-594bfd55b9-rxt49 prometheus level=info ts=2020-01-16T05:40:45.459Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579142443621 maxt=1579147200000 ulid=01DYPDWG2C1TT3105NWEP2868P duration=1.223390137s
+prometheus-594bfd55b9-rxt49 prometheus level=info ts=2020-01-16T05:40:45.536Z caller=head.go:668 component=tsdb msg=&#34;head GC completed&#34; duration=15.595659ms
+prometheus-594bfd55b9-rxt49 prometheus level=info ts=2020-01-16T07:00:00.921Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579147200000 maxt=1579154400000 ulid=01DYPJDMT1VB1VYVSJAB3ZPRNB duration=471.478236ms
+prometheus-594bfd55b9-rxt49 prometheus level=info ts=2020-01-16T07:00:01.019Z caller=head.go:668 component=tsdb msg=&#34;head GC completed&#34; duration=17.038266ms
+prometheus-594bfd55b9-rxt49 prometheus level=info ts=2020-01-16T09:00:00.969Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579154400000 maxt=1579161600000 ulid=01DYPS9BZFYVEBXY6F687EKNT8 duration=602.45951ms
+prometheus-594bfd55b9-rxt49 prometheus level=info ts=2020-01-16T09:00:01.095Z caller=head.go:668 component=tsdb msg=&#34;head GC completed&#34; duration=33.646921ms
+prometheus-594bfd55b9-rxt49 prometheus level=error ts=2020-01-16T11:00:00.663Z caller=db.go:609 component=tsdb msg=&#34;compaction failed&#34; err=&#34;persist head block: write compaction: write chunks: cannot allocate memory&#34;
+prometheus-594bfd55b9-rxt49 prometheus level=error ts=2020-01-16T11:00:01.938Z caller=db.go:609 component=tsdb msg=&#34;compaction failed&#34; err=&#34;persist head block: write compaction: write chunks: cannot allocate memory&#34;
+prometheus-594bfd55b9-rxt49 prometheus level=error ts=2020-01-16T11:00:04.261Z caller=db.go:609 component=tsdb msg=&#34;compaction failed&#34; err=&#34;persist head block: write compaction: write chunks: cannot allocate memory&#34;</pre></td></tr></table>
+</div>
+</div>
+<p><strong>compaction failed&rdquo; err=&ldquo;persist head block: write compaction: write chunks: cannot allocate memory</strong>のログが出力され始める。</p>
+
+<p>Podのメモリ推移のグラフ以下のようになっていた。</p>
+
+<figure>
+    <img src="/images/2020011701.png"/> 
+</figure>
+
+
+<p>※12PMでPodの再デプロイをしている。</p>
+
+<h2 id="どうやって解消したか">どうやって解消したか</h2>
+
+<p>事象発生時の起動オプション にはstorage.tsdb.retension.timeだけであったが追加でstorage.tsdb.min-block-durationも追加した。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml">apiVersion<span class="p">:</span><span class="w"> </span>extensions/v1beta1<span class="w">
+</span><span class="w"></span>kind<span class="p">:</span><span class="w"> </span>Deployment<span class="w">
+</span><span class="w"></span>metadata<span class="p">:</span><span class="w">
+</span><span class="w">  </span>name<span class="p">:</span><span class="w"> </span>prometheus<span class="w">
+</span><span class="w"></span>spec<span class="p">:</span><span class="w">
+</span><span class="w">  </span>template<span class="p">:</span><span class="w">
+</span><span class="w">    </span>spec<span class="p">:</span><span class="w">
+</span><span class="w">      </span>containers<span class="p">:</span><span class="w">
+</span><span class="w">        </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>prometheus<span class="w">
+</span><span class="w">          </span>args<span class="p">:</span><span class="w">
+</span><span class="w">            </span>-<span class="w"> </span><span class="s2">&#34;--config.file=/etc/prometheus/prometheus.yml&#34;</span><span class="w">
+</span><span class="w">            </span>-<span class="w"> </span><span class="s2">&#34;--storage.tsdb.path=/data/&#34;</span><span class="w">
+</span><span class="w">            </span>-<span class="w"> </span><span class="s2">&#34;--storage.tsdb.retention.time=10m&#34;</span><span class="w">
+</span><span class="w">            </span>-<span class="w"> </span><span class="s2">&#34;--storage.tsdb.min-block-duration=5m&#34;</span><span class="w"> </span>←追加<span class="w">
+</span><span class="w">            </span>-<span class="w"> </span><span class="s2">&#34;--web.enable-lifecycle&#34;</span></code></pre></td></tr></table>
+</div>
+</div>
+<p>prometheusのコードを見るとブロックディレクトリ内のmeta.jsonにあるmaxTimeを判定に入れていることがわかる。
+<a href="https://github.com/prometheus/prometheus/blob/v2.9.2/vendor/github.com/prometheus/tsdb/db.go#L670">https://github.com/prometheus/prometheus/blob/v2.9.2/vendor/github.com/prometheus/tsdb/db.go#L670</a></p>
+
+<h3 id="結果どうなったか">結果どうなったか</h3>
+
+<p><strong>rotationのログも継続的に出力され「cannot allocate memory」のログも出なくなった</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:33:56.214Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579231582696 maxt=1579231800000 ulid=01DYRS0ZRTP623TZ0D32Y0VS5Y duration=1.62823461s
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:33:56.281Z caller=head.go:668 component=tsdb msg=&#34;head GC completed&#34; duration=11.920144ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:37:30.765Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579231800000 maxt=1579232100000 ulid=01DYRS7JEF4CNMZ4HFZTN2ZE1S duration=445.699507ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:37:30.866Z caller=head.go:668 component=tsdb msg=&#34;head GC completed&#34; duration=18.677134ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:42:30.863Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579232100000 maxt=1579232400000 ulid=01DYRSGQDGHQ7CDTJ0E8KM06VC duration=543.027584ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:42:30.951Z caller=head.go:668 component=tsdb msg=&#34;head GC completed&#34; duration=11.532145ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:47:30.743Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579232400000 maxt=1579232700000 ulid=01DYRSSWCGAAPE51394D3KY3XM duration=422.910739ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:47:30.839Z caller=head.go:668 component=tsdb msg=&#34;head GC completed&#34; duration=11.107692ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:52:30.777Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579232700000 maxt=1579233000000 ulid=01DYRT31BG73MQ9WWP7WX1WAFK duration=457.516201ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:52:30.944Z caller=head.go:668 component=tsdb msg=&#34;head GC completed&#34; duration=11.344277ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:52:31.002Z caller=head.go:738 component=tsdb msg=&#34;WAL checkpoint complete&#34; first=0 last=1 duration=58.11359ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:57:30.836Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579233000000 maxt=1579233300000 ulid=01DYRTC6AGQZK6JHD1PRAKTSAV duration=516.794409ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T03:57:30.941Z caller=head.go:668 component=tsdb msg=&#34;head GC completed&#34; duration=11.109623ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T04:02:31.116Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579233300000 maxt=1579233600000 ulid=01DYRTNB9F2KM13G3H1YW940V9 duration=796.974963ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T04:02:31.179Z caller=head.go:668 component=tsdb msg=&#34;head GC completed&#34; duration=11.698745ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T04:02:31.265Z caller=head.go:738 component=tsdb msg=&#34;WAL checkpoint complete&#34; first=2 last=3 duration=86.160389ms
+prometheus-cc56c76b9-xr4m8 prometheus level=info ts=2020-01-17T04:07:30.826Z caller=compact.go:496 component=tsdb msg=&#34;write block&#34; mint=1579233600000 maxt=1579233900000 ulid=01DYRTYG8GDY8EWN7ZABHJVV7C duration=506.455293ms</pre></td></tr></table>
+</div>
+</div>
+<p><strong>/dataディレクトリのログデータもrotationしている</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></pre></td>
+<td class="lntd">
+<pre class="chroma">/data $ ls -al
+total 8
+drwxrwsrwt 6 root 2000 160 Jan 17 06:07 .
+drwxr-xr-x 1 root root 4096 Jan 17 03:26 ..
+drwxr-sr-x 3 1000 2000 120 Jan 17 05:57 01DYS17XJGQBR3010JG02ZHZ4N
+drwxr-sr-x 3 1000 2000 120 Jan 17 06:02 01DYS1H2HF6A6TB3Y97NHB6A26
+drwxr-sr-x 3 1000 2000 120 Jan 17 06:07 01DYS1T7GN72M2ZAZ2NEK1C96B
+-rw-r--r-- 1 1000 2000 0 Jan 17 03:26 lock
+-rw-r--r-- 1 1000 2000 20001 Jan 17 03:26 queries.active
+drwxr-sr-x 3 1000 2000 180 Jan 17 06:07 wal</pre></td></tr></table>
+</div>
+</div>
+<p><strong>01DYS17xxxxx</strong>のディレクトリが複数ある。</p>
+
+<p><strong>Podのメモリも安定</strong></p>
+
+<figure>
+    <img src="/images/2020011702.png"/> 
+</figure>
+
+
+<p>※12PM以降に対策を入れた新しいPodをデプロイしている。</p>
+
+<h2 id="special-thanks">Special thanks</h2>
+
+<ul>
+<li><a href="https://kazuhira-r.hatenablog.com/entry/2019/05/02/232813">Prometheusのストレージのドキュメントをさらっと読んでみて、retentionの設定もしてみる</a></li>
+</ul>
+
+<script src="https://cdn.jsdelivr.net/github-cards/latest/widget.js"></script>
+
+    </article>
+
+    
+<ul class="article-share">
+  <li>
+    <a href="https://twitter.com/share" class="twitter-share-button">Tweet</a> <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+  </li>
+  <li>
+    <div class="fb-share-button" data-href="https://blog.soushi.me/entry/2020/01/17/01/" data-layout="button_count" data-action="like" data-size="small" data-show-faces="true" data-share="true"></div>
+    <div id="fb-root"></div>
+    <script>(function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.10";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));</script>
+  </li>
+  <li>
+    <a href="http://b.hatena.ne.jp/entry/" class="hatena-bookmark-button" data-hatena-bookmark-layout="basic-label-counter" data-hatena-bookmark-lang="en" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+  </li>
+  <li>
+    <a data-pocket-label="pocket" data-pocket-count="horizontal" class="pocket-btn" data-lang="en"></a>
+    <script>!function(d,i){if(!d.getElementById(i)){var j=d.createElement("script");j.id=i;j.src="https://widgets.getpocket.com/v1/j/btn.js?v=1";var w=d.getElementById(i);d.body.appendChild(j);}}(document,"pocket-btn-js");</script>
+  </li>
+</ul>
+
+
+    <ul class="pager article-pager">
+      <li class="pager-newer pager-noitem">&lt; Newer</li>
+      <li class="pager-older">
+        <a href="/entry/2019/02/22/110648/" data-toggle="tooltip" data-placement="top" title="Kotlin MultiplatformサポートのGoogle Analyticsライブラリ「Measurer」をつくった">Older &gt;</a>
+      </li>
+    </ul>
+  </div>
+
+
+<div class="site-footer">
+  <div class="copyright">&copy; Copyright 2019 <a href="https://twitter.com/soushi_nozawa">Soushi Nozawa</a></div>
+  <ul class="site-footer-items">
+    <li class="site-footer-item-about"><a href="/about/" title="About">About</a></li>
+  </ul>
+  <div class="powerdby">
+    Powered by <a href="https://gohugo.io/">Hugo</a> and <a href="https://github.com/taikii/whiteplain">Whiteplain</a>
+  </div>
+</div>
+
+
+</body>
+</html>
